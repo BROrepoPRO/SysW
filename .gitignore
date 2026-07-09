@@ -1,0 +1,50 @@
+﻿# ============================================
+# .gitignore dlya VBA / Excel proektov
+# ============================================
+
+# Vremennye fayly Excel (lock-fayly)
+~$*.xls*
+*.~lock.*
+
+# Vremennye fayly
+*.tmp
+*.temp
+
+# Fayly blokirovki Microsoft Office
+~*.*
+
+# Log-fayly
+*.log
+
+# Bazy dannyh SQLite (esli ispolzuyutsya kak kesh)
+*.db
+*.sqlite
+
+# Sistemnye fayly Windows
+Thumbs.db
+Desktop.ini
+.BIN/
+
+# Papki sborok i kesha (esli poyavyatsya)
+bin/
+obj/
+Debug/
+Release/
+.vs/
+*.user
+*.suo
+*.sln.docstates
+
+# Papka node_modules (na sluchay, esli poyavitsya)
+node_modules/
+
+# Fayly konfiguracii IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Fayly s sekretami/klyuchami (esli poyavyatsya)
+*.key
+*.pem
+secrets/
