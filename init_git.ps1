@@ -1,11 +1,11 @@
-<#
+﻿<#
 .SYNOPSIS
     Inicializaciya Git-repozitoriya dlya proekta SysW i otpravka na GitHub.
 .DESCRIPTION
-    Skript vypolnyaet polnuyu nastrojku Git-repozitoriya.
+    Skript vypolnyaet polnuyu nastrojku Git-repozitoriya soglasno promtu.
 .NOTES
-    Avtor: SourceCraft
-    Versiya: 1.0
+    Avtor: SourceCraft Code Assistant
+    Versiya: 1.1
 #>
 
 # ============================================================
@@ -13,7 +13,9 @@
 # ============================================================
 function Write-ErrorAndExit {
     param([string]$Message)
+    Write-Host ""
     Write-Host "[OSHIBKA] $Message" -ForegroundColor Red
+    Write-Host ""
     exit 1
 }
 
@@ -34,38 +36,40 @@ function Write-Success {
 }
 
 # ============================================================
-# Shag 0: Proverka nalichiya Git v sisteme
+# Shag 1: Perehod v papku L:\PROject\SysW
 # ============================================================
-Write-Info "Proverka nalichiya Git..."
+Write-Info "Shag 1. Perehod v papku L:\PROject\SysW..."
+
+$targetDir = "L:\PROject\SysW"
+
+if (-not (Test-Path $targetDir -PathType Container)) {
+    Write-ErrorAndExit "Papka '$targetDir' ne sushestvuet. Skript ostanovlen."
+}
+
+Set-Location -Path $targetDir
+Write-Success "Tekushaya direktoriya: $(Get-Location)"
+Write-Host ""
+
+# ============================================================
+# Shag 2: Proverka, chto Git ustanovlen
+# ============================================================
+Write-Info "Shag 2. Proverka nalichiya Git v sisteme..."
 
 try {
     $gitVersion = git --version
     Write-Success "Git nayden: $gitVersion"
 } catch {
-    Write-ErrorAndExit "Git ne ustanovlen ili ne dobavlen v PATH. Ustanovite Git s https://git-scm.com/ i povtorite popytku."
+    Write-ErrorAndExit "Git ne ustanovlen ili ne dobavlen v PATH."
 }
+Write-Host ""
 
 # ============================================================
-# Shag 1: Proverka i perehod v direktoriyu L:\PROject\SysW
+# Shag 3: Inicializaciya Git-repozitoriya
 # ============================================================
-$targetDir = "L:\PROject\SysW"
-
-Write-Info "Proverka direktori: $targetDir"
-
-if (-not (Test-Path $targetDir -PathType Container)) {
-    Write-ErrorAndExit "Papka '$targetDir' ne naidena. Ubedites, chto put sushestvuet."
-}
-
-Set-Location -Path $targetDir
-Write-Success "Tekushaya direktoriya: $(Get-Location)"
-
-# ============================================================
-# Shag 2: Inicializaciya Git-repozitoriya
-# ============================================================
-Write-Info "Inicializaciya Git-repozitoriya..."
+Write-Info "Shag 3. Inicializaciya Git-repozitoriya (git init)..."
 
 if (Test-Path ".git" -PathType Container) {
-    Write-Host "[WARN] Repozitoriy uze inicializirovan (.git sushestvuet). Propuskaem git init." -ForegroundColor Yellow
+    Write-Host "[WARN] Repozitoriy uze inicializirovan (.git sushestvuet)." -ForegroundColor Yellow
 } else {
     git init
     if ($LASTEXITCODE -ne 0) {
@@ -73,63 +77,24 @@ if (Test-Path ".git" -PathType Container) {
     }
     Write-Success "Git-repozitoriy inicializirovan."
 }
+Write-Host ""
 
 # ============================================================
-# Shag 3: Sozdanie fayla .gitignore
+# Shag 4: Sozdanie fayla .gitignore
 # ============================================================
-Write-Info "Sozdanie fayla .gitignore..."
+Write-Info "Shag 4. Sozdanie fayla .gitignore..."
 
 $gitignoreContent = @"
-# ============================================
-# .gitignore dlya VBA / Excel proektov
-# ============================================
-
-# Vremennye fayly Excel (lock-fayly)
 ~$*.xls*
-*.~lock.*
-
-# Vremennye fayly
 *.tmp
-*.temp
-
-# Fayly blokirovki Microsoft Office
 ~*.*
-
-# Log-fayly
 *.log
-
-# Bazy dannyh SQLite (esli ispolzuyutsya kak kesh)
 *.db
 *.sqlite
-
-# Sistemnye fayly Windows
 Thumbs.db
 Desktop.ini
-$RECYCLE.BIN/
-
-# Papki sborok i kesha (esli poyavyatsya)
-bin/
-obj/
-Debug/
-Release/
-.vs/
-*.user
-*.suo
-*.sln.docstates
-
-# Papka node_modules (na sluchay, esli poyavitsya)
 node_modules/
-
-# Fayly konfiguracii IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Fayly s sekretami/klyuchami (esli poyavyatsya)
-*.key
-*.pem
-secrets/
+.yca/
 "@
 
 try {
@@ -138,51 +103,120 @@ try {
 } catch {
     Write-ErrorAndExit "Ne udalos sozdat .gitignore: $_"
 }
+Write-Host ""
 
 # ============================================================
-# Shag 4: Pereimenovanie vetki v main
+# Shag 5: Nastrojka lokalnyh parametrov polzovatelya Git
 # ============================================================
-Write-Info "Pereimenovanie vetki v 'main'..."
+Write-Info "Shag 5. Nastrojka lokalnyh parametrov polzovatelya Git..."
+
+try {
+    $currentName = git config user.name
+    $currentEmail = git config user.email
+
+    if (-not $currentName) {
+        git config user.name "BROrepoPRO"
+        Write-Success "user.name ustanovlen: 'BROrepoPRO'"
+    } else {
+        Write-Host "[INFO] user.name uze zadan: $currentName" -ForegroundColor White
+    }
+
+    if (-not $currentEmail) {
+        git config user.email "karambos1984@gmail.com"
+        Write-Success "user.email ustanovlen: 'karambos1984@gmail.com'"
+    } else {
+        Write-Host "[INFO] user.email uze zadan: $currentEmail" -ForegroundColor White
+    }
+} catch {
+    Write-ErrorAndExit "Ne udalos nastroit Git-konfig: $_"
+}
+Write-Host ""
+
+# ============================================================
+# Shag 6: Pereimenovanie tekushej vetki v main
+# ============================================================
+Write-Info "Shag 6. Pereimenovanie tekushej vetki v 'main'..."
 
 try {
     git branch -M main
     if ($LASTEXITCODE -ne 0) {
         throw "Oshibka pri pereimenovanii vetki."
     }
-    Write-Success "Vetka pereimenovana v 'main'."
+    Write-Success "Tekushaya vetka pereimenovana v 'main'."
 } catch {
     Write-ErrorAndExit "Ne udalos pereimenovat vetku: $_"
 }
+Write-Host ""
 
 # ============================================================
-# Shag 5: Dobavlenie udalonnogo repozitoriya
+# Shag 7: Dobavlenie udalonnogo repozitoriya
 # ============================================================
-Write-Info "Dobavlenie udalennogo repozitoriya: origin..."
+Write-Info "Shag 7. Dobavlenie udalonnogo repozitoriya origin..."
+
+$remoteUrl = "https://github.com/BROrepoPRO/SysW"
 
 try {
     $existingRemote = git remote get-url origin 2>$null
     if ($existingRemote) {
         Write-Host "[WARN] Udalonny repozitoriy 'origin' uze sushestvuet: $existingRemote" -ForegroundColor Yellow
-        if ($existingRemote -ne "https://github.com/BROrepoPRO/SysW") {
-            Write-Host "[WARN] URL otlichaetsya ot ozhidaemogo. Menyaem na https://github.com/BROrepoPRO/SysW..." -ForegroundColor Yellow
-            git remote set-url origin "https://github.com/BROrepoPRO/SysW"
+        if ($existingRemote -ne $remoteUrl) {
+            Write-Host "[WARN] URL otlichaetsya. Menyaem na $remoteUrl ..." -ForegroundColor Yellow
+            git remote set-url origin $remoteUrl
             Write-Success "URL udalonnogo repozitoriya obnovlen."
+        } else {
+            Write-Host "[INFO] URL uze sootvetstvuet ozhidaemomu." -ForegroundColor White
         }
     } else {
-        git remote add origin "https://github.com/BROrepoPRO/SysW"
+        git remote add origin $remoteUrl
         if ($LASTEXITCODE -ne 0) {
             throw "Oshibka pri dobavlenii udalonnogo repozitoriya."
         }
-        Write-Success "Udalonny repozitoriy dobavlen: https://github.com/BROrepoPRO/SysW"
+        Write-Success "Udalonny repozitoriy dobavlen: $remoteUrl"
     }
 } catch {
     Write-ErrorAndExit "Ne udalos dobavit udalonny repozitoriy: $_"
 }
+Write-Host ""
 
 # ============================================================
-# Shag 6: Dobavlenie vseh faylov v indeks
+# Shag 8: Sozdanie README.md
 # ============================================================
-Write-Info "Dobavlenie vseh faylov v indeks (git add .)..."
+Write-Info "Shag 8. Sozdanie README.md..."
+
+$readmeContent = @"
+# SysW - Sistema avtomatizacii obrabotki zakaz-naryadov avtoremonta
+
+**Naznachenie:** import, analiz i uchet dannyh zakaz-naryadov iz Excel v SQLite.
+
+**Tehnicheskiy sostav:**
+- Moduli VBA dlya Excel (import, parsing, vygruzka)
+- Baza dannyh SQLite (hranenie zakaz-naryadov, rabot, zapchastey)
+- PowerShell-skripty avtomatizacii
+- Integraciya s Git i GitHub dlya kontrolya versiy
+
+**Komanda proekta:**
+
+| Rol | Obyazannosti |
+|------|-------------|
+| **Nachalnik mira** | Generaciya idey, postanovka zadach, klyuchevye resheniya, arhitektura i prioritety. |
+| **Glavny pomoshnik** | Koordinaciya, dekompoziciya zadach, promty dlya Code Assistant, kontrol kachestva, integraciya rezultatov. |
+| **Code Assistant (DevOps-komanda)** | Napisanie koda, dokumentacii, testov, avtomatizaciya po gotovym promtam. |
+
+**Ispolzuemye tehnologii:** VBA, ADO, SQLite, Excel, Git, PowerShell, SourceCraft Code Assistant.
+"@
+
+try {
+    [System.IO.File]::WriteAllText((Join-Path $targetDir "README.md"), $readmeContent, [System.Text.Encoding]::UTF8)
+    Write-Success "Fayl README.md sozdan."
+} catch {
+    Write-ErrorAndExit "Ne udalos sozdat README.md: $_"
+}
+Write-Host ""
+
+# ============================================================
+# Shag 9: Dobavlenie vseh faylov v indeks
+# ============================================================
+Write-Info "Shag 9. Dobavlenie vseh faylov v indeks (git add .)..."
 
 try {
     git add .
@@ -193,104 +227,118 @@ try {
 } catch {
     Write-ErrorAndExit "Ne udalos dobavit fayly: $_"
 }
+Write-Host ""
 
 # ============================================================
-# Shag 6.5: Nastrojka Git-konfiga (user.name / user.email)
+# Shag 10: Pervy commit
 # ============================================================
-Write-Info "Proverka i nastrojka Git-konfiga (user.name / user.email)..."
-
-try {
-    $currentName = git config user.name
-    $currentEmail = git config user.email
-
-    if (-not $currentName) {
-        git config user.name "BROrepoPRO"
-        Write-Host "[WARN] user.name ne byl ustanovlen. Ustanovlen: 'BROrepoPRO'" -ForegroundColor Yellow
-    } else {
-        Write-Success "user.name: $currentName"
-    }
-
-    if (-not $currentEmail) {
-        git config user.email "brorepopro@users.noreply.github.com"
-        Write-Host "[WARN] user.email ne byl ustanovlen. Ustanovlen: 'brorepopro@users.noreply.github.com'" -ForegroundColor Yellow
-    } else {
-        Write-Success "user.email: $currentEmail"
-    }
-} catch {
-    Write-ErrorAndExit "Ne udalos nastroit Git-konfig: $_"
-}
-
-# ============================================================
-# Shag 7: Sozdanie pervogo commita
-# ============================================================
-Write-Info "Sozdanie pervogo commita..."
+Write-Info "Shag 10. Sozdanie pervogo commita..."
 
 try {
     $status = git status --porcelain
     if (-not $status) {
-        Write-Host "[WARN] Net izmeneniy dlya commita. Vozmozno, commit uze sozdan." -ForegroundColor Yellow
+        Write-Host "[WARN] Net izmenenij dlya commita. Vozmozhno, commit uze sozdan." -ForegroundColor Yellow
     } else {
-        git commit -m "Initial commit: struktura proekta SysW"
+        git commit -m "Initial commit: struktura proekta SysW i README"
         if ($LASTEXITCODE -ne 0) {
             throw "Oshibka pri sozdanii commita."
         }
-        Write-Success "Pervy commit sozdan."
+        Write-Success "Pervyj commit sozdan."
     }
 } catch {
     Write-ErrorAndExit "Ne udalos sozdat commit: $_"
 }
+Write-Host ""
 
 # ============================================================
-# Shag 8: Otpravka vetki main na GitHub
+# Shag 11: Proverka dostupnosti udalonnogo repozitoriya i push
 # ============================================================
-Write-Info "Otpravka vetki 'main' na GitHub (git push -u origin main)..."
-
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Yellow
-Write-Host "  VNIMANIE: Mozhet potrebovatsya autentifikaciya GitHub!" -ForegroundColor Yellow
-Write-Host "============================================================" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "Esli Git zaprosit login/parol - ispolzuyte:" -ForegroundColor White
-Write-Host "  - Login: vash GitHub username" -ForegroundColor White
-Write-Host "  - Parol: Personal Access Token (ne parol ot akkounta!)" -ForegroundColor White
-Write-Host ""
-Write-Host "Kak sozdat Personal Access Token:" -ForegroundColor White
-Write-Host "  1. GitHub -> Settings -> Developer settings -> Personal access tokens -> Tokens (classic)" -ForegroundColor White
-Write-Host "  2. Nagmite 'Generate new token (classic)'" -ForegroundColor White
-Write-Host "  3. Vyberite scope: repo (polny dostup)" -ForegroundColor White
-Write-Host "  4. Skopiruyte token i ispolzuyte ego kak parol" -ForegroundColor White
-Write-Host ""
+Write-Info "Shag 11. Proverka dostupnosti udalonnogo repozitoriya (git ls-remote origin)..."
 
 try {
+    $lsRemote = git ls-remote origin 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ""
+        Write-Host "[OSHIBKA] Ne udalos podklyuchitsya k udalennomu repozitoriyu." -ForegroundColor Red
+        Write-Host "Trebuetsya autentifikaciya na GitHub. Vypolnite vhod i povtorite push vruchnuyu." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Dlya ruchnogo pusha vypolnite:" -ForegroundColor White
+        Write-Host "  git push -u origin main" -ForegroundColor White
+        Write-Host ""
+        exit 1
+    }
+    Write-Success "Udalonny repozitoriy dostupen."
+
+    # Vypolnyaem push
+    Write-Info "Otpravka vetki 'main' na GitHub (git push -u origin main)..."
     git push -u origin main
     if ($LASTEXITCODE -ne 0) {
         Write-Host ""
         Write-Host "[OSHIBKA] Ne udalos otpravit vetku na GitHub." -ForegroundColor Red
-        Write-Host "Vozmoznye prichiny:" -ForegroundColor Yellow
-        Write-Host "  1. Ne proydena autentifikaciya - vvedite login i Personal Access Token." -ForegroundColor Yellow
-        Write-Host "  2. Repozitoriy https://github.com/BROrepoPRO/SysW ne sushestvuet - sozdajte ego vruchnuyu." -ForegroundColor Yellow
-        Write-Host "  3. Net dostupa k internetu ili GitHub zablokirovan." -ForegroundColor Yellow
+        Write-Host "Trebuetsya autentifikaciya na GitHub. Vypolnite vhod i povtorite push vruchnuyu." -ForegroundColor Yellow
         Write-Host ""
-        Write-Host "Posle resheniya problemy vypolnite komandu vruchnuyu:" -ForegroundColor White
+        Write-Host "Dlya ruchnogo pusha vypolnite:" -ForegroundColor White
         Write-Host "  git push -u origin main" -ForegroundColor White
+        Write-Host ""
         exit 1
     }
     Write-Success "Vetka 'main' uspeshno otpravlena na GitHub!"
 } catch {
     Write-Host ""
-    Write-Host "[OSHIBKA] Isklyuchenie pri push: $_" -ForegroundColor Red
-    Write-Host "Posle resheniya problemy vypolnite komandu vruchnuyu:" -ForegroundColor White
+    Write-Host "[OSHIBKA] Isklyuchenie pri proverke ili otpravke: $_" -ForegroundColor Red
+    Write-Host "Trebuetsya autentifikaciya na GitHub. Vypolnite vhod i povtorite push vruchnuyu." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Dlya ruchnogo pusha vypolnite:" -ForegroundColor White
     Write-Host "  git push -u origin main" -ForegroundColor White
+    Write-Host ""
     exit 1
 }
+Write-Host ""
 
 # ============================================================
-# Zavershenie
+# Shag 12: Sozdanie vetki dev ot main
 # ============================================================
+Write-Info "Shag 12. Sozdanie vetki 'dev' ot 'main'..."
+
+try {
+    $branchExists = git branch --list dev
+    if ($branchExists) {
+        Write-Host "[WARN] Vetka 'dev' uze sushestvuet. Perekljuchaemsya na nee." -ForegroundColor Yellow
+        git checkout dev
+    } else {
+        git checkout -b dev
+        if ($LASTEXITCODE -ne 0) {
+            throw "Oshibka pri sozdanii vetki dev."
+        }
+        Write-Success "Vetka 'dev' sozdana ot 'main' i vypolneno perekljuchenie na nee."
+    }
+} catch {
+    Write-ErrorAndExit "Ne udalos sozdat vetku dev: $_"
+}
+Write-Host ""
+
+# ============================================================
+# Shag 13: Vyvod tekushego statusa i loga
+# ============================================================
+Write-Info "Shag 13. Vyvod tekushego statusa i istorii..."
+
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "  git status" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
+git status
+
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "  git log --oneline --all --graph" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
+git log --oneline --all --graph
+
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host "  Inicializaciya Git-repozitoriya uspeshno zavershena!" -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Repozitoriy: https://github.com/BROrepoPRO/SysW" -ForegroundColor White
-Write-Host "Vetka: main" -ForegroundColor White
+Write-Host "Vetka: dev (sozdana ot main)" -ForegroundColor White
+Write-Host ""
