@@ -17,3 +17,5 @@
 | **Code Assistant (DevOps-команда)** | Написание кода, документации, тестов, автоматизация по готовым промтам. |
 
 **Используемые технологии:** VBA, ADO, SQLite, Excel, Git, PowerShell, SourceCraft Code Assistant.
+
+**История изменений:** [CHANGELOG.md](CHANGELOG.md)
