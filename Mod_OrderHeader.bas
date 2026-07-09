@@ -2,25 +2,25 @@ Attribute VB_Name = "Mod_OrderHeader"
 Option Explicit
 
 ' ============================================================================
-' РњРѕРґСѓР»СЊ: Mod_OrderHeader
-' РќР°Р·РЅР°С‡РµРЅРёРµ: РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРµ Р·Р°РїРѕР»РЅРµРЅРёРµ С€Р°РїРєРё Р·Р°РєР°Р·-РЅР°СЂСЏРґР° РїРѕ РЅРѕРјРµСЂСѓ Р·Р°РєР°Р·Р°
-' РђРІС‚РѕСЂ: SourceCraft
-' Р”Р°С‚Р°: 2026-07-09
+' Модуль: Mod_OrderHeader
+' Назначение: Автоматическое заполнение шапки заказ-наряда по номеру заказа
+' Автор: SourceCraft
+' Дата: 2026-07-09
 ' ============================================================================
 
 ' --------------------------------------------------------------------------
-' РџСѓР±Р»РёС‡РЅР°СЏ С„СѓРЅРєС†РёСЏ FillHeaderFromOrder
-' Р—Р°РїРѕР»РЅСЏРµС‚ СЏС‡РµР№РєРё B3:B15 РЅР° Р»РёСЃС‚Рµ main РЅР° РѕСЃРЅРѕРІРµ РЅРѕРјРµСЂР° Р·Р°РєР°Р·Р° (B2).
+' Публичная функция FillHeaderFromOrder
+' Заполняет ячейки B3:B15 на листе main на основе номера заказа (B2).
 '
-' РџР°СЂР°РјРµС‚СЂС‹:
-'   orderNumber - РЅРѕРјРµСЂ Р·Р°РєР°Р·Р° (Р·РЅР°С‡РµРЅРёРµ РёР· СЏС‡РµР№РєРё B2)
-'   wsMain      - СЂР°Р±РѕС‡РёР№ Р»РёСЃС‚ "main"
-'   wsSpisok    - СЂР°Р±РѕС‡РёР№ Р»РёСЃС‚ "spisok" (СЃРїСЂР°РІРѕС‡РЅРёРє РўРЎ)
-'   wsModel     - СЂР°Р±РѕС‡РёР№ Р»РёСЃС‚ "model" (СЃРїСЂР°РІРѕС‡РЅРёРє РјРѕРґРµР»РµР№)
+' Параметры:
+'   orderNumber - номер заказа (значение из ячейки B2)
+'   wsMain      - рабочий лист "main"
+'   wsSpisok    - рабочий лист "spisok" (справочник ТС)
+'   wsModel     - рабочий лист "model" (справочник моделей)
 '
-' Р’РѕР·РІСЂР°С‰Р°РµС‚:
-'   True  - РµСЃР»Рё РІС‹РїРѕР»РЅРµРЅРёРµ РїСЂРѕС€Р»Рѕ Р±РµР· РєСЂРёС‚РёС‡РµСЃРєРёС… РѕС€РёР±РѕРє VBA
-'   False - РµСЃР»Рё РІРѕР·РЅРёРєР»Р° runtime-РѕС€РёР±РєР°
+' Возвращает:
+'   True  - если выполнение прошло без критических ошибок VBA
+'   False - если возникла runtime-ошибка
 ' --------------------------------------------------------------------------
 Public Function FillHeaderFromOrder( _
     ByVal orderNumber As Variant, _
@@ -29,92 +29,96 @@ Public Function FillHeaderFromOrder( _
     ByVal wsModel As Worksheet _
 ) As Boolean
 
-    ' РљРѕРЅСЃС‚Р°РЅС‚С‹ РґР»СЏ Р»РёСЃС‚Р° "spisok"
-    Const SPISOK_COL_ORDER As Long = 1   ' СЃС‚РѕР»Р±РµС† A вЂ” РЅРѕРјРµСЂ Р·Р°РєР°Р·Р°
-    Const SPISOK_COL_MODEL As Long = 2   ' СЃС‚РѕР»Р±РµС† B вЂ” РњРѕРґРµР»СЊ
-    Const SPISOK_COL_GRZ  As Long = 3   ' СЃС‚РѕР»Р±РµС† C вЂ” Р“Р Р—
-    Const SPISOK_COL_VIN  As Long = 4   ' СЃС‚РѕР»Р±РµС† D вЂ” VIN
-    Const SPISOK_COL_GARAGE As Long = 5 ' СЃС‚РѕР»Р±РµС† E вЂ” РіР°СЂР°Р¶. в„–
-    Const SPISOK_COL_YEAR As Long = 6   ' СЃС‚РѕР»Р±РµС† F вЂ” РіРѕРґ РІС‹Рї.
-    Const SPISOK_COL_MILEAGE As Long = 7 ' СЃС‚РѕР»Р±РµС† G вЂ” РїСЂРѕР±РµРі
-    Const SPISOK_COL_DATE As Long = 8   ' СЃС‚РѕР»Р±РµС† H вЂ” РґР°С‚Р°
-    Const SPISOK_HEADER_ROWS As Long = 1 ' РѕРґРЅР° СЃС‚СЂРѕРєР° Р·Р°РіРѕР»РѕРІРєР°
+    ' Константы для листа "spisok"
+    Const SPISOK_COL_ORDER As Long = 1   ' столбец A — номер заказа
+    Const SPISOK_COL_MODEL As Long = 2   ' столбец B — Модель
+    Const SPISOK_COL_GRZ  As Long = 3   ' столбец C — ГРЗ
+    Const SPISOK_COL_VIN  As Long = 4   ' столбец D — VIN
+    Const SPISOK_COL_GARAGE As Long = 5 ' столбец E — гараж. №
+    Const SPISOK_COL_YEAR As Long = 6   ' столбец F — год вып.
+    Const SPISOK_COL_MILEAGE As Long = 7 ' столбец G — пробег
+    Const SPISOK_COL_DATE As Long = 8   ' столбец H — дата
+    Const SPISOK_HEADER_ROWS As Long = 1 ' одна строка заголовка
 
-    ' РљРѕРЅСЃС‚Р°РЅС‚С‹ РґР»СЏ Р»РёСЃС‚Р° "model"
-    Const MODEL_COL_NAME As Long = 1     ' СЃС‚РѕР»Р±РµС† 1 вЂ” РЅР°Р·РІР°РЅРёРµ РјРѕРґРµР»Рё
-    Const MODEL_COL_WORK_ORIG As Long = 3 ' СЃС‚РѕР»Р±РµС† 3 вЂ” Р Р°Р±РѕС‚С‹ РёСЃС…
-    Const MODEL_COL_WORK_MOD As Long = 4  ' СЃС‚РѕР»Р±РµС† 4 вЂ” Р Р°Р±РѕС‚С‹ РјРѕРґ
-    Const MODEL_COL_PARTS_MOD As Long = 5 ' СЃС‚РѕР»Р±РµС† 5 вЂ” Р—/С‡ РјРѕРґ
-    Const MODEL_COL_PRICE_NH As Long = 6  ' СЃС‚РѕР»Р±РµС† 6 вЂ” С†РµРЅР° РЅ/С‡
+    ' Константы для листа "model"
+    Const MODEL_COL_NAME As Long = 1     ' столбец 1 — название модели
+    Const MODEL_COL_WORK_ORIG As Long = 3 ' столбец 3 — Работы исх
+    Const MODEL_COL_WORK_MOD As Long = 4  ' столбец 4 — Работы мод
+    Const MODEL_COL_PARTS_MOD As Long = 5 ' столбец 5 — З/ч мод
+    Const MODEL_COL_PRICE_NH As Long = 6  ' столбец 6 — цена н/ч
 
-    ' РљРѕРЅСЃС‚Р°РЅС‚С‹ РґР»СЏ Р»РёСЃС‚Р° "main" (С†РµР»РµРІС‹Рµ СЏС‡РµР№РєРё)
-    Const MAIN_CELL_ORDER As String = "B2"   ' РЅРѕРјРµСЂ Р·Р°РєР°Р·Р° (РІС…РѕРґ)
-    Const MAIN_CELL_MODEL As String = "B3"   ' РњРѕРґРµР»СЊ
-    Const MAIN_CELL_GRZ As String = "B4"     ' Р“Р Р—
+    ' Константы для листа "main" (целевые ячейки)
+    Const MAIN_CELL_ORDER As String = "B2"   ' номер заказа (вход)
+    Const MAIN_CELL_MODEL As String = "B3"   ' Модель
+    Const MAIN_CELL_GRZ As String = "B4"     ' ГРЗ
     Const MAIN_CELL_VIN As String = "B5"     ' VIN
-    Const MAIN_CELL_GARAGE As String = "B6"  ' РіР°СЂР°Р¶. в„–
-    Const MAIN_CELL_YEAR As String = "B7"    ' РіРѕРґ РІС‹Рї.
-    Const MAIN_CELL_MILEAGE As String = "B8" ' РїСЂРѕР±РµРі
-    Const MAIN_CELL_DATE As String = "B9"    ' РґР°С‚Р°
+    Const MAIN_CELL_GARAGE As String = "B6"  ' гараж. №
+    Const MAIN_CELL_YEAR As String = "B7"    ' год вып.
+    Const MAIN_CELL_MILEAGE As String = "B8" ' пробег
+    Const MAIN_CELL_DATE As String = "B9"    ' дата
     Const MAIN_CELL_ORDER_FULL As String = "B10" ' "00" & B2 & "-20"
-    Const MAIN_CELL_PRICE_NH As String = "B11"   ' С†РµРЅР° РЅ/С‡
-    Const MAIN_CELL_WORK_ORIG As String = "B12"  ' Р Р°Р±РѕС‚С‹ РёСЃС…
-    Const MAIN_CELL_WORK_MOD As String = "B13"   ' Р Р°Р±РѕС‚С‹ РјРѕРґ
-    Const MAIN_CELL_PARTS_MOD As String = "B14"  ' Р—/С‡ РјРѕРґ
-    Const MAIN_CELL_ROW_NUM As String = "B15"    ' РЅРѕРјРµСЂ СЃС‚СЂРѕРєРё РЅР° spisok - 1
+    Const MAIN_CELL_PRICE_NH As String = "B11"   ' цена н/ч
+    Const MAIN_CELL_WORK_ORIG As String = "B12"  ' Работы исх
+    Const MAIN_CELL_WORK_MOD As String = "B13"   ' Работы мод
+    Const MAIN_CELL_PARTS_MOD As String = "B14"  ' З/ч мод
+    Const MAIN_CELL_ROW_NUM As String = "B15"    ' номер строки на spisok - 1
 
-    ' РџРµСЂРµРјРµРЅРЅС‹Рµ
-    Dim foundRowSpisok As Range   ' РЅР°Р№РґРµРЅРЅР°СЏ СЃС‚СЂРѕРєР° РЅР° Р»РёСЃС‚Рµ spisok
-    Dim foundRowModel As Range    ' РЅР°Р№РґРµРЅРЅР°СЏ СЃС‚СЂРѕРєР° РЅР° Р»РёСЃС‚Рµ model
-    Dim spisokRowIndex As Long    ' РЅРѕРјРµСЂ СЃС‚СЂРѕРєРё РЅР° spisok (Р°Р±СЃРѕР»СЋС‚РЅС‹Р№)
-    Dim orderNumStr As String     ' СЃС‚СЂРѕРєРѕРІРѕРµ РїСЂРµРґСЃС‚Р°РІР»РµРЅРёРµ РЅРѕРјРµСЂР° Р·Р°РєР°Р·Р°
-    Dim orderFullValue As String  ' Р·РЅР°С‡РµРЅРёРµ РґР»СЏ B10
+    ' Переменные
+    Dim foundRowSpisok As Range   ' найденная строка на листе spisok
+    Dim spisokRowIndex As Long    ' номер строки на spisok (абсолютный)
+    Dim orderNumStr As String     ' строковое представление номера заказа
+    Dim orderFullValue As String  ' значение для B10
 
-    ' Р’РєР»СЋС‡Р°РµРј РѕР±СЂР°Р±РѕС‚РєСѓ РѕС€РёР±РѕРє
+    ' Включаем обработку ошибок
     On Error GoTo ErrHandler
 
-    ' --- РћС‡РёС‰Р°РµРј С†РµР»РµРІС‹Рµ СЏС‡РµР№РєРё РїРµСЂРµРґ Р·Р°РїРѕР»РЅРµРЅРёРµРј ---
+    ' --- Очищаем целевые ячейки перед заполнением ---
     wsMain.Range(MAIN_CELL_MODEL & ":" & MAIN_CELL_ROW_NUM).ClearContents
 
-    ' --- РџСЂРѕРІРµСЂРєР° РІС…РѕРґРЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ ---
-    ' Р•СЃР»Рё РЅРѕРјРµСЂ Р·Р°РєР°Р·Р° РїСѓСЃС‚РѕР№ РёР»Рё РЅРµ С‡РёСЃР»Рѕ вЂ” РІС‹С…РѕРґРёРј Р±РµР· СЃРѕРѕР±С‰РµРЅРёСЏ
+    ' --- Проверка входного значения ---
+    ' Если номер заказа пустой или не число — выходим без сообщения
     If IsEmpty(orderNumber) Then
         FillHeaderFromOrder = True
         Exit Function
     End If
 
     If Not IsNumeric(orderNumber) Then
-        MsgBox "РќРѕРјРµСЂ Р·Р°РєР°Р·Р° РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ С‡РёСЃР»РѕРІС‹Рј Р·РЅР°С‡РµРЅРёРµРј." & vbCrLf & _
-               "РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІРІРµРґРёС‚Рµ С†РµР»РѕРµ РїРѕР»РѕР¶РёС‚РµР»СЊРЅРѕРµ С‡РёСЃР»Рѕ.", _
-               vbExclamation, "РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ РЅРѕРјРµСЂ Р·Р°РєР°Р·Р°"
+        MsgBox "Номер заказа должен быть числовым значением." & vbCrLf & _
+               "Пожалуйста, введите целое положительное число.", _
+               vbExclamation, "Некорректный номер заказа"
         FillHeaderFromOrder = True
         Exit Function
     End If
 
-    ' РџСЂРѕРІРµСЂРєР°, С‡С‚Рѕ С‡РёСЃР»Рѕ С†РµР»РѕРµ Рё РїРѕР»РѕР¶РёС‚РµР»СЊРЅРѕРµ
-    If orderNumber < 1 Or orderNumber <> CLng(orderNumber) Then
-        MsgBox "РќРѕРјРµСЂ Р·Р°РєР°Р·Р° РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ С†РµР»С‹Рј РїРѕР»РѕР¶РёС‚РµР»СЊРЅС‹Рј С‡РёСЃР»РѕРј." & vbCrLf & _
-               "РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІРІРµРґРёС‚Рµ РєРѕСЂСЂРµРєС‚РЅС‹Р№ РЅРѕРјРµСЂ Р·Р°РєР°Р·Р°.", _
-               vbExclamation, "РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ РЅРѕРјРµСЂ Р·Р°РєР°Р·Р°"
+    ' Проверка, что число целое и положительное
+    ' Используем CDbl для безопасного преобразования Variant в число,
+    ' затем Int для проверки на целость (избегаем банковского округления CLng).
+    Dim orderNumDouble As Double
+    orderNumDouble = CDbl(orderNumber)
+
+    If orderNumDouble < 1 Or orderNumDouble <> Int(orderNumDouble) Then
+        MsgBox "Номер заказа должен быть целым положительным числом." & vbCrLf & _
+               "Пожалуйста, введите корректный номер заказа.", _
+               vbExclamation, "Некорректный номер заказа"
         FillHeaderFromOrder = True
         Exit Function
     End If
 
-    ' --- РџРѕРёСЃРє Р·Р°РєР°Р·Р° РЅР° Р»РёСЃС‚Рµ spisok ---
+    ' --- Поиск заказа на листе spisok ---
     Set foundRowSpisok = wsSpisok.Columns(SPISOK_COL_ORDER).Find( _
         What:=orderNumber, _
         LookIn:=xlValues, _
         LookAt:=xlWhole)
 
     If foundRowSpisok Is Nothing Then
-        MsgBox "Р—Р°РєР°Р· СЃ РЅРѕРјРµСЂРѕРј " & orderNumber & " РЅРµ РЅР°Р№РґРµРЅ РІ СЃРїСЂР°РІРѕС‡РЅРёРєРµ РўРЎ." & vbCrLf & _
-               "РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РїСЂРѕРІРµСЂСЊС‚Рµ РЅРѕРјРµСЂ Р·Р°РєР°Р·Р° РёР»Рё Р·Р°РїРѕР»РЅРёС‚Рµ РґР°РЅРЅС‹Рµ РІСЂСѓС‡РЅСѓСЋ.", _
-               vbInformation, "Р—Р°РєР°Р· РЅРµ РЅР°Р№РґРµРЅ"
+        MsgBox "Заказ с номером " & orderNumber & " не найден в справочнике ТС." & vbCrLf & _
+               "Пожалуйста, проверьте номер заказа или заполните данные вручную.", _
+               vbInformation, "Заказ не найден"
         FillHeaderFromOrder = True
         Exit Function
     End If
 
-    ' --- Р—Р°РїРѕР»РЅРµРЅРёРµ РґР°РЅРЅС‹С… РёР· spisok ---
+    ' --- Заполнение данных из spisok ---
     spisokRowIndex = foundRowSpisok.Row
 
     wsMain.Range(MAIN_CELL_MODEL).Value = _
@@ -132,37 +136,48 @@ Public Function FillHeaderFromOrder( _
     wsMain.Range(MAIN_CELL_DATE).Value = _
         wsSpisok.Cells(spisokRowIndex, SPISOK_COL_DATE).Value
 
-    ' --- Р¤РѕСЂРјРёСЂРѕРІР°РЅРёРµ Р·РЅР°С‡РµРЅРёСЏ B10: "00" & B2 & "-20" ---
+    ' --- Формирование значения B10: "00" & B2 & "-20" ---
     orderNumStr = CStr(orderNumber)
     orderFullValue = "00" & orderNumStr & "-20"
     wsMain.Range(MAIN_CELL_ORDER_FULL).Value = orderFullValue
 
-    ' --- B15 = РЅРѕРјРµСЂ СЃС‚СЂРѕРєРё РЅР° spisok РјРёРЅСѓСЃ 1 (С‚.Рє. РїРµСЂРІР°СЏ СЃС‚СЂРѕРєР° вЂ” Р·Р°РіРѕР»РѕРІРѕРє) ---
+    ' --- B15 = номер строки на spisok минус 1 (т.к. первая строка — заголовок) ---
     wsMain.Range(MAIN_CELL_ROW_NUM).Value = spisokRowIndex - SPISOK_HEADER_ROWS
 
-    ' --- РџРѕРёСЃРє РјРѕРґРµР»Рё РЅР° Р»РёСЃС‚Рµ model ---
+    ' --- Поиск модели на листе model ---
     Dim modelName As String
     modelName = Trim(CStr(wsMain.Range(MAIN_CELL_MODEL).Value))
 
     If Len(modelName) > 0 Then
-        Set foundRowModel = wsModel.Columns(MODEL_COL_NAME).Find( _
-            What:=modelName, _
-            LookIn:=xlValues, _
-            LookAt:=xlWhole)
+        ' Ищем модель с точным совпадением, без учёта регистра и лишних пробелов.
+        ' Проходим по всем строкам столбца 1 листа model, применяем Trim к каждому
+        ' значению и сравниваем через StrComp (vbTextCompare — без учёта регистра).
+        Dim modelRowIndex As Long
+        Dim lastRowModel As Long
+        Dim i As Long
+        Dim cellVal As String
+        modelRowIndex = 0
 
-        If foundRowModel Is Nothing Then
-            MsgBox "РњРѕРґРµР»СЊ """ & modelName & """ РЅРµ РЅР°Р№РґРµРЅР° РІ СЃРїСЂР°РІРѕС‡РЅРёРєРµ РјРѕРґРµР»РµР№." & vbCrLf & _
-                   "РџРѕР¶Р°Р»СѓР№СЃС‚Р°, Р·Р°РїРѕР»РЅРёС‚Рµ РґР°РЅРЅС‹Рµ РїРѕ СЂР°Р±РѕС‚Р°Рј Рё Р·Р°РїС‡Р°СЃС‚СЏРј РІСЂСѓС‡РЅСѓСЋ.", _
-                   vbInformation, "РњРѕРґРµР»СЊ РЅРµ РЅР°Р№РґРµРЅР°"
-            ' B11:B14 РѕСЃС‚Р°СЋС‚СЃСЏ РїСѓСЃС‚С‹РјРё вЂ” РѕС‡РёС‰РµРЅС‹ РІ РЅР°С‡Р°Р»Рµ
+        lastRowModel = wsModel.Cells(wsModel.Rows.Count, MODEL_COL_NAME).End(xlUp).Row
+
+        For i = 1 To lastRowModel
+            cellVal = Trim(CStr(wsModel.Cells(i, MODEL_COL_NAME).Value))
+            If StrComp(cellVal, modelName, vbTextCompare) = 0 Then
+                modelRowIndex = i
+                Exit For
+            End If
+        Next i
+
+        If modelRowIndex = 0 Then
+            MsgBox "Модель """ & modelName & """ не найдена в справочнике моделей." & vbCrLf & _
+                   "Пожалуйста, заполните данные по работам и запчастям вручную.", _
+                   vbInformation, "Модель не найдена"
+            ' B11:B14 остаются пустыми — очищены в начале
             FillHeaderFromOrder = True
             Exit Function
         End If
 
-        ' --- Р—Р°РїРѕР»РЅРµРЅРёРµ РґР°РЅРЅС‹С… РёР· model ---
-        Dim modelRowIndex As Long
-        modelRowIndex = foundRowModel.Row
-
+        ' --- Заполнение данных из model ---
         wsMain.Range(MAIN_CELL_PRICE_NH).Value = _
             wsModel.Cells(modelRowIndex, MODEL_COL_PRICE_NH).Value
         wsMain.Range(MAIN_CELL_WORK_ORIG).Value = _
@@ -173,17 +188,23 @@ Public Function FillHeaderFromOrder( _
             wsModel.Cells(modelRowIndex, MODEL_COL_PARTS_MOD).Value
     End If
 
-    ' --- РЈСЃРїРµС€РЅРѕРµ Р·Р°РІРµСЂС€РµРЅРёРµ ---
+    ' --- Успешное завершение ---
+    ' Освобождаем объектные переменные
+    If Not foundRowSpisok Is Nothing Then Set foundRowSpisok = Nothing
+
+    ' Сбрасываем обработчик ошибок, чтобы не маскировать ошибки в вызывающем коде
+    On Error GoTo 0
+
     FillHeaderFromOrder = True
     Exit Function
 
 ErrHandler:
-    ' РћР±СЂР°Р±РѕС‚РєР° runtime-РѕС€РёР±РєРё
-    MsgBox "РџСЂРѕРёР·РѕС€Р»Р° РЅРµРїСЂРµРґРІРёРґРµРЅРЅР°СЏ РѕС€РёР±РєР° РїСЂРё Р·Р°РїРѕР»РЅРµРЅРёРё С€Р°РїРєРё Р·Р°РєР°Р·-РЅР°СЂСЏРґР°:" & vbCrLf & _
+    ' Обработка runtime-ошибки
+    MsgBox "Произошла непредвиденная ошибка при заполнении шапки заказ-наряда:" & vbCrLf & _
            vbCrLf & _
-           "РћС€РёР±РєР°: " & Err.Description & vbCrLf & _
-           "РќРѕРјРµСЂ: " & Err.Number, _
-           vbCritical, "РћС€РёР±РєР° РІС‹РїРѕР»РЅРµРЅРёСЏ"
+           "Ошибка: " & Err.Description & vbCrLf & _
+           "Номер: " & Err.Number, _
+           vbCritical, "Ошибка выполнения"
     FillHeaderFromOrder = False
 
 End Function
