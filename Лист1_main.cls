@@ -2,38 +2,38 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "Р›РёСЃС‚1"
+Attribute VB_Name = "Лист1"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-Attribute VB_Description = "Р›РёСЃС‚ main РІ РєРЅРёРіРµ Р·Р°РєР°Р·-РЅР°СЂСЏРґР°"
+Attribute VB_Description = "Лист main в книге заказ-наряда"
 Attribute VB_HelpID = 0
 Attribute VB_TemplateDerived = False
 Attribute VB_Customizable = True
 ' ============================================================================
-' РљР»Р°СЃСЃ main
-' РќР°Р·РЅР°С‡РµРЅРёРµ: РћР±СЂР°Р±РѕС‚РєР° РёР·РјРµРЅРµРЅРёСЏ СЏС‡РµР№РєРё B2 РґР»СЏ Р°РІС‚РѕР·Р°РїРѕР»РЅРµРЅРёСЏ С€Р°РїРєРё
+' Класс main
+' Назначение: Обработка изменения ячейки B2 для автозаполнения шапки
 ' ============================================================================
 
 Option Explicit
 
 ' --------------------------------------------------------------------------
-' РЎРѕР±С‹С‚РёРµ Worksheet_Change
-' Р—Р°РїСѓСЃРєР°РµС‚ FillHeaderFromOrder РїСЂРё РёР·РјРµРЅРµРЅРёРё СЏС‡РµР№РєРё B2
+' Событие Worksheet_Change
+' Запускает FillHeaderFromOrder при изменении ячейки B2
 ' --------------------------------------------------------------------------
 Private Sub Worksheet_Change(ByVal Target As Range)
-    ' Р—Р°С‰РёС‚Р° РѕС‚ СЂРµРєСѓСЂСЃРёРІРЅРѕРіРѕ РІС‹Р·РѕРІР°
+    ' Защита от рекурсивного вызова
     Static IsProcessing As Boolean
     If IsProcessing Then Exit Sub
     
-    ' РћС‚РєР»СЋС‡Р°РµРј СЃРѕР±С‹С‚РёСЏ (С‡С‚РѕР±С‹ РЅРµ Р±С‹Р»Рѕ С†РёРєР»Р°)
+    ' Отключаем события (чтобы не было цикла)
     If Not Application.EnableEvents Then Exit Sub
-    ' РўРѕР»СЊРєРѕ РѕРґРЅР° СЏС‡РµР№РєР°
+    ' Только одна ячейка
     If Target.CountLarge <> 1 Then Exit Sub
-    ' РўРѕР»СЊРєРѕ СЏС‡РµР№РєР° B2
+    ' Только ячейка B2
     If Intersect(Target, Me.Range("B2")) Is Nothing Then Exit Sub
-    ' РСЃРєР»СЋС‡Р°РµРј B3:B15 (С‡С‚РѕР±С‹ РЅРµ Р±С‹Р»Рѕ С†РёРєР»Р° РїСЂРё Р·Р°РїРѕР»РЅРµРЅРёРё)
+    ' Исключаем B3:B15 (чтобы не было цикла при заполнении)
     If Not Intersect(Target, Me.Range("B3:B15")) Is Nothing Then Exit Sub
 
     On Error GoTo ErrorHandler

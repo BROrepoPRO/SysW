@@ -2,22 +2,22 @@ Attribute VB_Name = "Mod_Import"
 Option Explicit
 
 ' ============================================================================
-' РњРѕРґСѓР»СЊ: Mod_Import
-' РќР°Р·РЅР°С‡РµРЅРёРµ: РРјРїРѕСЂС‚ РґР°РЅРЅС‹С… РёР· С„Р°Р№Р»Р° report.xlsx РІ РєРЅРёРіСѓ Р·Р°РєР°Р·-РЅР°СЂСЏРґР°
-' РђРІС‚РѕСЂ: SourceCraft
-' Р”Р°С‚Р°: 2026-07-09
+' Модуль: Mod_Import
+' Назначение: Импорт данных из файла report.xlsx в книгу заказ-наряда
+' Автор: SourceCraft
+' Дата: 2026-07-09
 ' ============================================================================
 
 ' ============================================================================
-' Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Рµ РїСЂРёРІР°С‚РЅС‹Рµ С„СѓРЅРєС†РёРё
+' Вспомогательные приватные функции
 ' ============================================================================
 
 ' --------------------------------------------------------------------------
-' Р¤СѓРЅРєС†РёСЏ: FindFirstCellContaining
-' РС‰РµС‚ РЅР° Р»РёСЃС‚Рµ ws РїРµСЂРІСѓСЋ СЏС‡РµР№РєСѓ (СЃРІРµСЂС…Сѓ РІРЅРёР·, СЃР»РµРІР° РЅР°РїСЂР°РІРѕ),
-' СЃРѕРґРµСЂР¶Р°С‰СѓСЋ РїРѕРґСЃС‚СЂРѕРєСѓ searchText (Р±РµР· СѓС‡С‘С‚Р° СЂРµРіРёСЃС‚СЂР°).
-' РџРѕРёСЃРє РІРµРґС‘С‚СЃСЏ РІ UsedRange, РЅРѕ РЅРµ Р±РѕР»РµРµ С‡РµРј РїРѕ maxRows СЃС‚СЂРѕРєР°Рј.
-' Р’РѕР·РІСЂР°С‰Р°РµС‚ Nothing, РµСЃР»Рё РЅРµ РЅР°Р№РґРµРЅРѕ.
+' Функция: FindFirstCellContaining
+' Ищет на листе ws первую ячейку (сверху вниз, слева направо),
+' содержащую подстроку searchText (без учёта регистра).
+' Поиск ведётся в UsedRange, но не более чем по maxRows строкам.
+' Возвращает Nothing, если не найдено.
 ' --------------------------------------------------------------------------
 Private Function FindFirstCellContaining(ByVal ws As Worksheet, _
                                          ByVal searchText As String, _
@@ -27,7 +27,7 @@ Private Function FindFirstCellContaining(ByVal ws As Worksheet, _
     Dim rowLimit As Long
     Dim i As Long, j As Long
     
-    ' РћРїСЂРµРґРµР»СЏРµРј РѕР±Р»Р°СЃС‚СЊ РїРѕРёСЃРєР°: UsedRange, РЅРѕ РЅРµ Р±РѕР»РµРµ maxRows СЃС‚СЂРѕРє
+    ' Определяем область поиска: UsedRange, но не более maxRows строк
     Set rng = ws.UsedRange
     If rng Is Nothing Then
         Set FindFirstCellContaining = Nothing
@@ -37,7 +37,7 @@ Private Function FindFirstCellContaining(ByVal ws As Worksheet, _
     rowLimit = rng.Rows.Count
     If rowLimit > maxRows Then rowLimit = maxRows
     
-    ' РџРѕРёСЃРє РїРµСЂРµР±РѕСЂРѕРј (РїРµСЂРІР°СЏ СЃРІРµСЂС…Сѓ, СЃР»РµРІР° РЅР°РїСЂР°РІРѕ)
+    ' Поиск перебором (первая сверху, слева направо)
     For i = 1 To rowLimit
         For j = 1 To rng.Columns.Count
             Set cell = ws.Cells(rng.Row + i - 1, rng.Column + j - 1)
@@ -54,10 +54,10 @@ Private Function FindFirstCellContaining(ByVal ws As Worksheet, _
 End Function
 
 ' --------------------------------------------------------------------------
-' Р¤СѓРЅРєС†РёСЏ: FindHeaderInColumnC
-' РС‰РµС‚ РІ СЃС‚РѕР»Р±С†Рµ C Р»РёСЃС‚Р° ws СЏС‡РµР№РєСѓ, СЃРѕРґРµСЂР¶Р°С‰СѓСЋ РїРѕРґСЃС‚СЂРѕРєСѓ searchText
-' (Р±РµР· СѓС‡С‘С‚Р° СЂРµРіРёСЃС‚СЂР°). РџРѕРёСЃРє СЃРІРµСЂС…Сѓ РІРЅРёР·, РЅРµ Р±РѕР»РµРµ maxRows СЃС‚СЂРѕРє.
-' Р’РѕР·РІСЂР°С‰Р°РµС‚ Nothing, РµСЃР»Рё РЅРµ РЅР°Р№РґРµРЅРѕ.
+' Функция: FindHeaderInColumnC
+' Ищет в столбце C листа ws ячейку, содержащую подстроку searchText
+' (без учёта регистра). Поиск сверху вниз, не более maxRows строк.
+' Возвращает Nothing, если не найдено.
 ' --------------------------------------------------------------------------
 Private Function FindHeaderInColumnC(ByVal ws As Worksheet, _
                                      ByVal searchText As String, _
@@ -79,9 +79,9 @@ Private Function FindHeaderInColumnC(ByVal ws As Worksheet, _
 End Function
 
 ' --------------------------------------------------------------------------
-' Р¤СѓРЅРєС†РёСЏ: FindRowWithTextInColumnC
-' РС‰РµС‚ РІ СЃС‚РѕР»Р±С†Рµ C Р»РёСЃС‚Р° ws СЃС‚СЂРѕРєСѓ, РЅР°С‡РёРЅР°СЏ СЃ startRow, СЃРѕРґРµСЂР¶Р°С‰СѓСЋ searchText.
-' Р’РѕР·РІСЂР°С‰Р°РµС‚ РЅРѕРјРµСЂ СЃС‚СЂРѕРєРё РёР»Рё 0, РµСЃР»Рё РЅРµ РЅР°Р№РґРµРЅРѕ.
+' Функция: FindRowWithTextInColumnC
+' Ищет в столбце C листа ws строку, начиная с startRow, содержащую searchText.
+' Возвращает номер строки или 0, если не найдено.
 ' --------------------------------------------------------------------------
 Private Function FindRowWithTextInColumnC(ByVal ws As Worksheet, _
                                           ByVal searchText As String, _
@@ -104,8 +104,8 @@ Private Function FindRowWithTextInColumnC(ByVal ws As Worksheet, _
 End Function
 
 ' --------------------------------------------------------------------------
-' Р¤СѓРЅРєС†РёСЏ: GetLastNonEmptyRowInRange
-' Р’РѕР·РІСЂР°С‰Р°РµС‚ РЅРѕРјРµСЂ РїРѕСЃР»РµРґРЅРµР№ РЅРµРїСѓСЃС‚РѕР№ СЃС‚СЂРѕРєРё РІ СѓРєР°Р·Р°РЅРЅРѕРј РґРёР°РїР°Р·РѕРЅРµ СЃС‚РѕР»Р±С†РѕРІ.
+' Функция: GetLastNonEmptyRowInRange
+' Возвращает номер последней непустой строки в указанном диапазоне столбцов.
 ' --------------------------------------------------------------------------
 Private Function GetLastNonEmptyRowInRange(ByVal ws As Worksheet, _
                                            ByVal colStart As Long, _
@@ -124,19 +124,19 @@ Private Function GetLastNonEmptyRowInRange(ByVal ws As Worksheet, _
 End Function
 
 ' ============================================================================
-' РџСѓР±Р»РёС‡РЅС‹Рµ С„СѓРЅРєС†РёРё
+' Публичные функции
 ' ============================================================================
 
 ' --------------------------------------------------------------------------
-' Р¤СѓРЅРєС†РёСЏ: ExtractNumberFromGRZ
-' РР·РІР»РµРєР°РµС‚ РёР· СЃС‚СЂРѕРєРё grz РїРµСЂРІСѓСЋ РЅРµРїСЂРµСЂС‹РІРЅСѓСЋ РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕСЃС‚СЊ
-' РёР· 3 РёР»Рё 4 С†РёС„СЂ РїРѕРґСЂСЏРґ.
+' Функция: ExtractNumberFromGRZ
+' Извлекает из строки grz первую непрерывную последовательность
+' из 3 или 4 цифр подряд.
 '
-' РџСЂРёРјРµСЂС‹:
-'   "РђРІС‚РѕРјРѕР±РёР»СЊ : Р›Р°РґР° Р’РµСЃС‚Р° Рі/РЅ Р• 833 РћР•/15" -> "833"
-'   "Рђ0663 95" -> "0663"
+' Примеры:
+'   "Автомобиль : Лада Веста г/н Е 833 ОЕ/15" -> "833"
+'   "А0663 95" -> "0663"
 '
-' Р’РѕР·РІСЂР°С‰Р°РµС‚ РїСѓСЃС‚СѓСЋ СЃС‚СЂРѕРєСѓ, РµСЃР»Рё РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕСЃС‚СЊ РЅРµ РЅР°Р№РґРµРЅР° РёР»Рё СЂР°РІРЅР° "0".
+' Возвращает пустую строку, если последовательность не найдена или равна "0".
 ' --------------------------------------------------------------------------
 Public Function ExtractNumberFromGRZ(ByVal grz As String) As String
     Dim i As Long
@@ -150,9 +150,9 @@ Public Function ExtractNumberFromGRZ(ByVal grz As String) As String
         If ch >= "0" And ch <= "9" Then
             digitSeq = digitSeq & ch
         Else
-            ' РџСЂРѕРІРµСЂСЏРµРј РЅР°РєРѕРїР»РµРЅРЅСѓСЋ РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕСЃС‚СЊ
+            ' Проверяем накопленную последовательность
             If Len(digitSeq) = 3 Or Len(digitSeq) = 4 Then
-                ' РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ СЌС‚Рѕ РЅРµ "0"
+                ' Проверяем, что это не "0"
                 If digitSeq <> "0" Then
                     ExtractNumberFromGRZ = digitSeq
                     Exit Function
@@ -162,7 +162,7 @@ Public Function ExtractNumberFromGRZ(ByVal grz As String) As String
         End If
     Next i
     
-    ' РџСЂРѕРІРµСЂСЏРµРј РѕСЃС‚Р°С‚РѕРє РІ РєРѕРЅС†Рµ СЃС‚СЂРѕРєРё
+    ' Проверяем остаток в конце строки
     If Len(digitSeq) = 3 Or Len(digitSeq) = 4 Then
         If digitSeq <> "0" Then
             ExtractNumberFromGRZ = digitSeq
@@ -174,14 +174,14 @@ Public Function ExtractNumberFromGRZ(ByVal grz As String) As String
 End Function
 
 ' --------------------------------------------------------------------------
-' Р¤СѓРЅРєС†РёСЏ: RenameSheetsByGRZ
-' РћС‚РєСЂС‹РІР°РµС‚ РєРЅРёРіСѓ report.xlsx, РїРµСЂРµРёРјРµРЅРѕРІС‹РІР°РµС‚ РІРёРґРёРјС‹Рµ Р»РёСЃС‚С‹
-' (РєСЂРѕРјРµ "report" Рё "spisok") РІ С†РёС„СЂРѕРІРѕР№ РєРѕРґ, РёР·РІР»РµС‡С‘РЅРЅС‹Р№ РёР· Р“Р Р—.
+' Функция: RenameSheetsByGRZ
+' Открывает книгу report.xlsx, переименовывает видимые листы
+' (кроме "report" и "spisok") в цифровой код, извлечённый из ГРЗ.
 '
-' РџР°СЂР°РјРµС‚СЂС‹:
-'   reportPath - РїРѕР»РЅС‹Р№ РїСѓС‚СЊ Рє С„Р°Р№Р»Сѓ report.xlsx
+' Параметры:
+'   reportPath - полный путь к файлу report.xlsx
 '
-' Р’РѕР·РІСЂР°С‰Р°РµС‚ True, РµСЃР»Рё С…РѕС‚СЏ Р±С‹ РѕРґРёРЅ Р»РёСЃС‚ Р±С‹Р» РїРµСЂРµРёРјРµРЅРѕРІР°РЅ.
+' Возвращает True, если хотя бы один лист был переименован.
 ' --------------------------------------------------------------------------
 Public Function RenameSheetsByGRZ(ByVal reportPath As String) As Boolean
     Const PROC_NAME As String = "RenameSheetsByGRZ"
@@ -198,36 +198,36 @@ Public Function RenameSheetsByGRZ(ByVal reportPath As String) As Boolean
     
     renamedCount = 0
     
-    ' РџСЂРѕРІРµСЂСЏРµРј СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёРµ С„Р°Р№Р»Р°
+    ' Проверяем существование файла
     If Not Mod_Utils.FileExists(reportPath) Then
-        MsgBox "Р¤Р°Р№Р» report.xlsx РЅРµ РЅР°Р№РґРµРЅ РїРѕ РїСѓС‚Рё:" & vbCrLf & reportPath, _
+        MsgBox "Файл report.xlsx не найден по пути:" & vbCrLf & reportPath, _
                vbExclamation, PROC_NAME
         RenameSheetsByGRZ = False
         Exit Function
     End If
     
-    ' РћС‚РєСЂС‹РІР°РµРј РєРЅРёРіСѓ РІ СЂРµР¶РёРјРµ Р·Р°РїРёСЃРё, РЅРµРІРёРґРёРјРѕ
+    ' Открываем книгу в режиме записи, невидимо
     Set wbReport = Workbooks.Open(reportPath, ReadOnly:=False, UpdateLinks:=0)
     wbReport.Windows(1).Visible = False
     
-    ' РџРµСЂРµР±РёСЂР°РµРј РІСЃРµ РІРёРґРёРјС‹Рµ Р»РёСЃС‚С‹
+    ' Перебираем все видимые листы
     For Each ws In wbReport.Sheets
         If ws.Visible = xlSheetVisible Then
             sheetName = ws.Name
             
-            ' РџСЂРѕРїСѓСЃРєР°РµРј Р»РёСЃС‚С‹ "report" Рё "spisok" (Р±РµР· СѓС‡С‘С‚Р° СЂРµРіРёСЃС‚СЂР°)
+            ' Пропускаем листы "report" и "spisok" (без учёта регистра)
             If StrComp(sheetName, "report", vbTextCompare) <> 0 And _
                StrComp(sheetName, "spisok", vbTextCompare) <> 0 Then
                 
-                ' РС‰РµРј РїРµСЂРІСѓСЋ СЏС‡РµР№РєСѓ, СЃРѕРґРµСЂР¶Р°С‰СѓСЋ "Р°РІС‚РѕРјРѕР±РёР»СЊ"
-                Set cell = FindFirstCellContaining(ws, "Р°РІС‚РѕРјРѕР±РёР»СЊ", 30)
+                ' Ищем первую ячейку, содержащую "автомобиль"
+                Set cell = FindFirstCellContaining(ws, "автомобиль", 30)
                 
                 If Not cell Is Nothing Then
-                    ' РР·РІР»РµРєР°РµРј РЅРѕРјРµСЂ РёР· РїРѕР»РЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ СЏС‡РµР№РєРё
+                    ' Извлекаем номер из полного значения ячейки
                     grzNumber = ExtractNumberFromGRZ(CStr(cell.Value))
                     
                     If Len(grzNumber) > 0 Then
-                        ' Р•СЃР»Рё Р»РёСЃС‚ СЃ С‚Р°РєРёРј РёРјРµРЅРµРј СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚, СѓРґР°Р»СЏРµРј РµРіРѕ
+                        ' Если лист с таким именем уже существует, удаляем его
                         Application.DisplayAlerts = False
                         On Error Resume Next
                         Set existingWs = Nothing
@@ -239,7 +239,7 @@ Public Function RenameSheetsByGRZ(ByVal reportPath As String) As Boolean
                         On Error GoTo ErrHandler
                         Application.DisplayAlerts = True
                         
-                        ' РџРµСЂРµРёРјРµРЅРѕРІС‹РІР°РµРј Р»РёСЃС‚
+                        ' Переименовываем лист
                         ws.Name = grzNumber
                         renamedCount = renamedCount + 1
                     End If
@@ -248,7 +248,7 @@ Public Function RenameSheetsByGRZ(ByVal reportPath As String) As Boolean
         End If
     Next ws
     
-    ' РЎРѕС…СЂР°РЅСЏРµРј Рё Р·Р°РєСЂС‹РІР°РµРј
+    ' Сохраняем и закрываем
     wbReport.Close SaveChanges:=True
     
     Application.DisplayAlerts = True
@@ -256,14 +256,14 @@ Public Function RenameSheetsByGRZ(ByVal reportPath As String) As Boolean
     Exit Function
     
 ErrHandler:
-    ' Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј DisplayAlerts
+    ' Восстанавливаем DisplayAlerts
     Application.DisplayAlerts = True
     
-    MsgBox "РћС€РёР±РєР° РІ " & PROC_NAME & ":" & vbCrLf & vbCrLf & _
-           "РќРѕРјРµСЂ: " & Err.Number & vbCrLf & _
-           "РћРїРёСЃР°РЅРёРµ: " & Err.Description, vbCritical, PROC_NAME
+    MsgBox "Ошибка в " & PROC_NAME & ":" & vbCrLf & vbCrLf & _
+           "Номер: " & Err.Number & vbCrLf & _
+           "Описание: " & Err.Description, vbCritical, PROC_NAME
     
-    ' РџС‹С‚Р°РµРјСЃСЏ Р·Р°РєСЂС‹С‚СЊ РєРЅРёРіСѓ, РµСЃР»Рё РѕРЅР° РѕС‚РєСЂС‹С‚Р°
+    ' Пытаемся закрыть книгу, если она открыта
     On Error Resume Next
     If Not wbReport Is Nothing Then
         Application.DisplayAlerts = False
@@ -276,10 +276,10 @@ ErrHandler:
 End Function
 
 ' --------------------------------------------------------------------------
-' Р¤СѓРЅРєС†РёСЏ: SearchSheetByGRZ
-' Р’ РѕС‚РєСЂС‹С‚РѕР№ РєРЅРёРіРµ reportWorkbook РёС‰РµС‚ Р»РёСЃС‚ СЃ РёРјРµРЅРµРј, СЂР°РІРЅС‹Рј grzNumber.
+' Функция: SearchSheetByGRZ
+' В открытой книге reportWorkbook ищет лист с именем, равным grzNumber.
 '
-' Р’РѕР·РІСЂР°С‰Р°РµС‚ РѕР±СЉРµРєС‚ Worksheet РёР»Рё Nothing.
+' Возвращает объект Worksheet или Nothing.
 ' --------------------------------------------------------------------------
 Public Function SearchSheetByGRZ(ByVal reportWorkbook As Workbook, _
                                  ByVal grzNumber As String) As Worksheet
@@ -290,12 +290,12 @@ Public Function SearchSheetByGRZ(ByVal reportWorkbook As Workbook, _
 End Function
 
 ' --------------------------------------------------------------------------
-' Р¤СѓРЅРєС†РёСЏ: ImportSheet
-' РљРѕРїРёСЂСѓРµС‚ sourceSheet РїРµСЂРµРґ Р»РёСЃС‚РѕРј "main" РІ mainBook.
-' РџРµСЂРµРёРјРµРЅРѕРІС‹РІР°РµС‚ СЃРєРѕРїРёСЂРѕРІР°РЅРЅС‹Р№ Р»РёСЃС‚ РІ newSheetName.
-' РќРµ СѓРґР°Р»СЏРµС‚ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р»РёСЃС‚ СЃ С‚Р°РєРёРј РёРјРµРЅРµРј (Excel СЃРѕР·РґР°СЃС‚ СЃСѓС„С„РёРєСЃ).
+' Функция: ImportSheet
+' Копирует sourceSheet перед листом "main" в mainBook.
+' Переименовывает скопированный лист в newSheetName.
+' Не удаляет существующий лист с таким именем (Excel создаст суффикс).
 '
-' Р’РѕР·РІСЂР°С‰Р°РµС‚ True РїСЂРё СѓСЃРїРµС…Рµ.
+' Возвращает True при успехе.
 ' --------------------------------------------------------------------------
 Public Function ImportSheet(ByVal sourceSheet As Worksheet, _
                             ByVal mainBook As Workbook, _
@@ -304,7 +304,7 @@ Public Function ImportSheet(ByVal sourceSheet As Worksheet, _
     
     On Error GoTo ErrHandler
     
-    ' РџРѕР»СѓС‡Р°РµРј СЃСЃС‹Р»РєСѓ РЅР° Р»РёСЃС‚ "main" РІ С†РµР»РµРІРѕР№ РєРЅРёРіРµ
+    ' Получаем ссылку на лист "main" в целевой книге
     Dim wsMain As Worksheet
     Set wsMain = Nothing
     On Error Resume Next
@@ -312,20 +312,20 @@ Public Function ImportSheet(ByVal sourceSheet As Worksheet, _
     On Error GoTo ErrHandler
     
     If wsMain Is Nothing Then
-        MsgBox "Р›РёСЃС‚ 'main' РЅРµ РЅР°Р№РґРµРЅ РІ С†РµР»РµРІРѕР№ РєРЅРёРіРµ.", vbExclamation, PROC_NAME
+        MsgBox "Лист 'main' не найден в целевой книге.", vbExclamation, PROC_NAME
         ImportSheet = False
         Exit Function
     End If
     
-    ' РљРѕРїРёСЂСѓРµРј Р»РёСЃС‚ РїРµСЂРµРґ Р»РёСЃС‚РѕРј "main"
+    ' Копируем лист перед листом "main"
     sourceSheet.Copy Before:=wsMain
     
-    ' РџРµСЂРµРёРјРµРЅРѕРІС‹РІР°РµРј СЃРєРѕРїРёСЂРѕРІР°РЅРЅС‹Р№ Р»РёСЃС‚
-    ' РџРѕСЃР»Рµ Copy Р°РєС‚РёРІРЅС‹Рј СЃС‚Р°РЅРѕРІРёС‚СЃСЏ РЅРѕРІС‹Р№ Р»РёСЃС‚ - РёСЃРїРѕР»СЊР·СѓРµРј ActiveSheet
+    ' Переименовываем скопированный лист
+    ' После Copy активным становится новый лист - используем ActiveSheet
     On Error Resume Next
     ActiveSheet.Name = newSheetName
     If Err.Number <> 0 Then
-        ' Р•СЃР»Рё РёРјСЏ Р·Р°РЅСЏС‚Рѕ, Excel СѓР¶Рµ СЃРѕР·РґР°Р» СЃСѓС„С„РёРєСЃ - СЌС‚Рѕ РЅРѕСЂРјР°Р»СЊРЅРѕ
+        ' Если имя занято, Excel уже создал суффикс - это нормально
         Err.Clear
     End If
     On Error GoTo ErrHandler
@@ -334,33 +334,33 @@ Public Function ImportSheet(ByVal sourceSheet As Worksheet, _
     Exit Function
     
 ErrHandler:
-    MsgBox "РћС€РёР±РєР° РІ " & PROC_NAME & ":" & vbCrLf & vbCrLf & _
-           "РќРѕРјРµСЂ: " & Err.Number & vbCrLf & _
-           "РћРїРёСЃР°РЅРёРµ: " & Err.Description, vbCritical, PROC_NAME
+    MsgBox "Ошибка в " & PROC_NAME & ":" & vbCrLf & vbCrLf & _
+           "Номер: " & Err.Number & vbCrLf & _
+           "Описание: " & Err.Description, vbCritical, PROC_NAME
     ImportSheet = False
 End Function
 
 ' --------------------------------------------------------------------------
-' Р¤СѓРЅРєС†РёСЏ: ImportIncomingDocNumber
-' Р—Р°РіР»СѓС€РєР°. Р’РѕР·РІСЂР°С‰Р°РµС‚ РїСѓСЃС‚СѓСЋ СЃС‚СЂРѕРєСѓ.
+' Функция: ImportIncomingDocNumber
+' Заглушка. Возвращает пустую строку.
 ' --------------------------------------------------------------------------
 Public Function ImportIncomingDocNumber(ByVal sourceSheet As Worksheet) As String
     ImportIncomingDocNumber = ""
 End Function
 
 ' --------------------------------------------------------------------------
-' Р¤СѓРЅРєС†РёСЏ: ImportDataToMain
-' РРјРїРѕСЂС‚РёСЂСѓРµС‚ РґР°РЅРЅС‹Рµ РёР· sourceSheet РЅР° mainSheet.
+' Функция: ImportDataToMain
+' Импортирует данные из sourceSheet на mainSheet.
 '
-' РўР°Р±Р»РёС†Р° "Р’С‹РїРѕР»РЅРµРЅРЅС‹Рµ СЂР°Р±РѕС‚С‹":
-'   - РС‰РµРј Р·Р°РіРѕР»РѕРІРѕРє "РќР°РёРјРµРЅРѕРІР°РЅРёРµ" РІ СЃС‚РѕР»Р±С†Рµ C
-'   - РЎРѕР±РёСЂР°РµРј СЃС‚СЂРѕРєРё РґР°РЅРЅС‹С… РґРѕ СЃС‚СЂРѕРєРё "РС‚РѕРіРѕ СЂР°Р±РѕС‚"
-'   - C -> L (РќР°РёРјРµРЅРѕРІР°РЅРёРµ), D -> M (РљРѕР»-РІРѕ РѕРї.), H -> N (Р’СЃРµРіРѕ)
+' Таблица "Выполненные работы":
+'   - Ищем заголовок "Наименование" в столбце C
+'   - Собираем строки данных до строки "Итого работ"
+'   - C -> L (Наименование), D -> M (Кол-во оп.), H -> N (Всего)
 '
-' РўР°Р±Р»РёС†Р° "Р Р°СЃС…РѕРґРЅР°СЏ РЅР°РєР»Р°РґРЅР°СЏ":
-'   - РС‰РµРј "Р Р°СЃС…РѕРґРЅР°СЏ РЅР°РєР»Р°РґРЅР°СЏ" РёР»Рё РІС‚РѕСЂРѕРµ "РќР°РёРјРµРЅРѕРІР°РЅРёРµ" РІ СЃС‚РѕР»Р±С†Рµ C
-'   - РЎРѕР±РёСЂР°РµРј СЃС‚СЂРѕРєРё РґР°РЅРЅС‹С… РґРѕ РїСѓСЃС‚РѕР№ СЃС‚СЂРѕРєРё
-'   - B -> X (в„– РєР°С‚.), C -> Y (РќР°РёРјРµРЅРѕРІР°РЅРёРµ), D -> Z (РљРѕР»-РІРѕ), G -> AA (Р’СЃРµРіРѕ)
+' Таблица "Расходная накладная":
+'   - Ищем "Расходная накладная" или второе "Наименование" в столбце C
+'   - Собираем строки данных до пустой строки
+'   - B -> X (№ кат.), C -> Y (Наименование), D -> Z (Кол-во), G -> AA (Всего)
 ' --------------------------------------------------------------------------
 Public Sub ImportDataToMain(ByVal sourceSheet As Worksheet, _
                             ByVal mainSheet As Worksheet)
@@ -374,130 +374,130 @@ Public Sub ImportDataToMain(ByVal sourceSheet As Worksheet, _
     
     On Error GoTo ErrHandler
     
-    ' --- РћС‡РёСЃС‚РєР° С†РµР»РµРІС‹С… РґРёР°РїР°Р·РѕРЅРѕРІ ---
-    ' РћРїСЂРµРґРµР»СЏРµРј РїРѕСЃР»РµРґРЅСЋСЋ РЅРµРїСѓСЃС‚СѓСЋ СЃС‚СЂРѕРєСѓ РґР»СЏ L:N
+    ' --- Очистка целевых диапазонов ---
+    ' Определяем последнюю непустую строку для L:N
     lastRowL = GetLastNonEmptyRowInRange(mainSheet, 12, 14) ' L=12, N=14
     If lastRowL >= 2 Then
         mainSheet.Range("L2:N" & lastRowL).ClearContents
     End If
     
-    ' РћРїСЂРµРґРµР»СЏРµРј РїРѕСЃР»РµРґРЅСЋСЋ РЅРµРїСѓСЃС‚СѓСЋ СЃС‚СЂРѕРєСѓ РґР»СЏ X:AA
+    ' Определяем последнюю непустую строку для X:AA
     lastRowX = GetLastNonEmptyRowInRange(mainSheet, 24, 27) ' X=24, AA=27
     If lastRowX >= 2 Then
         mainSheet.Range("X2:AA" & lastRowX).ClearContents
     End If
     
-    ' --- РРјРїРѕСЂС‚ С‚Р°Р±Р»РёС†С‹ "Р’С‹РїРѕР»РЅРµРЅРЅС‹Рµ СЂР°Р±РѕС‚С‹" ---
+    ' --- Импорт таблицы "Выполненные работы" ---
     Dim headerRowWorks As Long
-    Dim РёС‚РѕРіРѕRowWorks As Long
+    Dim итогоRowWorks As Long
     
-    ' РС‰РµРј Р·Р°РіРѕР»РѕРІРѕРє "РќР°РёРјРµРЅРѕРІР°РЅРёРµ" РІ СЃС‚РѕР»Р±С†Рµ C
-    headerRowWorks = FindRowWithTextInColumnC(sourceSheet, "РќР°РёРјРµРЅРѕРІР°РЅРёРµ", 1, 100)
+    ' Ищем заголовок "Наименование" в столбце C
+    headerRowWorks = FindRowWithTextInColumnC(sourceSheet, "Наименование", 1, 100)
     
     If headerRowWorks > 0 Then
-        ' РС‰РµРј СЃС‚СЂРѕРєСѓ "РС‚РѕРіРѕ СЂР°Р±РѕС‚" РїРѕСЃР»Рµ Р·Р°РіРѕР»РѕРІРєР°
-        РёС‚РѕРіРѕRowWorks = FindRowWithTextInColumnC(sourceSheet, "РС‚РѕРіРѕ СЂР°Р±РѕС‚", headerRowWorks + 1, 100)
+        ' Ищем строку "Итого работ" после заголовка
+        итогоRowWorks = FindRowWithTextInColumnC(sourceSheet, "Итого работ", headerRowWorks + 1, 100)
         
-        If РёС‚РѕРіРѕRowWorks > 0 Then
-            ' РЎРѕР±РёСЂР°РµРј СЃС‚СЂРѕРєРё РґР°РЅРЅС‹С… РјРµР¶РґСѓ Р·Р°РіРѕР»РѕРІРєРѕРј Рё "РС‚РѕРіРѕ СЂР°Р±РѕС‚"
+        If итогоRowWorks > 0 Then
+            ' Собираем строки данных между заголовком и "Итого работ"
             destRow = 2
-            For dataRow = headerRowWorks + 1 To РёС‚РѕРіРѕRowWorks - 1
-                ' РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ СЃС‚СЂРѕРєР° РЅРµ РїСѓСЃС‚Р° (С…РѕС‚СЏ Р±С‹ РѕРґРЅР° СЏС‡РµР№РєР° РЅРµ РїСѓСЃС‚Р°)
+            For dataRow = headerRowWorks + 1 To итогоRowWorks - 1
+                ' Проверяем, что строка не пуста (хотя бы одна ячейка не пуста)
                 If Len(Trim(CStr(sourceSheet.Cells(dataRow, 3).Value))) > 0 Then
-                    ' РќР°РёРјРµРЅРѕРІР°РЅРёРµ (C) -> L
+                    ' Наименование (C) -> L
                     mainSheet.Cells(destRow, 12).Value = sourceSheet.Cells(dataRow, 3).Value
-                    ' РљРѕР»-РІРѕ РѕРї. (D) -> M
+                    ' Кол-во оп. (D) -> M
                     mainSheet.Cells(destRow, 13).Value = sourceSheet.Cells(dataRow, 4).Value
-                    ' Р’СЃРµРіРѕ (H) -> N
+                    ' Всего (H) -> N
                     mainSheet.Cells(destRow, 14).Value = sourceSheet.Cells(dataRow, 8).Value
                     destRow = destRow + 1
                 End If
             Next dataRow
         Else
-            MsgBox "РќРµ РЅР°Р№РґРµРЅР° СЃС‚СЂРѕРєР° 'РС‚РѕРіРѕ СЂР°Р±РѕС‚' РЅР° Р»РёСЃС‚Рµ '" & sourceSheet.Name & "'.", _
+            MsgBox "Не найдена строка 'Итого работ' на листе '" & sourceSheet.Name & "'.", _
                    vbExclamation, PROC_NAME
         End If
     Else
-        MsgBox "РќРµ РЅР°Р№РґРµРЅ Р·Р°РіРѕР»РѕРІРѕРє С‚Р°Р±Р»РёС†С‹ 'Р’С‹РїРѕР»РЅРµРЅРЅС‹Рµ СЂР°Р±РѕС‚С‹' РЅР° Р»РёСЃС‚Рµ '" & sourceSheet.Name & "'.", _
+        MsgBox "Не найден заголовок таблицы 'Выполненные работы' на листе '" & sourceSheet.Name & "'.", _
                vbExclamation, PROC_NAME
     End If
     
-    ' --- РРјРїРѕСЂС‚ С‚Р°Р±Р»РёС†С‹ "Р Р°СЃС…РѕРґРЅР°СЏ РЅР°РєР»Р°РґРЅР°СЏ" ---
-    Dim СЂР°СЃС…РѕРґRow As Long
+    ' --- Импорт таблицы "Расходная накладная" ---
+    Dim расходRow As Long
     Dim headerRowParts As Long
     Dim partsStartRow As Long
     
-    ' РЎРЅР°С‡Р°Р»Р° РёС‰РµРј "Р Р°СЃС…РѕРґРЅР°СЏ РЅР°РєР»Р°РґРЅР°СЏ"
-    СЂР°СЃС…РѕРґRow = FindRowWithTextInColumnC(sourceSheet, "Р Р°СЃС…РѕРґРЅР°СЏ РЅР°РєР»Р°РґРЅР°СЏ", 1, 200)
+    ' Сначала ищем "Расходная накладная"
+    расходRow = FindRowWithTextInColumnC(sourceSheet, "Расходная накладная", 1, 200)
     
-    If СЂР°СЃС…РѕРґRow > 0 Then
-        ' РС‰РµРј Р·Р°РіРѕР»РѕРІРѕРє "РќР°РёРјРµРЅРѕРІР°РЅРёРµ" РїРѕСЃР»Рµ СЃС‚СЂРѕРєРё "Р Р°СЃС…РѕРґРЅР°СЏ РЅР°РєР»Р°РґРЅР°СЏ"
-        headerRowParts = FindRowWithTextInColumnC(sourceSheet, "РќР°РёРјРµРЅРѕРІР°РЅРёРµ", СЂР°СЃС…РѕРґRow + 1, 50)
+    If расходRow > 0 Then
+        ' Ищем заголовок "Наименование" после строки "Расходная накладная"
+        headerRowParts = FindRowWithTextInColumnC(sourceSheet, "Наименование", расходRow + 1, 50)
     Else
-        ' РС‰РµРј РІС‚РѕСЂРѕРµ РІС…РѕР¶РґРµРЅРёРµ "РќР°РёРјРµРЅРѕРІР°РЅРёРµ" РІ СЃС‚РѕР»Р±С†Рµ C
-        Dim firstРќР°РёРјРµРЅРѕРІР°РЅРёРµ As Long
-        firstРќР°РёРјРµРЅРѕРІР°РЅРёРµ = FindRowWithTextInColumnC(sourceSheet, "РќР°РёРјРµРЅРѕРІР°РЅРёРµ", 1, 100)
-        If firstРќР°РёРјРµРЅРѕРІР°РЅРёРµ > 0 Then
-            headerRowParts = FindRowWithTextInColumnC(sourceSheet, "РќР°РёРјРµРЅРѕРІР°РЅРёРµ", firstРќР°РёРјРµРЅРѕРІР°РЅРёРµ + 1, 100)
+        ' Ищем второе вхождение "Наименование" в столбце C
+        Dim firstНаименование As Long
+        firstНаименование = FindRowWithTextInColumnC(sourceSheet, "Наименование", 1, 100)
+        If firstНаименование > 0 Then
+            headerRowParts = FindRowWithTextInColumnC(sourceSheet, "Наименование", firstНаименование + 1, 100)
         Else
             headerRowParts = 0
         End If
     End If
     
     If headerRowParts > 0 Then
-        ' РЎРѕР±РёСЂР°РµРј СЃС‚СЂРѕРєРё РґР°РЅРЅС‹С… РїРѕСЃР»Рµ Р·Р°РіРѕР»РѕРІРєР° РґРѕ РїСѓСЃС‚РѕР№ СЃС‚СЂРѕРєРё
+        ' Собираем строки данных после заголовка до пустой строки
         destRow = 2
         For dataRow = headerRowParts + 1 To headerRowParts + 200
-            ' РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ СЃС‚СЂРѕРєР° РЅРµ РїСѓСЃС‚Р° (С…РѕС‚СЏ Р±С‹ РѕРґРЅР° СЏС‡РµР№РєР° РІ B:D РЅРµ РїСѓСЃС‚Р°)
+            ' Проверяем, что строка не пуста (хотя бы одна ячейка в B:D не пуста)
             If Len(Trim(CStr(sourceSheet.Cells(dataRow, 2).Value))) = 0 And _
                Len(Trim(CStr(sourceSheet.Cells(dataRow, 3).Value))) = 0 And _
                Len(Trim(CStr(sourceSheet.Cells(dataRow, 4).Value))) = 0 Then
-                Exit For ' Р”РѕС€Р»Рё РґРѕ РїСѓСЃС‚РѕР№ СЃС‚СЂРѕРєРё
+                Exit For ' Дошли до пустой строки
             End If
             
-            ' в„– РєР°С‚. (B) -> X
+            ' № кат. (B) -> X
             mainSheet.Cells(destRow, 24).Value = sourceSheet.Cells(dataRow, 2).Value
-            ' РќР°РёРјРµРЅРѕРІР°РЅРёРµ (C) -> Y
+            ' Наименование (C) -> Y
             mainSheet.Cells(destRow, 25).Value = sourceSheet.Cells(dataRow, 3).Value
-            ' РљРѕР»-РІРѕ (D) -> Z
+            ' Кол-во (D) -> Z
             mainSheet.Cells(destRow, 26).Value = sourceSheet.Cells(dataRow, 4).Value
-            ' Р’СЃРµРіРѕ (G) -> AA
+            ' Всего (G) -> AA
             mainSheet.Cells(destRow, 27).Value = sourceSheet.Cells(dataRow, 7).Value
             
             destRow = destRow + 1
         Next dataRow
     Else
-        MsgBox "РќРµ РЅР°Р№РґРµРЅР° С‚Р°Р±Р»РёС†Р° 'Р Р°СЃС…РѕРґРЅР°СЏ РЅР°РєР»Р°РґРЅР°СЏ' РЅР° Р»РёСЃС‚Рµ '" & sourceSheet.Name & "'.", _
+        MsgBox "Не найдена таблица 'Расходная накладная' на листе '" & sourceSheet.Name & "'.", _
                vbExclamation, PROC_NAME
     End If
     
     Exit Sub
     
 ErrHandler:
-    MsgBox "РћС€РёР±РєР° РІ " & PROC_NAME & ":" & vbCrLf & vbCrLf & _
-           "РќРѕРјРµСЂ: " & Err.Number & vbCrLf & _
-           "РћРїРёСЃР°РЅРёРµ: " & Err.Description, vbCritical, PROC_NAME
+    MsgBox "Ошибка в " & PROC_NAME & ":" & vbCrLf & vbCrLf & _
+           "Номер: " & Err.Number & vbCrLf & _
+           "Описание: " & Err.Description, vbCritical, PROC_NAME
 End Sub
 
 ' ============================================================================
-' Р“Р»Р°РІРЅР°СЏ РїСЂРѕС†РµРґСѓСЂР°
+' Главная процедура
 ' ============================================================================
 
 ' --------------------------------------------------------------------------
-' РџСЂРѕС†РµРґСѓСЂР°: ImportFromReport
-' Р“Р»Р°РІРЅР°СЏ РїСЂРѕС†РµРґСѓСЂР° РёРјРїРѕСЂС‚Р°, РІС‹Р·С‹РІР°РµС‚СЃСЏ РїРѕ РєРЅРѕРїРєРµ "РРњРџРћР Рў".
+' Процедура: ImportFromReport
+' Главная процедура импорта, вызывается по кнопке "ИМПОРТ".
 '
-' РџРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕСЃС‚СЊ:
-'   1. РћС‚РєР»СЋС‡Р°РµС‚ ScreenUpdating Рё EnableEvents
-'   2. Р’С‹Р·С‹РІР°РµС‚ RenameSheetsByGRZ
-'   3. РџРѕР»СѓС‡Р°РµС‚ Р“Р Р— РёР· main!B4, РёР·РІР»РµРєР°РµС‚ РЅРѕРјРµСЂ
-'   4. РћС‚РєСЂС‹РІР°РµС‚ report.xlsx С‚РѕР»СЊРєРѕ РґР»СЏ С‡С‚РµРЅРёСЏ
-'   5. РС‰РµС‚ Р»РёСЃС‚ РїРѕ РЅРѕРјРµСЂСѓ Р“Р Р—
-'   6. Р¤РѕСЂРјРёСЂСѓРµС‚ РёРјСЏ РЅРѕРІРѕРіРѕ Р»РёСЃС‚Р°: <РЅРѕРјРµСЂ Р·Р°РєР°Р·Р°>M
-'   7. РљРѕРїРёСЂСѓРµС‚ Р»РёСЃС‚ РІ С‚РµРєСѓС‰СѓСЋ РєРЅРёРіСѓ
-'   8. РРјРїРѕСЂС‚РёСЂСѓРµС‚ РґР°РЅРЅС‹Рµ РЅР° Р»РёСЃС‚ main
-'   9. Р—Р°РєСЂС‹РІР°РµС‚ report.xlsx
-'   10. Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ РЅР°СЃС‚СЂРѕР№РєРё
+' Последовательность:
+'   1. Отключает ScreenUpdating и EnableEvents
+'   2. Вызывает RenameSheetsByGRZ
+'   3. Получает ГРЗ из main!B4, извлекает номер
+'   4. Открывает report.xlsx только для чтения
+'   5. Ищет лист по номеру ГРЗ
+'   6. Формирует имя нового листа: <номер заказа>M
+'   7. Копирует лист в текущую книгу
+'   8. Импортирует данные на лист main
+'   9. Закрывает report.xlsx
+'   10. Восстанавливает настройки
 ' --------------------------------------------------------------------------
 Public Sub ImportFromReport()
     Const PROC_NAME As String = "ImportFromReport"
@@ -514,108 +514,108 @@ Public Sub ImportFromReport()
     
     On Error GoTo ErrHandler
     
-    ' РћС‚РєР»СЋС‡Р°РµРј РѕР±РЅРѕРІР»РµРЅРёРµ СЌРєСЂР°РЅР° Рё СЃРѕР±С‹С‚РёСЏ
+    ' Отключаем обновление экрана и события
     Application.ScreenUpdating = False
     Application.EnableEvents = False
     
-    ' РџРѕР»СѓС‡Р°РµРј Р»РёСЃС‚ main
+    ' Получаем лист main
     Set wsMain = Nothing
     On Error Resume Next
     Set wsMain = ThisWorkbook.Sheets("main")
     On Error GoTo ErrHandler
     
     If wsMain Is Nothing Then
-        MsgBox "Р›РёСЃС‚ 'main' РЅРµ РЅР°Р№РґРµРЅ РІ С‚РµРєСѓС‰РµР№ РєРЅРёРіРµ.", vbExclamation, PROC_NAME
+        MsgBox "Лист 'main' не найден в текущей книге.", vbExclamation, PROC_NAME
         GoTo CleanUp
     End If
     
-    ' --- РЁР°Рі 1: РџРµСЂРµРёРјРµРЅРѕРІР°РЅРёРµ Р»РёСЃС‚РѕРІ РІ report.xlsx ---
+    ' --- Шаг 1: Переименование листов в report.xlsx ---
     reportPath = ThisWorkbook.Path
     If Right(reportPath, 1) <> "\" Then reportPath = reportPath & "\"
     reportPath = reportPath & "report.xlsx"
     
     If Not RenameSheetsByGRZ(reportPath) Then
-        MsgBox "РќРµ СѓРґР°Р»РѕСЃСЊ РїРµСЂРµРёРјРµРЅРѕРІР°С‚СЊ Р»РёСЃС‚С‹ РІ С„Р°Р№Р»Рµ report.xlsx." & vbCrLf & _
-               "Р’РѕР·РјРѕР¶РЅРѕ, С„Р°Р№Р» РЅРµ РЅР°Р№РґРµРЅ РёР»Рё РЅР° Р»РёСЃС‚Р°С… РЅРµ РѕР±РЅР°СЂСѓР¶РµРЅС‹ Р“Р Р—.", _
+        MsgBox "Не удалось переименовать листы в файле report.xlsx." & vbCrLf & _
+               "Возможно, файл не найден или на листах не обнаружены ГРЗ.", _
                vbInformation, PROC_NAME
         GoTo CleanUp
     End If
     
-    ' --- РЁР°Рі 2: РџРѕР»СѓС‡РµРЅРёРµ Р“Р Р— ---
+    ' --- Шаг 2: Получение ГРЗ ---
     grzValue = Trim(CStr(wsMain.Range("B4").Value))
     
     If Len(grzValue) = 0 Then
-        MsgBox "РЇС‡РµР№РєР° B4 (Р“Р Р—) РЅР° Р»РёСЃС‚Рµ 'main' РїСѓСЃС‚Р°.", vbInformation, PROC_NAME
+        MsgBox "Ячейка B4 (ГРЗ) на листе 'main' пуста.", vbInformation, PROC_NAME
         GoTo CleanUp
     End If
     
     grzNumber = ExtractNumberFromGRZ(grzValue)
     
     If Len(grzNumber) = 0 Then
-        MsgBox "РќРµ СѓРґР°Р»РѕСЃСЊ РёР·РІР»РµС‡СЊ РЅРѕРјРµСЂ РёР· Р“Р Р—: """ & grzValue & """", _
+        MsgBox "Не удалось извлечь номер из ГРЗ: """ & grzValue & """", _
                vbInformation, PROC_NAME
         GoTo CleanUp
     End If
     
-    ' --- РЁР°Рі 3: РћС‚РєСЂС‹С‚РёРµ report.xlsx С‚РѕР»СЊРєРѕ РґР»СЏ С‡С‚РµРЅРёСЏ ---
+    ' --- Шаг 3: Открытие report.xlsx только для чтения ---
     Set wbReport = Workbooks.Open(reportPath, ReadOnly:=True, UpdateLinks:=0)
     wbReport.Windows(1).Visible = False
     
-    ' --- РЁР°Рі 4: РџРѕРёСЃРє Р»РёСЃС‚Р° РїРѕ РЅРѕРјРµСЂСѓ Р“Р Р— ---
+    ' --- Шаг 4: Поиск листа по номеру ГРЗ ---
     Set sourceSheet = SearchSheetByGRZ(wbReport, grzNumber)
     
     If sourceSheet Is Nothing Then
-        MsgBox "Р’ С„Р°Р№Р»Рµ report.xlsx РЅРµ РЅР°Р№РґРµРЅ Р»РёСЃС‚ СЃ РЅРѕРјРµСЂРѕРј """ & grzNumber & """", _
+        MsgBox "В файле report.xlsx не найден лист с номером """ & grzNumber & """", _
                vbInformation, PROC_NAME
         GoTo CloseReport
     End If
     
-    ' --- РЁР°Рі 5: Р¤РѕСЂРјРёСЂРѕРІР°РЅРёРµ РёРјРµРЅРё РЅРѕРІРѕРіРѕ Р»РёСЃС‚Р° ---
+    ' --- Шаг 5: Формирование имени нового листа ---
     orderNumber = wsMain.Range("B2").Value
     If IsEmpty(orderNumber) Then
-        MsgBox "РЇС‡РµР№РєР° B2 (РЅРѕРјРµСЂ Р·Р°РєР°Р·Р°) РЅР° Р»РёСЃС‚Рµ 'main' РїСѓСЃС‚Р°.", _
+        MsgBox "Ячейка B2 (номер заказа) на листе 'main' пуста.", _
                vbInformation, PROC_NAME
         GoTo CloseReport
     End If
     newSheetName = CStr(orderNumber) & "M"
     
-    ' --- РЁР°Рі 6: РљРѕРїРёСЂРѕРІР°РЅРёРµ Р»РёСЃС‚Р° ---
+    ' --- Шаг 6: Копирование листа ---
     If Not ImportSheet(sourceSheet, ThisWorkbook, newSheetName) Then
-        MsgBox "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРєРѕРїРёСЂРѕРІР°С‚СЊ Р»РёСЃС‚.", vbExclamation, PROC_NAME
+        MsgBox "Не удалось скопировать лист.", vbExclamation, PROC_NAME
         GoTo CloseReport
     End If
     
-    ' --- РЁР°Рі 7: РџРѕР»СѓС‡РµРЅРёРµ СЃСЃС‹Р»РєРё РЅР° СЃРєРѕРїРёСЂРѕРІР°РЅРЅС‹Р№ Р»РёСЃС‚ ---
+    ' --- Шаг 7: Получение ссылки на скопированный лист ---
     On Error Resume Next
     Set importedSheet = ThisWorkbook.Sheets(newSheetName)
     If Err.Number <> 0 Then
-        ' Р•СЃР»Рё С‚РѕС‡РЅРѕРµ РёРјСЏ РЅРµ РЅР°Р№РґРµРЅРѕ (Excel РґРѕР±Р°РІРёР» СЃСѓС„С„РёРєСЃ),
-        ' РёС‰РµРј РїРѕСЃР»РµРґРЅРёР№ РґРѕР±Р°РІР»РµРЅРЅС‹Р№ Р»РёСЃС‚
+        ' Если точное имя не найдено (Excel добавил суффикс),
+        ' ищем последний добавленный лист
         Set importedSheet = ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count)
         Err.Clear
     End If
     On Error GoTo ErrHandler
     
-    ' --- РЁР°Рі 8: РРјРїРѕСЂС‚ РґР°РЅРЅС‹С… РЅР° Р»РёСЃС‚ main ---
+    ' --- Шаг 8: Импорт данных на лист main ---
     ImportDataToMain importedSheet, wsMain
     
-    ' --- РЁР°Рі 9: РРјРїРѕСЂС‚ РІС…РѕРґСЏС‰РµРіРѕ РЅРѕРјРµСЂР° РґРѕРєСѓРјРµРЅС‚Р° (Р·Р°РіР»СѓС€РєР°) ---
+    ' --- Шаг 9: Импорт входящего номера документа (заглушка) ---
     Dim docNumber As String
     docNumber = ImportIncomingDocNumber(importedSheet)
     
-    ' --- РЁР°Рі 10: Р—Р°РєСЂС‹С‚РёРµ report.xlsx ---
+    ' --- Шаг 10: Закрытие report.xlsx ---
     wbReport.Close SaveChanges:=False
     Set wbReport = Nothing
     
-    ' Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј РЅР°СЃС‚СЂРѕР№РєРё
+    ' Восстанавливаем настройки
     Application.ScreenUpdating = True
     Application.EnableEvents = True
     
-    MsgBox "РРјРїРѕСЂС‚ РґР°РЅРЅС‹С… СѓСЃРїРµС€РЅРѕ Р·Р°РІРµСЂС€С‘РЅ.", vbInformation, PROC_NAME
+    MsgBox "Импорт данных успешно завершён.", vbInformation, PROC_NAME
     Exit Sub
     
 CloseReport:
-    ' Р—Р°РєСЂС‹РІР°РµРј report.xlsx Р±РµР· СЃРѕС…СЂР°РЅРµРЅРёСЏ, РµСЃР»Рё РѕС‚РєСЂС‹С‚Р°
+    ' Закрываем report.xlsx без сохранения, если открыта
     On Error Resume Next
     If Not wbReport Is Nothing Then
         wbReport.Close SaveChanges:=False
@@ -630,15 +630,15 @@ CleanUp:
     Exit Sub
     
 ErrHandler:
-    MsgBox "РћС€РёР±РєР° РІ " & PROC_NAME & ":" & vbCrLf & vbCrLf & _
-           "РќРѕРјРµСЂ: " & Err.Number & vbCrLf & _
-           "РћРїРёСЃР°РЅРёРµ: " & Err.Description, vbCritical, PROC_NAME
+    MsgBox "Ошибка в " & PROC_NAME & ":" & vbCrLf & vbCrLf & _
+           "Номер: " & Err.Number & vbCrLf & _
+           "Описание: " & Err.Description, vbCritical, PROC_NAME
     
-    ' Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј РЅР°СЃС‚СЂРѕР№РєРё
+    ' Восстанавливаем настройки
     Application.ScreenUpdating = True
     Application.EnableEvents = True
     
-    ' Р—Р°РєСЂС‹РІР°РµРј report.xlsx, РµСЃР»Рё РѕС‚РєСЂС‹С‚Р°
+    ' Закрываем report.xlsx, если открыта
     On Error Resume Next
     If Not wbReport Is Nothing Then
         wbReport.Close SaveChanges:=False
