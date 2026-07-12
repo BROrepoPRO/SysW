@@ -3,14 +3,10 @@ Option Explicit
 
 ' ============================================================
 ' Модуль: Mod_Utils
-' Назначение: вспомогательные функции для работы с Excel и SQLite
+' Назначение: Вспомогательные функции для работы с Excel
 ' ============================================================
 
-' Константы для SQLite
-Public Const SQLITE_DLL As String = "C:\SQLite\sqlite3.dll"
-Public Const DB_PATH As String = "C:\SQLite\SysW.db"
-
-' Тип для хранения данных заказ-наряда
+' Тип для хранения данных заказа-наряда
 Public Type OrderHeader
     OrderNumber As String
     ClientName As String
@@ -21,6 +17,18 @@ Public Type OrderHeader
     DateOut As Date
     Status As String
 End Type
+
+' Функция: получение листа по имени (без ошибки если нет)
+Public Function GetSheetByName(ByVal wb As Workbook, ByVal SheetName As String) As Worksheet
+    On Error Resume Next
+    Set GetSheetByName = wb.Sheets(SheetName)
+    On Error GoTo 0
+End Function
+
+' Функция: получение пути к книге
+Public Function GetWorkbookPath() As String
+    GetWorkbookPath = ThisWorkbook.Path
+End Function
 
 ' Функция: проверка существования файла
 Public Function FileExists(ByVal FilePath As String) As Boolean
@@ -43,9 +51,9 @@ End Function
 Public Sub WriteLog(ByVal Message As String)
     Dim LogPath As String
     Dim F As Long
-    LogPath = ThisWorkbook.Path + "\log.txt"
+    LogPath = ThisWorkbook.Path & "\log.txt"
     F = FreeFile
     Open LogPath For Append As #F
-    Print #F, Now + " - " + Message
+    Print #F, Now & " - " & Message
     Close #F
 End Sub

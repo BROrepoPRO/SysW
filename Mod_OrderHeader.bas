@@ -3,59 +3,79 @@ Option Explicit
 
 ' ============================================================
 ' Модуль: Mod_OrderHeader
-' Назначение: автоматическое заполнение шапки заказ-наряда
+' Назначение: Автоматическое заполнение полей заказа-наряда
 ' ============================================================
 
-' Константы для столбцов
-Private Const COL_ORDER_NUM As String = "B"
-Private Const COL_CLIENT As String = "C"
-Private Const COL_CAR_MODEL As String = "D"
-Private Const COL_CAR_PLATE As String = "E"
-Private Const COL_MILEAGE As String = "F"
-Private Const COL_DATE_IN As String = "G"
-Private Const COL_DATE_OUT As String = "H"
-Private Const COL_STATUS As String = "I"
-
-' Обработчик изменения ячейки (вызывается из листа)
-Public Sub OnWorksheetChange(ByVal Target As Range)
-    If Target.Cells.Count > 1 Then Exit Sub
-    If Intersect(Target, Range(COL_ORDER_NUM & ":" & COL_ORDER_NUM)) Is Nothing Then Exit Sub
-    If Target.Row < 2 Then Exit Sub
+' Главная процедура: заполнение заголовка из найденного заказа
+Public Sub FillHeaderFromOrder(ByVal OrderNum As String, _
+                               ByVal wsMain As Worksheet, _
+                               ByVal wsSpisok As Worksheet, _
+                               ByVal wsModel As Worksheet)
+    Dim FoundCell As Range
+    Dim ModelCode As String
+    Dim ModelFound As Range
     
-    Dim OrderNum As String
-    OrderNum = Trim(Target.Value)
+    ' Проверка листов
+    If wsSpisok Is Nothing Or wsModel Is Nothing Then
+        MsgBox "Не найдены служебные листы (spisok, model).", vbExclamation, "Ошибка"
+        Exit Sub
+    End If
     
-    If OrderNum = "" Then Exit Sub
+    ' Поиск по .Text в колонке A листа spisok
+    Set FoundCell = wsSpisok.Columns("A").Find(What:=OrderNum, LookAt:=xlWhole, LookIn:=xlValues)
     
-    ' Поиск заказа в SQLite
-    Dim Header As OrderHeader
-    If FindOrder(OrderNum, Header) Then
-        ' Заполняем шапку
-        Application.EnableEvents = False
-        Range(COL_CLIENT & Target.Row).Value = Header.ClientName
-        Range(COL_CAR_MODEL & Target.Row).Value = Header.CarModel
-        Range(COL_CAR_PLATE & Target.Row).Value = Header.CarPlate
-        Range(COL_MILEAGE & Target.Row).Value = Header.Mileage
-        Range(COL_DATE_IN & Target.Row).Value = Header.DateIn
-        Range(COL_DATE_OUT & Target.Row).Value = Header.DateOut
-        Range(COL_STATUS & Target.Row).Value = Header.Status
-        Application.EnableEvents = True
+    If Not FoundCell Is Nothing Then
+        ' Заполняем B3:B15
+        wsMain.Range("B3").Value = FoundCell.Value                                   ' Номер заказа
+        wsMain.Range("B4").Value = FoundCell.Offset(0, 1).Value                      ' Клиент
+        wsMain.Range("B5").Value = FoundCell.Offset(0, 2).Value                      ' Автомобиль
+        wsMain.Range("B6").Value = FoundCell.Offset(0, 3).Value                      ' Госномер
+        wsMain.Range("B7").Value = FoundCell.Offset(0, 4).Value                      ' Пробег
+        wsMain.Range("B8").Value = FoundCell.Offset(0, 5).Value                      ' Дата заезда
+        wsMain.Range("B9").Value = FoundCell.Offset(0, 6).Value                      ' Дата выезда
+        wsMain.Range("B10").Value = FoundCell.Offset(0, 7).Value                     ' Статус
+        
+        ' Поиск модели по коду
+        ModelCode = FoundCell.Offset(0, 8).Value                                     ' Код модели
+        If ModelCode <> "" Then
+            Set ModelFound = wsModel.Columns("A").Find(What:=ModelCode, LookAt:=xlWhole, LookIn:=xlValues)
+            If Not ModelFound Is Nothing Then
+                wsMain.Range("B11").Value = ModelFound.Value                         ' Модель
+                wsMain.Range("B12").Value = ModelFound.Offset(0, 1).Value            ' Цвет
+                wsMain.Range("B13").Value = ModelFound.Offset(0, 2).Value            ' Год выпуска
+                wsMain.Range("B14").Value = ModelFound.Offset(0, 3).Value            ' VIN
+            End If
+        End If
+        
+        wsMain.Range("B15").Value = FoundCell.Offset(0, 9).Value                     ' Примечание
+    Else
+        ' Очищаем B3:B15
+        wsMain.Range("B3:B15").ClearContents
     End If
 End Sub
 
-' Функция: поиск заказа в SQLite по номеру
-Private Function FindOrder(ByVal OrderNum As String, ByRef Header As OrderHeader) As Boolean
-    ' Заглушка — в реальности здесь будет SQL-запрос к SQLite
-    ' Пока возвращаем тестовые данные
-    If OrderNum = "ЗН-001" Then
-        Header.OrderNumber = OrderNum
-        Header.ClientName = "Иванов И.И."
-        Header.CarModel = "Toyota Camry"
-        Header.CarPlate = "А123ВС77"
-        Header.Mileage = 45000
-        Header.DateIn = DateSerial(2026, 7, 1)
-        Header.DateOut = DateSerial(2026, 7, 5)
-        Header.Status = "В работе"
+' Публичная функция для тестов: поиск заказа
+Public Function FindOrder(ByVal OrderNum As String, ByRef Header As OrderHeader) As Boolean
+    Dim ws As Worksheet
+    Dim FoundCell As Range
+    
+    Set ws = GetSheetByName(ThisWorkbook, "spisok")
+    If ws Is Nothing Then
+        FindOrder = False
+        Exit Function
+    End If
+    
+    Set FoundCell = ws.Columns("A").Find(What:=OrderNum, LookAt:=xlWhole, LookIn:=xlValues)
+    
+    If Not FoundCell Is Nothing Then
+        Header.OrderNumber = FoundCell.Value
+        Header.ClientName = FoundCell.Offset(0, 1).Value
+        Header.CarModel = FoundCell.Offset(0, 2).Value
+        Header.CarPlate = FoundCell.Offset(0, 3).Value
+        Header.Mileage = Val(FoundCell.Offset(0, 4).Value)
+        Header.DateIn = FoundCell.Offset(0, 5).Value
+        Header.DateOut = FoundCell.Offset(0, 6).Value
+        Header.Status = FoundCell.Offset(0, 7).Value
         FindOrder = True
     Else
         FindOrder = False

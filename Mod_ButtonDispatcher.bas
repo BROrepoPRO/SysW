@@ -3,21 +3,21 @@ Option Explicit
 
 ' ============================================================
 ' Модуль: Mod_ButtonDispatcher
-' Назначение: диспетчер кнопок на листах
+' Назначение: Обработка нажатий на кнопки
 ' ============================================================
 
-' Обработчик нажатия кнопки "Импорт"
-Public Sub btnImport_Click()
+' Обработчик кнопки "Импорт"
+Public Sub Btn_main_Import_Click()
     Mod_Import.RunImport
 End Sub
 
-' Обработчик нажатия кнопки "Тест"
-Public Sub btnTest_Click()
+' Обработчик кнопки "Тест"
+Public Sub Btn_main_Test_Click()
     Mod_MinimalTestRunner.RunAllTests
 End Sub
 
-' Обработчик нажатия кнопки "Очистить"
-Public Sub btnClear_Click()
+' Обработчик кнопки "Очистить"
+Public Sub Btn_main_Clear_Click()
     Dim ws As Worksheet
     Dim Response As VbMsgBoxResult
     
@@ -30,8 +30,17 @@ Public Sub btnClear_Click()
     End If
 End Sub
 
-' Обработчик нажатия кнопки "Обновить"
-Public Sub btnRefresh_Click()
-    MsgBox "Обновление данных из SQLite...", vbInformation, "Обновление"
-    ' Здесь будет вызов загрузки из SQLite
+' Обработчик кнопки "Обновить"
+Public Sub Btn_main_Refresh_Click()
+    MsgBox "Обновление данных...", vbInformation, "Обновление"
+End Sub
+
+' Заглушка для z4
+Public Sub Btn_z4_Action_Click()
+    MsgBox "Функция z4 в разработке.", vbInformation, "z4"
+End Sub
+
+' Заглушка для work
+Public Sub Btn_work_Action_Click()
+    MsgBox "Функция work в разработке.", vbInformation, "Work"
 End Sub
