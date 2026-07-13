@@ -2,11 +2,11 @@ Attribute VB_Name = "Mod_OrderHeader"
 Option Explicit
 
 ' ============================================================
-' Модуль: Mod_OrderHeader
-' Назначение: Автоматическое заполнение полей заказа-наряда
+' РњРѕРґСѓР»СЊ: Mod_OrderHeader
+' РќР°Р·РЅР°С‡РµРЅРёРµ: РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРµ Р·Р°РїРѕР»РЅРµРЅРёРµ РїРѕР»РµР№ Р·Р°РєР°Р·Р°-РЅР°СЂСЏРґР°
 ' ============================================================
 
-' Главная процедура: заполнение заголовка из найденного заказа
+' Р“Р»Р°РІРЅР°СЏ РїСЂРѕС†РµРґСѓСЂР°: Р·Р°РїРѕР»РЅРµРЅРёРµ Р·Р°РіРѕР»РѕРІРєР° РёР· РЅР°Р№РґРµРЅРЅРѕРіРѕ Р·Р°РєР°Р·Р°
 Public Sub FillHeaderFromOrder(ByVal OrderNum As String, _
                                ByVal wsMain As Worksheet, _
                                ByVal wsSpisok As Worksheet, _
@@ -14,68 +14,75 @@ Public Sub FillHeaderFromOrder(ByVal OrderNum As String, _
     Dim FoundCell As Range
     Dim ModelCode As String
     Dim ModelFound As Range
-    
-    ' Проверка листов
+
+    ' РџСЂРѕРІРµСЂРєР° Р»РёСЃС‚РѕРІ
     If wsSpisok Is Nothing Or wsModel Is Nothing Then
-        MsgBox "Не найдены служебные листы (spisok, model).", vbExclamation, "Ошибка"
+        MsgBox "РќРµ РЅР°Р№РґРµРЅС‹ СЃР»СѓР¶РµР±РЅС‹Рµ Р»РёСЃС‚С‹ (spisok, model).", vbExclamation, "РћС€РёР±РєР°"
         Exit Sub
     End If
-    
-    ' Поиск по .Text в колонке A листа spisok
+
+    ' РџРѕРёСЃРє РїРѕ в„– Рї/Рї РІ РєРѕР»РѕРЅРєРµ A Р»РёСЃС‚Р° spisok
     Set FoundCell = wsSpisok.Columns("A").Find(What:=OrderNum, LookAt:=xlWhole, LookIn:=xlValues)
-    
+
     If Not FoundCell Is Nothing Then
-        ' Заполняем B3:B15
-        wsMain.Range("B3").Value = FoundCell.Value                                   ' Номер заказа
-        wsMain.Range("B4").Value = FoundCell.Offset(0, 1).Value                      ' Клиент
-        wsMain.Range("B5").Value = FoundCell.Offset(0, 2).Value                      ' Автомобиль
-        wsMain.Range("B6").Value = FoundCell.Offset(0, 3).Value                      ' Госномер
-        wsMain.Range("B7").Value = FoundCell.Offset(0, 4).Value                      ' Пробег
-        wsMain.Range("B8").Value = FoundCell.Offset(0, 5).Value                      ' Дата заезда
-        wsMain.Range("B9").Value = FoundCell.Offset(0, 6).Value                      ' Дата выезда
-        wsMain.Range("B10").Value = FoundCell.Offset(0, 7).Value                     ' Статус
-        
-        ' Поиск модели по коду
-        ModelCode = FoundCell.Offset(0, 8).Value                                     ' Код модели
+        ' Р—Р°РїРѕР»РЅСЏРµРј B3:B15
+        ' РњР°РїРїРёРЅРі РІ СЃРѕРѕС‚РІРµС‚СЃС‚РІРёРё СЃ СЂРµР°Р»СЊРЅРѕР№ СЃС‚СЂСѓРєС‚СѓСЂРѕР№ Р»РёСЃС‚Р° spisok:
+        ' A=в„– Рї/Рї, B=РњРѕРґРµР»СЊ, C=Р“Р Р—, D=VIN, E=РіР°СЂР°Р¶.в„–, F=РіРѕРґ РІС‹Рї., G=РїСЂРѕР±РµРі, H=РґР°С‚Р°
+        ' РќРѕРјРµСЂ Р·Р°РєР°Р·-РЅР°СЂСЏРґР° С„РѕСЂРјРёСЂСѓРµС‚СЃСЏ РїРѕ С„РѕСЂРјСѓР»Рµ: "00"&B2&"-20"
+        wsMain.Range("B3").Value = "00" & wsMain.Range("B2").Value & "-20"           ' РќРѕРјРµСЂ Р·Р°РєР°Р·-РЅР°СЂСЏРґР°
+        wsMain.Range("B4").Value = FoundCell.Offset(0, 1).Value                      ' B: РњРѕРґРµР»СЊ
+        wsMain.Range("B5").Value = FoundCell.Offset(0, 2).Value                      ' C: Р“Р Р—
+        wsMain.Range("B6").Value = FoundCell.Offset(0, 3).Value                      ' D: VIN
+        wsMain.Range("B7").Value = FoundCell.Offset(0, 4).Value                      ' E: РіР°СЂР°Р¶. в„–
+        wsMain.Range("B8").Value = FoundCell.Offset(0, 5).Value                      ' F: РіРѕРґ РІС‹Рї.
+        wsMain.Range("B9").Value = FoundCell.Offset(0, 6).Value                      ' G: РїСЂРѕР±РµРі
+        wsMain.Range("B10").Value = FoundCell.Offset(0, 7).Value                     ' H: РґР°С‚Р°
+
+        ' РџРѕРёСЃРє РјРѕРґРµР»Рё РїРѕ РєРѕРґСѓ
+        ModelCode = FoundCell.Offset(0, 8).Value                                     ' I: РљРѕРґ РјРѕРґРµР»Рё
         If ModelCode <> "" Then
             Set ModelFound = wsModel.Columns("A").Find(What:=ModelCode, LookAt:=xlWhole, LookIn:=xlValues)
             If Not ModelFound Is Nothing Then
-                wsMain.Range("B11").Value = ModelFound.Value                         ' Модель
-                wsMain.Range("B12").Value = ModelFound.Offset(0, 1).Value            ' Цвет
-                wsMain.Range("B13").Value = ModelFound.Offset(0, 2).Value            ' Год выпуска
+                wsMain.Range("B11").Value = ModelFound.Value                         ' РњРѕРґРµР»СЊ
+                wsMain.Range("B12").Value = ModelFound.Offset(0, 1).Value            ' Р¦РІРµС‚
+                wsMain.Range("B13").Value = ModelFound.Offset(0, 2).Value            ' Р“РѕРґ РІС‹РїСѓСЃРєР°
                 wsMain.Range("B14").Value = ModelFound.Offset(0, 3).Value            ' VIN
             End If
         End If
-        
-        wsMain.Range("B15").Value = FoundCell.Offset(0, 9).Value                     ' Примечание
+
+        wsMain.Range("B15").Value = FoundCell.Offset(0, 9).Value                     ' J: РџСЂРёРјРµС‡Р°РЅРёРµ
     Else
-        ' Очищаем B3:B15
+        ' РћС‡РёС‰Р°РµРј B3:B15
         wsMain.Range("B3:B15").ClearContents
     End If
 End Sub
 
-' Публичная функция для тестов: поиск заказа
+' РџСѓР±Р»РёС‡РЅР°СЏ С„СѓРЅРєС†РёСЏ РґР»СЏ С‚РµСЃС‚РѕРІ: РїРѕРёСЃРє Р·Р°РєР°Р·Р°
+' РС‰РµС‚ РїРѕ в„– Рї/Рї (РєРѕР»РѕРЅРєР° A) РЅР° Р»РёСЃС‚Рµ spisok
 Public Function FindOrder(ByVal OrderNum As String, ByRef Header As OrderHeader) As Boolean
     Dim ws As Worksheet
     Dim FoundCell As Range
-    
+
     Set ws = GetSheetByName(ThisWorkbook, "spisok")
     If ws Is Nothing Then
         FindOrder = False
         Exit Function
     End If
-    
+
+    ' РџРѕРёСЃРє РїРѕ РєРѕР»РѕРЅРєРµ A (в„– Рї/Рї)
     Set FoundCell = ws.Columns("A").Find(What:=OrderNum, LookAt:=xlWhole, LookIn:=xlValues)
-    
+
     If Not FoundCell Is Nothing Then
-        Header.OrderNumber = FoundCell.Value
-        Header.ClientName = FoundCell.Offset(0, 1).Value
-        Header.CarModel = FoundCell.Offset(0, 2).Value
-        Header.CarPlate = FoundCell.Offset(0, 3).Value
-        Header.Mileage = Val(FoundCell.Offset(0, 4).Value)
-        Header.DateIn = FoundCell.Offset(0, 5).Value
-        Header.DateOut = FoundCell.Offset(0, 6).Value
-        Header.Status = FoundCell.Offset(0, 7).Value
+        ' РњР°РїРїРёРЅРі РІ СЃРѕРѕС‚РІРµС‚СЃС‚РІРёРё СЃ СЂРµР°Р»СЊРЅРѕР№ СЃС‚СЂСѓРєС‚СѓСЂРѕР№ Р»РёСЃС‚Р° spisok:
+        ' A=в„– Рї/Рї, B=РњРѕРґРµР»СЊ, C=Р“Р Р—, D=VIN, E=РіР°СЂР°Р¶.в„–, F=РіРѕРґ РІС‹Рї., G=РїСЂРѕР±РµРі, H=РґР°С‚Р°
+        Header.OrderNumber = FoundCell.Value                    ' A: в„– Рї/Рї
+        Header.ModelName = FoundCell.Offset(0, 1).Value         ' B: РњРѕРґРµР»СЊ
+        Header.GRZ = FoundCell.Offset(0, 2).Value               ' C: Р“Р Р—
+        Header.VIN = FoundCell.Offset(0, 3).Value               ' D: VIN
+        Header.GarageNumber = FoundCell.Offset(0, 4).Value      ' E: РіР°СЂР°Р¶. в„–
+        Header.YearMade = Val(FoundCell.Offset(0, 5).Value)     ' F: РіРѕРґ РІС‹Рї.
+        Header.MileageValue = Val(FoundCell.Offset(0, 6).Value) ' G: РїСЂРѕР±РµРі
+        Header.DateValue = FoundCell.Offset(0, 7).Value         ' H: РґР°С‚Р°
         FindOrder = True
     Else
         FindOrder = False

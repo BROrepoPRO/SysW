@@ -7,33 +7,33 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-Attribute VB_Description = "Лист main с формой заказа-наряда"
+Attribute VB_Description = "Р›РёСЃС‚ main РІ РєРЅРёРіРµ Р·Р°РєР°Р·-РЅР°СЂСЏРґР°"
 Attribute VB_HelpID = 0
 Attribute VB_TemplateDerived = False
 Attribute VB_Customizable = True
 ' ============================================================================
-' Лист main
-' Назначение: Обработка изменения ячейки B2 для автозаполнения полей
+' Р›РёСЃС‚ main
+' РќР°Р·РЅР°С‡РµРЅРёРµ: РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРµ Р·Р°РїРѕР»РЅРµРЅРёРµ РїРѕР»РµР№ Р·Р°РєР°Р·Р°-РЅР°СЂСЏРґР°
 ' ============================================================================
 
 Option Explicit
 
 ' --------------------------------------------------------------------------
-' Событие Worksheet_Change
-' Вызывает FillHeaderFromOrder при изменении ячейки B2
+' РЎРѕР±С‹С‚РёРµ Worksheet_Change
+' Р—Р°РїСѓСЃРєР°РµС‚ FillHeaderFromOrder РїСЂРё РёР·РјРµРЅРµРЅРёРё СЏС‡РµР№РєРё B2
 ' --------------------------------------------------------------------------
 Private Sub Worksheet_Change(ByVal Target As Range)
-    ' Защита от рекурсивного вызова
+    ' Р—Р°С‰РёС‚Р° РѕС‚ СЂРµРєСѓСЂСЃРёРІРЅРѕРіРѕ РІС‹Р·РѕРІР°
     Static IsProcessing As Boolean
     If IsProcessing Then Exit Sub
     
-    ' Проверка флага (сброс после ошибки)
+    ' РџСЂРѕРІРµСЂРєР° С„Р»Р°РіР° (РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ True)
     If Not Application.EnableEvents Then Exit Sub
-    ' Только одна ячейка
+    ' РўРѕР»СЊРєРѕ РѕРґРЅР° СЏС‡РµР№РєР°
     If Target.CountLarge <> 1 Then Exit Sub
-    ' Только ячейка B2
+    ' РўРѕР»СЊРєРѕ СЏС‡РµР№РєР° B2
     If Intersect(Target, Me.Range("B2")) Is Nothing Then Exit Sub
-    ' Исключаем B3:B15 (чтобы не было цикла при автозаполнении)
+    ' РСЃРєР»СЋС‡Р°РµРј B3:B15 (С‡С‚РѕР±С‹ РЅРµ Р±С‹Р»Рѕ С†РёРєР»Р° РїСЂРё Р·Р°РїРѕР»РЅРµРЅРёРё)
     If Not Intersect(Target, Me.Range("B3:B15")) Is Nothing Then Exit Sub
 
     On Error GoTo ErrorHandler

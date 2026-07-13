@@ -2,45 +2,45 @@ Attribute VB_Name = "Mod_ButtonDispatcher"
 Option Explicit
 
 ' ============================================================
-' Модуль: Mod_ButtonDispatcher
-' Назначение: Обработка нажатий на кнопки
+' РњРѕРґСѓР»СЊ: Mod_ButtonDispatcher
+' РќР°Р·РЅР°С‡РµРЅРёРµ: РћР±СЂР°Р±РѕС‚РєР° РЅР°Р¶Р°С‚РёР№ РЅР° РєРЅРѕРїРєРё
 ' ============================================================
 
-' Обработчик кнопки "Импорт"
+' РћР±СЂР°Р±РѕС‚С‡РёРє РєРЅРѕРїРєРё "РРјРїРѕСЂС‚"
 Public Sub Btn_main_Import_Click()
     Mod_Import.RunImport
 End Sub
 
-' Обработчик кнопки "Тест"
+' РћР±СЂР°Р±РѕС‚С‡РёРє РєРЅРѕРїРєРё "РўРµСЃС‚"
 Public Sub Btn_main_Test_Click()
     Mod_MinimalTestRunner.RunAllTests
 End Sub
 
-' Обработчик кнопки "Очистить"
+' РћР±СЂР°Р±РѕС‚С‡РёРє РєРЅРѕРїРєРё "РћС‡РёСЃС‚РёС‚СЊ"
 Public Sub Btn_main_Clear_Click()
     Dim ws As Worksheet
     Dim Response As VbMsgBoxResult
-    
+
     Set ws = ActiveSheet
-    Response = MsgBox("Очистить все данные на листе " & ws.Name & "?", vbYesNo + vbQuestion, "Очистка")
-    
+    Response = MsgBox("РћС‡РёСЃС‚РёС‚СЊ РІСЃРµ РґР°РЅРЅС‹Рµ РЅР° Р»РёСЃС‚Рµ " & ws.Name & "?", vbYesNo + vbQuestion, "РћС‡РёСЃС‚РєР°")
+
     If Response = vbYes Then
         ws.Cells.ClearContents
-        MsgBox "Данные очищены.", vbInformation, "Очистка"
+        MsgBox "Р”Р°РЅРЅС‹Рµ РѕС‡РёС‰РµРЅС‹.", vbInformation, "РћС‡РёСЃС‚РєР°"
     End If
 End Sub
 
-' Обработчик кнопки "Обновить"
+' РћР±СЂР°Р±РѕС‚С‡РёРє РєРЅРѕРїРєРё "РћР±РЅРѕРІРёС‚СЊ"
 Public Sub Btn_main_Refresh_Click()
-    MsgBox "Обновление данных...", vbInformation, "Обновление"
+    MsgBox "РћР±РЅРѕРІР»РµРЅРёРµ РґР°РЅРЅС‹С…...", vbInformation, "РћР±РЅРѕРІР»РµРЅРёРµ"
 End Sub
 
-' Заглушка для z4
+' Р—Р°РіР»СѓС€РєР° РґР»СЏ z4
 Public Sub Btn_z4_Action_Click()
-    MsgBox "Функция z4 в разработке.", vbInformation, "z4"
+    MsgBox "Р¤СѓРЅРєС†РёСЏ z4 РІ СЂР°Р·СЂР°Р±РѕС‚РєРµ.", vbInformation, "z4"
 End Sub
 
-' Заглушка для work
+' Р—Р°РіР»СѓС€РєР° РґР»СЏ work
 Public Sub Btn_work_Action_Click()
-    MsgBox "Функция work в разработке.", vbInformation, "Work"
+    MsgBox "Р¤СѓРЅРєС†РёСЏ work РІ СЂР°Р·СЂР°Р±РѕС‚РєРµ.", vbInformation, "Work"
 End Sub

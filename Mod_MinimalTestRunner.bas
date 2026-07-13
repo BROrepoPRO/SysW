@@ -2,64 +2,64 @@ Attribute VB_Name = "Mod_MinimalTestRunner"
 Option Explicit
 
 ' ============================================================
-' Модуль: Mod_MinimalTestRunner
-' Назначение: Минимальный набор тестов TC-01..TC-09
+' РњРѕРґСѓР»СЊ: Mod_MinimalTestRunner
+' РќР°Р·РЅР°С‡РµРЅРёРµ: РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРёР№ РїСЂРѕРіРѕРЅ С‚РµСЃС‚РѕРІ TC-01..TC-09
 ' ============================================================
 
-' Главная процедура запуска тестов
+' Р—Р°РїСѓСЃРєР°РµС‚ РѕСЃРЅРѕРІРЅРѕР№ С†РёРєР» С‚РµСЃС‚РѕРІ
 Public Sub RunAllTests()
     Dim TotalTests As Long
     Dim PassedTests As Long
     Dim FailedTests As Long
-    
+
     TotalTests = 0
     PassedTests = 0
     FailedTests = 0
-    
+
     Debug.Print "========================================="
-    Debug.Print "Запуск тестов Mod_MinimalTestRunner"
+    Debug.Print "Р—Р°РїСѓСЃРє С‚РµСЃС‚РѕРІ Mod_MinimalTestRunner"
     Debug.Print "========================================="
-    
-    ' TC-01: FileExists с существующим файлом
+
+    ' TC-01: FileExists СЃ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј С„Р°Р№Р»РѕРј
     TotalTests = TotalTests + 1
     If Test_FileExists_Existing() Then
         PassedTests = PassedTests + 1
-        Debug.Print "  [OK] TC-01: FileExists с существующим файлом"
+        Debug.Print "  [OK] TC-01: FileExists СЃ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј С„Р°Р№Р»РѕРј"
     Else
         FailedTests = FailedTests + 1
-        Debug.Print "  [FAIL] TC-01: FileExists с существующим файлом"
+        Debug.Print "  [FAIL] TC-01: FileExists СЃ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј С„Р°Р№Р»РѕРј"
     End If
-    
-    ' TC-02: FileExists с несуществующим файлом
+
+    ' TC-02: FileExists СЃ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј С„Р°Р№Р»РѕРј
     TotalTests = TotalTests + 1
     If Test_FileExists_NonExisting() Then
         PassedTests = PassedTests + 1
-        Debug.Print "  [OK] TC-02: FileExists с несуществующим файлом"
+        Debug.Print "  [OK] TC-02: FileExists СЃ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј С„Р°Р№Р»РѕРј"
     Else
         FailedTests = FailedTests + 1
-        Debug.Print "  [FAIL] TC-02: FileExists с несуществующим файлом"
+        Debug.Print "  [FAIL] TC-02: FileExists СЃ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј С„Р°Р№Р»РѕРј"
     End If
-    
-    ' TC-03: FormatDateSQL корректная дата
+
+    ' TC-03: FormatDateSQL РєРѕСЂСЂРµРєС‚РЅРѕР№ РґР°С‚С‹
     TotalTests = TotalTests + 1
     If Test_FormatDateSQL_Valid() Then
         PassedTests = PassedTests + 1
-        Debug.Print "  [OK] TC-03: FormatDateSQL корректная дата"
+        Debug.Print "  [OK] TC-03: FormatDateSQL РєРѕСЂСЂРµРєС‚РЅРѕР№ РґР°С‚С‹"
     Else
         FailedTests = FailedTests + 1
-        Debug.Print "  [FAIL] TC-03: FormatDateSQL корректная дата"
+        Debug.Print "  [FAIL] TC-03: FormatDateSQL РєРѕСЂСЂРµРєС‚РЅРѕР№ РґР°С‚С‹"
     End If
-    
-    ' TC-04: FormatDateSQL с пустой датой
+
+    ' TC-04: FormatDateSQL СЃ РїСѓСЃС‚РѕР№ РґР°С‚РѕР№
     TotalTests = TotalTests + 1
     If Test_FormatDateSQL_Empty() Then
         PassedTests = PassedTests + 1
-        Debug.Print "  [OK] TC-04: FormatDateSQL с пустой датой"
+        Debug.Print "  [OK] TC-04: FormatDateSQL СЃ РїСѓСЃС‚РѕР№ РґР°С‚РѕР№"
     Else
         FailedTests = FailedTests + 1
-        Debug.Print "  [FAIL] TC-04: FormatDateSQL с пустой датой"
+        Debug.Print "  [FAIL] TC-04: FormatDateSQL СЃ РїСѓСЃС‚РѕР№ РґР°С‚РѕР№"
     End If
-    
+
     ' TC-05: ExtractNumberFromGRZ
     TotalTests = TotalTests + 1
     If Test_ExtractNumberFromGRZ() Then
@@ -69,58 +69,58 @@ Public Sub RunAllTests()
         FailedTests = FailedTests + 1
         Debug.Print "  [FAIL] TC-05: ExtractNumberFromGRZ"
     End If
-    
-    ' TC-06: GetSheetByName существующий лист
+
+    ' TC-06: GetSheetByName СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р»РёСЃС‚
     TotalTests = TotalTests + 1
     If Test_GetSheetByName_Existing() Then
         PassedTests = PassedTests + 1
-        Debug.Print "  [OK] TC-06: GetSheetByName существующий лист"
+        Debug.Print "  [OK] TC-06: GetSheetByName СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р»РёСЃС‚"
     Else
         FailedTests = FailedTests + 1
-        Debug.Print "  [FAIL] TC-06: GetSheetByName существующий лист"
+        Debug.Print "  [FAIL] TC-06: GetSheetByName СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р»РёСЃС‚"
     End If
-    
-    ' TC-07: GetSheetByName несуществующий лист
+
+    ' TC-07: GetSheetByName РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р»РёСЃС‚
     TotalTests = TotalTests + 1
     If Test_GetSheetByName_NonExisting() Then
         PassedTests = PassedTests + 1
-        Debug.Print "  [OK] TC-07: GetSheetByName несуществующий лист"
+        Debug.Print "  [OK] TC-07: GetSheetByName РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р»РёСЃС‚"
     Else
         FailedTests = FailedTests + 1
-        Debug.Print "  [FAIL] TC-07: GetSheetByName несуществующий лист"
+        Debug.Print "  [FAIL] TC-07: GetSheetByName РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р»РёСЃС‚"
     End If
-    
-    ' TC-08: FindOrder с существующим заказом
+
+    ' TC-08: FindOrder СЃ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј Р·Р°РєР°Р·РѕРј
     TotalTests = TotalTests + 1
     If Test_FindOrder_Existing() Then
         PassedTests = PassedTests + 1
-        Debug.Print "  [OK] TC-08: FindOrder с существующим заказом"
+        Debug.Print "  [OK] TC-08: FindOrder СЃ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј Р·Р°РєР°Р·РѕРј"
     Else
         FailedTests = FailedTests + 1
-        Debug.Print "  [FAIL] TC-08: FindOrder с существующим заказом"
+        Debug.Print "  [FAIL] TC-08: FindOrder СЃ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј Р·Р°РєР°Р·РѕРј"
     End If
-    
-    ' TC-09: FindOrder с несуществующим заказом
+
+    ' TC-09: FindOrder СЃ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј Р·Р°РєР°Р·РѕРј
     TotalTests = TotalTests + 1
     If Test_FindOrder_NonExisting() Then
         PassedTests = PassedTests + 1
-        Debug.Print "  [OK] TC-09: FindOrder с несуществующим заказом"
+        Debug.Print "  [OK] TC-09: FindOrder СЃ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј Р·Р°РєР°Р·РѕРј"
     Else
         FailedTests = FailedTests + 1
-        Debug.Print "  [FAIL] TC-09: FindOrder с несуществующим заказом"
+        Debug.Print "  [FAIL] TC-09: FindOrder СЃ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј Р·Р°РєР°Р·РѕРј"
     End If
-    
-    ' Итог
+
+    ' РС‚РѕРі
     Debug.Print "========================================="
-    Debug.Print "Итого: " & TotalTests & " тестов, " & PassedTests & " пройдено, " & FailedTests & " падений"
+    Debug.Print "РС‚РѕРіРѕ: " & TotalTests & " С‚РµСЃС‚РѕРІ, " & PassedTests & " РїСЂРѕР№РґРµРЅРѕ, " & FailedTests & " РїСЂРѕРІР°Р»РµРЅРѕ"
     Debug.Print "========================================="
-    
-    MsgBox "Тестирование завершено." & vbCrLf & _
-           "Всего: " & TotalTests & ", пройдено: " & PassedTests & ", падений: " & FailedTests, _
-           vbInformation, "Результаты тестов"
+
+    MsgBox "РўРµСЃС‚РёСЂРѕРІР°РЅРёРµ Р·Р°РІРµСЂС€РµРЅРѕ." & vbCrLf & _
+           "РС‚РѕРіРѕ: " & TotalTests & ", РїСЂРѕР№РґРµРЅРѕ: " & PassedTests & ", РїСЂРѕРІР°Р»РµРЅРѕ: " & FailedTests, _
+           vbInformation, "Р РµР·СѓР»СЊС‚Р°С‚С‹ С‚РµСЃС‚РѕРІ"
 End Sub
 
-' TC-01: FileExists с существующим файлом
+' TC-01: FileExists СЃ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј С„Р°Р№Р»РѕРј
 Private Function Test_FileExists_Existing() As Boolean
     On Error Resume Next
     Test_FileExists_Existing = FileExists("C:\Windows\notepad.exe")
@@ -128,7 +128,7 @@ Private Function Test_FileExists_Existing() As Boolean
     On Error GoTo 0
 End Function
 
-' TC-02: FileExists с несуществующим файлом
+' TC-02: FileExists СЃ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј С„Р°Р№Р»РѕРј
 Private Function Test_FileExists_NonExisting() As Boolean
     On Error Resume Next
     Test_FileExists_NonExisting = Not FileExists("C:\Windows\ nonexistent_file_12345.tmp")
@@ -136,7 +136,7 @@ Private Function Test_FileExists_NonExisting() As Boolean
     On Error GoTo 0
 End Function
 
-' TC-03: FormatDateSQL корректная дата
+' TC-03: FormatDateSQL РєРѕСЂСЂРµРєС‚РЅРѕР№ РґР°С‚С‹
 Private Function Test_FormatDateSQL_Valid() As Boolean
     On Error Resume Next
     Dim Result As String
@@ -146,7 +146,7 @@ Private Function Test_FormatDateSQL_Valid() As Boolean
     On Error GoTo 0
 End Function
 
-' TC-04: FormatDateSQL с пустой датой
+' TC-04: FormatDateSQL СЃ РїСѓСЃС‚РѕР№ РґР°С‚РѕР№
 Private Function Test_FormatDateSQL_Empty() As Boolean
     On Error Resume Next
     Dim Result As String
@@ -160,13 +160,13 @@ End Function
 Private Function Test_ExtractNumberFromGRZ() As Boolean
     On Error Resume Next
     Dim Result As String
-    Result = ExtractNumberFromGRZ("А123ВВ77")
+    Result = ExtractNumberFromGRZ("Рђ123Р’Р’77")
     Test_ExtractNumberFromGRZ = (Result = "12377")
     If Err.Number <> 0 Then Test_ExtractNumberFromGRZ = False
     On Error GoTo 0
 End Function
 
-' TC-06: GetSheetByName существующий лист
+' TC-06: GetSheetByName СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р»РёСЃС‚
 Private Function Test_GetSheetByName_Existing() As Boolean
     On Error Resume Next
     Dim ws As Worksheet
@@ -176,7 +176,7 @@ Private Function Test_GetSheetByName_Existing() As Boolean
     On Error GoTo 0
 End Function
 
-' TC-07: GetSheetByName несуществующий лист
+' TC-07: GetSheetByName РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р»РёСЃС‚
 Private Function Test_GetSheetByName_NonExisting() As Boolean
     On Error Resume Next
     Dim ws As Worksheet
@@ -186,20 +186,21 @@ Private Function Test_GetSheetByName_NonExisting() As Boolean
     On Error GoTo 0
 End Function
 
-' TC-08: FindOrder с существующим заказом
+' TC-08: FindOrder СЃ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј Р·Р°РєР°Р·РѕРј (РїРѕ в„– Рї/Рї = "1")
 Private Function Test_FindOrder_Existing() As Boolean
     On Error Resume Next
     Dim Header As OrderHeader
-    Test_FindOrder_Existing = FindOrder("ЗН-001", Header)
+    ' РС‰РµРј РїРѕ в„– Рї/Рї (РєРѕР»РѕРЅРєР° A Р»РёСЃС‚Р° spisok)
+    Test_FindOrder_Existing = FindOrder("1", Header)
     If Err.Number <> 0 Then Test_FindOrder_Existing = False
     On Error GoTo 0
 End Function
 
-' TC-09: FindOrder с несуществующим заказом
+' TC-09: FindOrder СЃ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј Р·Р°РєР°Р·РѕРј
 Private Function Test_FindOrder_NonExisting() As Boolean
     On Error Resume Next
     Dim Header As OrderHeader
-    Test_FindOrder_NonExisting = Not FindOrder("NONEXISTENT_ORDER_999", Header)
+    Test_FindOrder_NonExisting = Not FindOrder("999", Header)
     If Err.Number <> 0 Then Test_FindOrder_NonExisting = False
     On Error GoTo 0
 End Function
