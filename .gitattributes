@@ -1,0 +1,17 @@
+# Нормализация окончаний строк
+* text=auto eol=lf
+
+# VBA-файлы: хранить в UTF-8, Git не меняет кодировку
+*.bas text working-tree-encoding=UTF-8
+*.cls text working-tree-encoding=UTF-8
+
+# Python-файлы
+*.py text
+
+# Markdown
+*.md text
+
+# Excel файлы (бинарные) - не трогать
+*.xlsm binary
+*.xlsx binary
+*.xls binary

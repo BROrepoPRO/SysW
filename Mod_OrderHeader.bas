@@ -3,62 +3,97 @@ Option Explicit
 
 ' ============================================================
 ' Модуль: Mod_OrderHeader
-' Назначение: Автоматическое заполнение полей заказа-наряда
+' Назначение: Заполнение заголовка заказа-наряда
 ' ============================================================
 
-' Главная процедура: заполнение заголовка из найденного заказа
-Public Sub FillHeaderFromOrder(ByVal OrderNum As String, _
-                               ByVal wsMain As Worksheet, _
-                               ByVal wsSpisok As Worksheet, _
-                               ByVal wsModel As Worksheet)
-    Dim FoundCell As Range
-    Dim ModelCode As String
-    Dim ModelFound As Range
+' --------------------------------------------------------------------------
+' FillHeaderFromOrder
+' Заполняет B3:B15 на листе main данными из spisok и model по номеру заказа
+' --------------------------------------------------------------------------
+Public Function FillHeaderFromOrder(OrderNum As Variant) As Boolean
+    Dim wsSpisok As Worksheet
+    Dim wsModel As Worksheet
+    Dim wsMain As Worksheet
+    Dim FoundRow As Range
+    Dim ModelRow As Range
+    Dim ModelCode As Variant
 
-    ' Проверка листов
-    If wsSpisok Is Nothing Or wsModel Is Nothing Then
-        MsgBox "Не найдены служебные листы (spisok, model).", vbExclamation, "Ошибка"
-        Exit Sub
+    ' Константы столбцов листа spisok
+    Const SPISOK_COL_MODEL As Long = 2
+    Const SPISOK_COL_GRZ As Long = 3
+    Const SPISOK_COL_VIN As Long = 4
+    Const SPISOK_COL_GARAGE As Long = 5
+    Const SPISOK_COL_YEAR As Long = 6
+    Const SPISOK_COL_MILEAGE As Long = 7
+    Const SPISOK_COL_DATE As Long = 8
+    Const SPISOK_COL_NOTE As Long = 10
+
+    ' Константы столбцов листа model
+    Const MODEL_COL_GROUP As Long = 2
+    Const MODEL_COL_PRICE As Long = 3
+    Const MODEL_COL_WORKS_ORIG As Long = 4
+    Const MODEL_COL_WORKS_MOD As Long = 5
+
+    Set wsMain = ThisWorkbook.Sheets("main")
+    Set wsSpisok = ThisWorkbook.Sheets("spisok")
+    Set wsModel = ThisWorkbook.Sheets("model")
+
+    ' Очистка B3:B15
+    wsMain.Range("B3:B15").ClearContents
+
+    ' Проверка, что OrderNum — число
+    If Not IsNumeric(OrderNum) Then
+        MsgBox "Номер заказа должен быть числом!", vbExclamation, "Ошибка"
+        FillHeaderFromOrder = False
+        Exit Function
     End If
 
-    ' Поиск по № п/п в колонке A листа spisok
-    Set FoundCell = wsSpisok.Columns("A").Find(What:=OrderNum, LookAt:=xlWhole, LookIn:=xlValues)
-
-    If Not FoundCell Is Nothing Then
-        ' Заполняем B3:B15
-        ' Маппинг в соответствии с реальной структурой листа spisok:
-        ' A=№ п/п, B=Модель, C=ГРЗ, D=VIN, E=гараж.№, F=год вып., G=пробег, H=дата
-        ' Номер заказ-наряда формируется по формуле: "00"&B2&"-20"
-        wsMain.Range("B3").Value = "00" & wsMain.Range("B2").Value & "-20"           ' Номер заказ-наряда
-        wsMain.Range("B4").Value = FoundCell.Offset(0, 1).Value                      ' B: Модель
-        wsMain.Range("B5").Value = FoundCell.Offset(0, 2).Value                      ' C: ГРЗ
-        wsMain.Range("B6").Value = FoundCell.Offset(0, 3).Value                      ' D: VIN
-        wsMain.Range("B7").Value = FoundCell.Offset(0, 4).Value                      ' E: гараж. №
-        wsMain.Range("B8").Value = FoundCell.Offset(0, 5).Value                      ' F: год вып.
-        wsMain.Range("B9").Value = FoundCell.Offset(0, 6).Value                      ' G: пробег
-        wsMain.Range("B10").Value = FoundCell.Offset(0, 7).Value                     ' H: дата
-
-        ' Поиск модели по коду
-        ModelCode = FoundCell.Offset(0, 8).Value                                     ' I: Код модели
-        If ModelCode <> "" Then
-            Set ModelFound = wsModel.Columns("A").Find(What:=ModelCode, LookAt:=xlWhole, LookIn:=xlValues)
-            If Not ModelFound Is Nothing Then
-                wsMain.Range("B11").Value = ModelFound.Value                         ' Модель
-                wsMain.Range("B12").Value = ModelFound.Offset(0, 1).Value            ' Цвет
-                wsMain.Range("B13").Value = ModelFound.Offset(0, 2).Value            ' Год выпуска
-                wsMain.Range("B14").Value = ModelFound.Offset(0, 3).Value            ' VIN
-            End If
-        End If
-
-        wsMain.Range("B15").Value = FoundCell.Offset(0, 9).Value                     ' J: Примечание
-    Else
-        ' Очищаем B3:B15
+    ' Поиск заказа в столбце A листа spisok (точное совпадение)
+    Set FoundRow = wsSpisok.Columns(1).Find(What:=OrderNum, LookAt:=xlWhole)
+    If FoundRow Is Nothing Then
+        MsgBox "Заказ с номером " & OrderNum & " не найден!", vbExclamation, "Ошибка"
         wsMain.Range("B3:B15").ClearContents
+        FillHeaderFromOrder = False
+        Exit Function
     End If
-End Sub
 
-' Публичная функция для тестов: поиск заказа
-' Ищет по № п/п (колонка A) на листе spisok
+    ' B3 = "00" & значение B2 & "-20"
+    wsMain.Cells(3, 2).Value = "00" & CStr(OrderNum) & "-20"
+
+    ' B4:B10 из столбцов B–H найденной строки spisok
+    wsMain.Cells(4, 2).Value = FoundRow.Cells(1, SPISOK_COL_MODEL).Value   ' Модель
+    wsMain.Cells(5, 2).Value = FoundRow.Cells(1, SPISOK_COL_GRZ).Value     ' ГРЗ
+    wsMain.Cells(6, 2).Value = FoundRow.Cells(1, SPISOK_COL_VIN).Value     ' VIN
+    wsMain.Cells(7, 2).Value = FoundRow.Cells(1, SPISOK_COL_GARAGE).Value  ' Гараж.№
+    wsMain.Cells(8, 2).Value = FoundRow.Cells(1, SPISOK_COL_YEAR).Value    ' Год вып.
+    wsMain.Cells(9, 2).Value = FoundRow.Cells(1, SPISOK_COL_MILEAGE).Value ' Пробег
+    wsMain.Cells(10, 2).Value = FoundRow.Cells(1, SPISOK_COL_DATE).Value   ' Дата
+
+    ' Код модели из столбца I
+    ModelCode = FoundRow.Cells(1, 9).Value
+
+    ' Поиск кода модели в столбце A листа model (начиная со строки 3)
+    If Not IsNull(ModelCode) And ModelCode <> "" Then
+        Set ModelRow = wsModel.Columns(1).Find(What:=ModelCode, LookAt:=xlWhole)
+        If Not ModelRow Is Nothing And ModelRow.Row >= 3 Then
+            wsMain.Cells(11, 2).Value = ModelRow.Cells(1, MODEL_COL_PRICE).Value      ' Цена н/ч
+            wsMain.Cells(12, 2).Value = ModelRow.Cells(1, MODEL_COL_GROUP).Value      ' Группа
+            wsMain.Cells(13, 2).Value = ModelRow.Cells(1, MODEL_COL_WORKS_ORIG).Value ' Работы исх
+            wsMain.Cells(14, 2).Value = ModelRow.Cells(1, MODEL_COL_WORKS_MOD).Value  ' Работы мод
+        End If
+    End If
+
+    ' B15 = примечание из столбца J spisok
+    wsMain.Cells(15, 2).Value = FoundRow.Cells(1, SPISOK_COL_NOTE).Value
+
+    FillHeaderFromOrder = True
+End Function
+
+' --------------------------------------------------------------------------
+' FindOrder
+' Поиск заказа по номеру (столбец A) на листе spisok
+' Заполняет структуру OrderHeader полями A–H
+' --------------------------------------------------------------------------
 Public Function FindOrder(ByVal OrderNum As String, ByRef Header As OrderHeader) As Boolean
     Dim ws As Worksheet
     Dim FoundCell As Range
@@ -69,22 +104,98 @@ Public Function FindOrder(ByVal OrderNum As String, ByRef Header As OrderHeader)
         Exit Function
     End If
 
-    ' Поиск по колонке A (№ п/п)
+    ' Поиск в столбце A (номер заказа)
     Set FoundCell = ws.Columns("A").Find(What:=OrderNum, LookAt:=xlWhole, LookIn:=xlValues)
 
     If Not FoundCell Is Nothing Then
-        ' Маппинг в соответствии с реальной структурой листа spisok:
-        ' A=№ п/п, B=Модель, C=ГРЗ, D=VIN, E=гараж.№, F=год вып., G=пробег, H=дата
-        Header.OrderNumber = FoundCell.Value                    ' A: № п/п
+        ' Заполнение структуры из найденной строки листа spisok:
+        ' A=№ заказа, B=Модель, C=ГРЗ, D=VIN, E=Гараж.№, F=Год вып., G=Пробег, H=Дата
+        Header.OrderNumber = FoundCell.Value                    ' A: № заказа
         Header.ModelName = FoundCell.Offset(0, 1).Value         ' B: Модель
         Header.GRZ = FoundCell.Offset(0, 2).Value               ' C: ГРЗ
         Header.VIN = FoundCell.Offset(0, 3).Value               ' D: VIN
-        Header.GarageNumber = FoundCell.Offset(0, 4).Value      ' E: гараж. №
-        Header.YearMade = Val(FoundCell.Offset(0, 5).Value)     ' F: год вып.
-        Header.MileageValue = Val(FoundCell.Offset(0, 6).Value) ' G: пробег
-        Header.DateValue = FoundCell.Offset(0, 7).Value         ' H: дата
+        Header.GarageNumber = FoundCell.Offset(0, 4).Value      ' E: Гараж. №
+        Header.YearMade = Val(FoundCell.Offset(0, 5).Value)     ' F: Год вып.
+        Header.MileageValue = Val(FoundCell.Offset(0, 6).Value) ' G: Пробег
+        Header.DateValue = FoundCell.Offset(0, 7).Value         ' H: Дата
         FindOrder = True
     Else
         FindOrder = False
     End If
 End Function
+
+' ============================================================
+' _UI-ПРОЦЕДУРЫ (обёртки с пользовательским вводом/выводом)
+' ============================================================
+
+' --------------------------------------------------------------------------
+' FillHeaderFromOrder_UI
+' Запрашивает номер заказа из B2, вызывает FillHeaderFromOrder,
+' показывает результат пользователю
+' --------------------------------------------------------------------------
+Public Sub FillHeaderFromOrder_UI()
+    On Error GoTo ErrHandler
+
+    Dim orderNum As Variant
+    orderNum = ThisWorkbook.Sheets("main").Range("B2").Value
+
+    If IsEmpty(orderNum) Or orderNum = "" Then
+        MsgBox "Введите номер заказа в ячейку B2!", vbExclamation, "Предупреждение"
+        Exit Sub
+    End If
+
+    If Not FillHeaderFromOrder(orderNum) Then
+        MsgBox "Не удалось заполнить шапку заказа.", vbExclamation, "Ошибка"
+        Exit Sub
+    End If
+
+    MsgBox "Шапка заказа заполнена.", vbInformation, "SysW"
+    Exit Sub
+
+ErrHandler:
+    MsgBox "Ошибка в FillHeaderFromOrder_UI: " & Err.Description, vbCritical, "Ошибка"
+    Call Mod_Utils.WriteLog("FillHeaderFromOrder_UI: " & Err.Description)
+End Sub
+
+' --------------------------------------------------------------------------
+' FindOrder_UI
+' Запрашивает номер заказа через InputBox, вызывает FindOrder,
+' форматирует и показывает результат
+' --------------------------------------------------------------------------
+Public Sub FindOrder_UI()
+    On Error GoTo ErrHandler
+
+    Dim orderNum As String
+    Dim Header As OrderHeader
+    Dim result As Boolean
+    Dim msg As String
+
+    orderNum = InputBox("Введите номер заказа для поиска:", "Поиск заказа")
+
+    If orderNum = "" Then
+        Exit Sub
+    End If
+
+    result = FindOrder(orderNum, Header)
+
+    If result Then
+        msg = "Заказ найден:" & vbCrLf & vbCrLf
+        msg = msg & "Номер: " & Header.OrderNumber & vbCrLf
+        msg = msg & "Модель: " & Header.ModelName & vbCrLf
+        msg = msg & "ГРЗ: " & Header.GRZ & vbCrLf
+        msg = msg & "VIN: " & Header.VIN & vbCrLf
+        msg = msg & "Гараж.№: " & Header.GarageNumber & vbCrLf
+        msg = msg & "Год вып.: " & Header.YearMade & vbCrLf
+        msg = msg & "Пробег: " & Header.MileageValue & vbCrLf
+        msg = msg & "Дата: " & Header.DateValue
+        MsgBox msg, vbInformation, "Результат поиска"
+    Else
+        MsgBox "Заказ с номером '" & orderNum & "' не найден.", vbExclamation, "Результат поиска"
+    End If
+
+    Exit Sub
+
+ErrHandler:
+    MsgBox "Ошибка в FindOrder_UI: " & Err.Description, vbCritical, "Ошибка"
+    Call Mod_Utils.WriteLog("FindOrder_UI: " & Err.Description)
+End Sub

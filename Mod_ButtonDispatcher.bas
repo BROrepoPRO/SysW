@@ -3,44 +3,118 @@ Option Explicit
 
 ' ============================================================
 ' Модуль: Mod_ButtonDispatcher
-' Назначение: Обработка нажатий на кнопки
+' Назначение: Диспетчер кнопок на формах
+' Содержит ТОЛЬКО однострочные вызовы _UI-процедур
 ' ============================================================
 
-' Обработчик кнопки "Импорт"
-Public Sub Btn_main_Import_Click()
-    Mod_Import.RunImport
-End Sub
+' ============================================================
+' ОБРАБОТЧИКИ ЛИСТА MAIN
+' ============================================================
 
-' Обработчик кнопки "Тест"
-Public Sub Btn_main_Test_Click()
-    Mod_FullTestRunner.RunAllTests
-End Sub
-
-' Обработчик кнопки "Очистить"
+' --------------------------------------------------------------------------
+' Btn_main_Clear_Click
+' Очищает все данные на листе main
+' --------------------------------------------------------------------------
 Public Sub Btn_main_Clear_Click()
-    Dim ws As Worksheet
-    Dim Response As VbMsgBoxResult
-
-    Set ws = ActiveSheet
-    Response = MsgBox("Очистить все данные на листе " & ws.Name & "?", vbYesNo + vbQuestion, "Очистка")
-
-    If Response = vbYes Then
-        ws.Cells.ClearContents
-        MsgBox "Данные очищены.", vbInformation, "Очистка"
-    End If
+    Call Mod_Import.ClearMainSheet_UI
 End Sub
 
-' Обработчик кнопки "Обновить"
-Public Sub Btn_main_Refresh_Click()
-    MsgBox "Обновление данных...", vbInformation, "Обновление"
+' --------------------------------------------------------------------------
+' Btn_main_Import_Click
+' Запускает импорт из отчёта по ГРЗ из ячейки B4
+' --------------------------------------------------------------------------
+Public Sub Btn_main_Import_Click()
+    Call Mod_Import.ImportSheet_UI
 End Sub
 
-' Заглушка для z4
-Public Sub Btn_z4_Action_Click()
-    MsgBox "Функция z4 в разработке.", vbInformation, "z4"
+' --------------------------------------------------------------------------
+' Btn_main_FillHeader_Click
+' Заполняет шапку заказа (B3:B15) по номеру из ячейки B2
+' --------------------------------------------------------------------------
+Public Sub Btn_main_FillHeader_Click()
+    Call Mod_OrderHeader.FillHeaderFromOrder_UI
 End Sub
 
-' Заглушка для work
-Public Sub Btn_work_Action_Click()
-    MsgBox "Функция work в разработке.", vbInformation, "Work"
+' --------------------------------------------------------------------------
+' Btn_main_ClearHeader_Click
+' Очищает только шапку заказа (B3:B15) на листе main
+' --------------------------------------------------------------------------
+Public Sub Btn_main_ClearHeader_Click()
+    Call Mod_Import.ClearHeader_UI
+End Sub
+
+' --------------------------------------------------------------------------
+' Btn_main_ImportByInput_Click
+' Импорт листа из report.xlsx по ГРЗ, введённому пользователем
+' --------------------------------------------------------------------------
+Public Sub Btn_main_ImportByInput_Click()
+    Call Mod_Import.ImportByInput_UI
+End Sub
+
+' --------------------------------------------------------------------------
+' Btn_main_RunTests_Click
+' Запускает все тесты (TC-01..TC-20)
+' --------------------------------------------------------------------------
+Public Sub Btn_main_RunTests_Click()
+    Call Mod_FullTestRunner.RunAllTests_UI
+End Sub
+
+' --------------------------------------------------------------------------
+' Btn_main_WriteLog_Click
+' Записывает сообщение в лог-файл через диалог ввода
+' --------------------------------------------------------------------------
+Public Sub Btn_main_WriteLog_Click()
+    Call Mod_Utils.WriteLog_UI
+End Sub
+
+' --------------------------------------------------------------------------
+' Btn_main_RenameSheets_Click
+' Переименовывает листы в report.xlsx по ГРЗ
+' --------------------------------------------------------------------------
+Public Sub Btn_main_RenameSheets_Click()
+    Call Mod_Import.RenameSheets_UI
+End Sub
+
+' --------------------------------------------------------------------------
+' Btn_main_ImportDataToMain_Click
+' Переносит данные с активного листа в лист main
+' --------------------------------------------------------------------------
+Public Sub Btn_main_ImportDataToMain_Click()
+    Call Mod_Import.ImportDataToMain_UI
+End Sub
+
+' --------------------------------------------------------------------------
+' Btn_main_FindOrder_Click
+' Поиск заказа по номеру через диалог ввода и отображение результата
+' --------------------------------------------------------------------------
+Public Sub Btn_main_FindOrder_Click()
+    Call Mod_OrderHeader.FindOrder_UI
+End Sub
+
+' ============================================================
+' ОБРАБОТЧИКИ АДМИНИСТРИРОВАНИЯ
+' ============================================================
+
+' --------------------------------------------------------------------------
+' Btn_main_ShowWorkbookPath_Click
+' Показывает путь к текущей книге
+' --------------------------------------------------------------------------
+Public Sub Btn_main_ShowWorkbookPath_Click()
+    Call Mod_Utils.ShowWorkbookPath_UI
+End Sub
+
+' --------------------------------------------------------------------------
+' Btn_main_ShowCurrentUser_Click
+' Показывает имя текущего пользователя Windows
+' --------------------------------------------------------------------------
+Public Sub Btn_main_ShowCurrentUser_Click()
+    Call Mod_Utils.ShowCurrentUser_UI
+End Sub
+
+' --------------------------------------------------------------------------
+' Btn_main_CheckFileExists_Click
+' Проверяет существование файла по введённому пути
+' --------------------------------------------------------------------------
+Public Sub Btn_main_CheckFileExists_Click()
+    Call Mod_Utils.CheckFileExists_UI
 End Sub

@@ -2,44 +2,44 @@ Attribute VB_Name = "Mod_FullTestRunner"
 Option Explicit
 
 ' ============================================================
-' Модуль: Mod_FullTestRunner
-' Назначение: Полный набор тестов для системы SysW
-' Покрытие: TC-01 .. TC-20 (17 автоматических, 3 ручных)
+' РњРѕРґСѓР»СЊ: Mod_FullTestRunner
+' РќР°Р·РЅР°С‡РµРЅРёРµ: РџРѕР»РЅС‹Р№ РЅР°Р±РѕСЂ С‚РµСЃС‚РѕРІ РґР»СЏ РїСЂРѕРµРєС‚Р° SysW
+' РџРѕРєСЂС‹С‚РёРµ: TC-01 .. TC-20 (17 Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРёС…, 3 СЂСѓС‡РЅС‹С…)
 ' ============================================================
 
-' ---- Счётчики результатов ----
+' ---- РЎС‡С‘С‚С‡РёРєРё СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ ----
 Private m_Total As Long
 Private m_Passed As Long
 Private m_Failed As Long
 Private m_Skipped As Long
 
 ' ============================================================
-' Главная процедура: запуск всех тестов
+' Р“Р»Р°РІРЅР°СЏ РїСЂРѕС†РµРґСѓСЂР°: Р·Р°РїСѓСЃРє РІСЃРµС… С‚РµСЃС‚РѕРІ
 ' ============================================================
 Public Sub RunAllTests()
-    ' Инициализация счётчиков
+    ' РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ СЃС‡С‘С‚С‡РёРєРѕРІ
     m_Total = 0
     m_Passed = 0
     m_Failed = 0
     m_Skipped = 0
 
     Debug.Print "=============================================="
-    Debug.Print "  ЗАПУСК ПОЛНОГО НАБОРА ТЕСТОВ (TC-01..TC-20)"
+    Debug.Print "  Р—Р°РїСѓСЃРє РїРѕР»РЅРѕРіРѕ РЅР°Р±РѕСЂР° С‚РµСЃС‚РѕРІ (TC-01..TC-20)"
     Debug.Print "=============================================="
     Debug.Print ""
 
-    ' Запуск групп тестов
+    ' Р—Р°РїСѓСЃРє РіСЂСѓРїРї С‚РµСЃС‚РѕРІ
     RunUtilsTests
     RunOrderHeaderTests
     RunImportTests
     RunButtonTests
 
-    ' Итоговый отчёт
+    ' Р¤РёРЅР°Р»СЊРЅС‹Р№ РѕС‚С‡С‘С‚
     PrintFinalReport
 End Sub
 
 ' ============================================================
-' Группа: Тесты утилит (TC-01..TC-04, TC-06, TC-07, TC-19, TC-20)
+' Р“СЂСѓРїРїР°: С‚РµСЃС‚С‹ Utils (TC-01..TC-04, TC-06, TC-07, TC-19, TC-20)
 ' ============================================================
 Private Sub RunUtilsTests()
     Dim Header As OrderHeader
@@ -51,89 +51,89 @@ Private Sub RunUtilsTests()
     Debug.Print "--- Mod_Utils Tests ---"
 
     ' -------------------------------------------------------
-    ' TC-01: FileExists с существующим файлом
+    ' TC-01: FileExists СЃ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј С„Р°Р№Р»РѕРј
     ' -------------------------------------------------------
     On Error Resume Next
     Result = FileExists("C:\Windows\notepad.exe")
     If Err.Number <> 0 Then
-        AddResult "TC-01", "FileExists с существующим файлом", False, "Ошибка: " & Err.Description
+        AddResult "TC-01", "FileExists СЃ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј С„Р°Р№Р»РѕРј", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
-        AddResult "TC-01", "FileExists с существующим файлом", (Result = True), _
-                  "ожидалось True, получено " & CStr(Result)
+        AddResult "TC-01", "FileExists СЃ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј С„Р°Р№Р»РѕРј", (Result = True), _
+                  "РћР¶РёРґР°Р»РѕСЃСЊ True, РїРѕР»СѓС‡РµРЅРѕ " & CStr(Result)
     End If
     On Error GoTo 0
 
     ' -------------------------------------------------------
-    ' TC-02: FileExists с несуществующим файлом
+    ' TC-02: FileExists СЃ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј С„Р°Р№Р»РѕРј
     ' -------------------------------------------------------
     On Error Resume Next
     Result = FileExists("C:\nonexistent_file_12345.txt")
     If Err.Number <> 0 Then
-        AddResult "TC-02", "FileExists с несуществующим файлом", False, "Ошибка: " & Err.Description
+        AddResult "TC-02", "FileExists СЃ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј С„Р°Р№Р»РѕРј", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
-        AddResult "TC-02", "FileExists с несуществующим файлом", (Result = False), _
-                  "ожидалось False, получено " & CStr(Result)
+        AddResult "TC-02", "FileExists СЃ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј С„Р°Р№Р»РѕРј", (Result = False), _
+                  "РћР¶РёРґР°Р»РѕСЃСЊ False, РїРѕР»СѓС‡РµРЅРѕ " & CStr(Result)
     End If
     On Error GoTo 0
 
     ' -------------------------------------------------------
-    ' TC-03: FormatDateSQL с валидной датой
+    ' TC-03: FormatDateSQL СЃ РєРѕСЂСЂРµРєС‚РЅРѕР№ РґР°С‚РѕР№
     ' -------------------------------------------------------
     On Error Resume Next
     Dim FmtResult As String
     FmtResult = FormatDateSQL(DateSerial(2026, 7, 12))
     If Err.Number <> 0 Then
-        AddResult "TC-03", "FormatDateSQL с валидной датой", False, "Ошибка: " & Err.Description
+        AddResult "TC-03", "FormatDateSQL СЃ РєРѕСЂСЂРµРєС‚РЅРѕР№ РґР°С‚РѕР№", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
-        AddResult "TC-03", "FormatDateSQL с валидной датой", (FmtResult = "2026-07-12"), _
-                  "ожидалось '2026-07-12', получено '" & FmtResult & "'"
+        AddResult "TC-03", "FormatDateSQL СЃ РєРѕСЂСЂРµРєС‚РЅРѕР№ РґР°С‚РѕР№", (FmtResult = "2026-07-12"), _
+                  "РћР¶РёРґР°Р»РѕСЃСЊ '2026-07-12', РїРѕР»СѓС‡РµРЅРѕ '" & FmtResult & "'"
     End If
     On Error GoTo 0
 
     ' -------------------------------------------------------
-    ' TC-04: FormatDateSQL с нулевой датой
+    ' TC-04: FormatDateSQL СЃ РЅСѓР»РµРІРѕР№ РґР°С‚РѕР№
     ' -------------------------------------------------------
     On Error Resume Next
     FmtResult = FormatDateSQL(0)
     If Err.Number <> 0 Then
-        AddResult "TC-04", "FormatDateSQL с нулевой датой", False, "Ошибка: " & Err.Description
+        AddResult "TC-04", "FormatDateSQL СЃ РЅСѓР»РµРІРѕР№ РґР°С‚РѕР№", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
-        AddResult "TC-04", "FormatDateSQL с нулевой датой", (FmtResult = "1899-12-30"), _
-                  "ожидалось '1899-12-30', получено '" & FmtResult & "'"
+        AddResult "TC-04", "FormatDateSQL СЃ РЅСѓР»РµРІРѕР№ РґР°С‚РѕР№", (FmtResult = "1899-12-30"), _
+                  "РћР¶РёРґР°Р»РѕСЃСЊ '1899-12-30', РїРѕР»СѓС‡РµРЅРѕ '" & FmtResult & "'"
     End If
     On Error GoTo 0
 
     ' -------------------------------------------------------
-    ' TC-06: GetSheetByName существующий
+    ' TC-06: GetSheetByName СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№
     ' -------------------------------------------------------
     On Error Resume Next
     Dim ws As Worksheet
     Set ws = GetSheetByName(ThisWorkbook, "main")
     If Err.Number <> 0 Then
-        AddResult "TC-06", "GetSheetByName существующий лист", False, "Ошибка: " & Err.Description
+        AddResult "TC-06", "GetSheetByName СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р»РёСЃС‚", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
-        AddResult "TC-06", "GetSheetByName существующий лист", (Not ws Is Nothing), _
-                  "ожидался Not Nothing, получено Nothing"
+        AddResult "TC-06", "GetSheetByName СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р»РёСЃС‚", (Not ws Is Nothing), _
+                  "РћР¶РёРґР°Р»РѕСЃСЊ Not Nothing, РїРѕР»СѓС‡РµРЅРѕ Nothing"
     End If
     Set ws = Nothing
     On Error GoTo 0
 
     ' -------------------------------------------------------
-    ' TC-07: GetSheetByName несуществующий
+    ' TC-07: GetSheetByName РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№
     ' -------------------------------------------------------
     On Error Resume Next
     Set ws = GetSheetByName(ThisWorkbook, "NONEXISTENT")
     If Err.Number <> 0 Then
-        AddResult "TC-07", "GetSheetByName несуществующий лист", False, "Ошибка: " & Err.Description
+        AddResult "TC-07", "GetSheetByName РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р»РёСЃС‚", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
-        AddResult "TC-07", "GetSheetByName несуществующий лист", (ws Is Nothing), _
-                  "ожидался Nothing, получен лист"
+        AddResult "TC-07", "GetSheetByName РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ Р»РёСЃС‚", (ws Is Nothing), _
+                  "РћР¶РёРґР°Р»РѕСЃСЊ Nothing, Р»РёСЃС‚ РЅР°Р№РґРµРЅ"
     End If
     Set ws = Nothing
     On Error GoTo 0
@@ -142,14 +142,14 @@ Private Sub RunUtilsTests()
     ' TC-19: WriteLog
     ' -------------------------------------------------------
     On Error Resume Next
-    Call WriteLog("Mod_FullTestRunner: тестовое сообщение TC-19")
+    Call WriteLog("Mod_FullTestRunner: РІС‹РїРѕР»РЅРµРЅРёРµ РїСЂРѕРІРµСЂРєРё TC-19")
     LogPath = ThisWorkbook.Path & "\log.txt"
     If Err.Number <> 0 Then
-        AddResult "TC-19", "WriteLog запись в лог", False, "Ошибка: " & Err.Description
+        AddResult "TC-19", "WriteLog Р·Р°РїРёСЃСЊ РІ Р»РѕРі", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
-        AddResult "TC-19", "WriteLog запись в лог", FileExists(LogPath), _
-                  "файл лога не найден: " & LogPath
+        AddResult "TC-19", "WriteLog Р·Р°РїРёСЃСЊ РІ Р»РѕРі", FileExists(LogPath), _
+                  "С„Р°Р№Р» Р»РѕРіР° РЅРµ РЅР°Р№РґРµРЅ: " & LogPath
     End If
     On Error GoTo 0
 
@@ -160,7 +160,7 @@ Private Sub RunUtilsTests()
     PathResult = GetWorkbookPath()
     UserResult = GetCurrentUser()
     If Err.Number <> 0 Then
-        AddResult "TC-20", "GetWorkbookPath / GetCurrentUser", False, "Ошибка: " & Err.Description
+        AddResult "TC-20", "GetWorkbookPath / GetCurrentUser", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
         Dim PathOk As Boolean
@@ -168,7 +168,7 @@ Private Sub RunUtilsTests()
         PathOk = (Len(PathResult) > 0)
         UserOk = (Len(UserResult) > 0)
         AddResult "TC-20", "GetWorkbookPath / GetCurrentUser", (PathOk And UserOk), _
-                  "Path пустой=" & CStr(Not PathOk) & ", User пустой=" & CStr(Not UserOk)
+                  "Path РїСѓСЃС‚РѕР№=" & CStr(Not PathOk) & ", User РїСѓСЃС‚РѕР№=" & CStr(Not UserOk)
     End If
     On Error GoTo 0
 
@@ -176,8 +176,8 @@ Private Sub RunUtilsTests()
 End Sub
 
 ' ============================================================
-' Группа: Тесты OrderHeader (TC-08, TC-09, TC-11, TC-12)
-'          TC-10 — ручной тест (проверка визуального результата)
+' Р“СЂСѓРїРїР°: С‚РµСЃС‚С‹ OrderHeader (TC-08, TC-09, TC-11, TC-12)
+'          TC-10 РІ СЂРµР·РµСЂРІРµ (С‚СЂРµР±СѓРµС‚ СЃРїРµС†РёР°Р»СЊРЅС‹С… РґР°РЅРЅС‹С…)
 ' ============================================================
 Private Sub RunOrderHeaderTests()
     Dim Header As OrderHeader
@@ -190,10 +190,10 @@ Private Sub RunOrderHeaderTests()
     Debug.Print "--- Mod_OrderHeader Tests ---"
 
     ' -------------------------------------------------------
-    ' TC-08: FindOrder существующий (№ п/п "1")
+    ' TC-08: FindOrder СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ (РїРѕ в„– Рї/Рї "1")
     ' -------------------------------------------------------
     On Error Resume Next
-    ' Очищаем Header перед тестом
+    ' РћС‡РёСЃС‚РєР° Header РїРµСЂРµРґ С‚РµСЃС‚РѕРј
     Header.OrderNumber = ""
     Header.ModelName = ""
     Header.GRZ = ""
@@ -205,53 +205,53 @@ Private Sub RunOrderHeaderTests()
 
     FindResult = FindOrder("1", Header)
     If Err.Number <> 0 Then
-        AddResult "TC-08", "FindOrder существующий (№ п/п '1')", False, "Ошибка: " & Err.Description
+        AddResult "TC-08", "FindOrder СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ (РїРѕ в„– Рї/Рї '1')", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
         Dim Tc08Passed As Boolean
         Tc08Passed = FindResult And (Header.OrderNumber = "1")
         Dim Tc08Reason As String
         If Not FindResult Then
-            Tc08Reason = "FindOrder вернул False"
+            Tc08Reason = "FindOrder РІРµСЂРЅСѓР» False"
         ElseIf Header.OrderNumber <> "1" Then
-            Tc08Reason = "OrderNumber='" & Header.OrderNumber & "', ожидалось '1'"
+            Tc08Reason = "OrderNumber='" & Header.OrderNumber & "', РѕР¶РёРґР°Р»РѕСЃСЊ '1'"
         End If
-        AddResult "TC-08", "FindOrder существующий (№ п/п '1')", Tc08Passed, Tc08Reason
+        AddResult "TC-08", "FindOrder СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ (РїРѕ в„– Рї/Рї '1')", Tc08Passed, Tc08Reason
     End If
     On Error GoTo 0
 
     ' -------------------------------------------------------
-    ' TC-09: FindOrder несуществующий
+    ' TC-09: FindOrder РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№
     ' -------------------------------------------------------
     On Error Resume Next
     FindResult = FindOrder("999", Header)
     If Err.Number <> 0 Then
-        AddResult "TC-09", "FindOrder несуществующий (№ п/п '999')", False, "Ошибка: " & Err.Description
+        AddResult "TC-09", "FindOrder РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ (РїРѕ в„– Рї/Рї '999')", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
-        AddResult "TC-09", "FindOrder несуществующий (№ п/п '999')", (FindResult = False), _
-                  "ожидалось False, получено True"
+        AddResult "TC-09", "FindOrder РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ (РїРѕ в„– Рї/Рї '999')", (FindResult = False), _
+                  "РћР¶РёРґР°Р»РѕСЃСЊ False, РїРѕР»СѓС‡РµРЅРѕ True"
     End If
     On Error GoTo 0
 
     ' -------------------------------------------------------
-    ' TC-11: FillHeaderFromOrder с Nothing-листами
+    ' TC-11: FillHeaderFromOrder СЃ Nothing-РїР°СЂР°РјРµС‚СЂР°РјРё
     ' -------------------------------------------------------
     On Error Resume Next
     Set wsMain = GetSheetByName(ThisWorkbook, "main")
-    ' Передаём Nothing в wsSpisok и wsModel
+    ' РџРµСЂРµРґР°С‡Р° Nothing РІ wsSpisok Рё wsModel
     Call FillHeaderFromOrder("1", wsMain, Nothing, Nothing)
     If Err.Number <> 0 Then
-        AddResult "TC-11", "FillHeaderFromOrder с Nothing-листами", False, "Ошибка: " & Err.Description
+        AddResult "TC-11", "FillHeaderFromOrder СЃ Nothing-РїР°СЂР°РјРµС‚СЂР°РјРё", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
-        ' Ожидается, что процедура вызовет MsgBox и выйдет без ошибки
-        AddResult "TC-11", "FillHeaderFromOrder с Nothing-листами", True, ""
+        ' РћР¶РёРґР°РµС‚СЃСЏ, С‡С‚Рѕ С„СѓРЅРєС†РёСЏ РІС‹РґР°СЃС‚ MsgBox Рё РІРµСЂРЅС‘С‚ False
+        AddResult "TC-11", "FillHeaderFromOrder СЃ Nothing-РїР°СЂР°РјРµС‚СЂР°РјРё", True, ""
     End If
     On Error GoTo 0
 
     ' -------------------------------------------------------
-    ' TC-12: FillHeaderFromOrder заказ не найден
+    ' TC-12: FillHeaderFromOrder Р·Р°РєР°Р· РЅРµ РЅР°Р№РґРµРЅ
     ' -------------------------------------------------------
     On Error Resume Next
     Set wsMain = GetSheetByName(ThisWorkbook, "main")
@@ -259,17 +259,17 @@ Private Sub RunOrderHeaderTests()
     Set wsModel = GetSheetByName(ThisWorkbook, "model")
 
     If (Not wsMain Is Nothing) And (Not wsSpisok Is Nothing) And (Not wsModel Is Nothing) Then
-        ' Сохраняем состояние B3:B15
+        ' РЎРѕС…СЂР°РЅСЏРµРј СЃРѕСЃС‚РѕСЏРЅРёРµ B3:B15
         SavedState = SaveSheetRange(wsMain, "B3:B15")
 
-        ' Вызываем с несуществующим номером
+        ' Р’С‹Р·РѕРІ СЃ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРј Р·Р°РєР°Р·РѕРј
         Call FillHeaderFromOrder("999", wsMain, wsSpisok, wsModel)
 
         If Err.Number <> 0 Then
-            AddResult "TC-12", "FillHeaderFromOrder заказ не найден", False, "Ошибка: " & Err.Description
+            AddResult "TC-12", "FillHeaderFromOrder Р·Р°РєР°Р· РЅРµ РЅР°Р№РґРµРЅ", False, "РћС€РёР±РєР°: " & Err.Description
             Err.Clear
         Else
-            ' Проверяем, что B3:B15 очищены
+            ' РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ B3:B15 РѕС‡РёС‰РµРЅС‹
             Dim IsCleared As Boolean
             IsCleared = (wsMain.Range("B3").Value = "") And _
                         (wsMain.Range("B4").Value = "") And _
@@ -284,15 +284,15 @@ Private Sub RunOrderHeaderTests()
                         (wsMain.Range("B13").Value = "") And _
                         (wsMain.Range("B14").Value = "") And _
                         (wsMain.Range("B15").Value = "")
-            AddResult "TC-12", "FillHeaderFromOrder заказ не найден", IsCleared, _
-                      "B3:B15 не полностью очищены"
+            AddResult "TC-12", "FillHeaderFromOrder Р·Р°РєР°Р· РЅРµ РЅР°Р№РґРµРЅ", IsCleared, _
+                      "B3:B15 РЅРµ Р±С‹Р»Рё РѕС‡РёС‰РµРЅС‹ РїРѕСЃР»Рµ РѕС€РёР±РєРё"
         End If
 
-        ' Восстанавливаем состояние
+        ' Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј СЃРѕСЃС‚РѕСЏРЅРёРµ
         RestoreSheetRange wsMain, "B3:B15", SavedState
     Else
-        AddResult "TC-12", "FillHeaderFromOrder заказ не найден", False, _
-                  "Не найден один из листов: main/spisok/model"
+        AddResult "TC-12", "FillHeaderFromOrder Р·Р°РєР°Р· РЅРµ РЅР°Р№РґРµРЅ", False, _
+                  "РќРµ РЅР°Р№РґРµРЅ РѕРґРёРЅ РёР· Р»РёСЃС‚РѕРІ: main/spisok/model"
     End If
     On Error GoTo 0
 
@@ -304,8 +304,8 @@ Private Sub RunOrderHeaderTests()
 End Sub
 
 ' ============================================================
-' Группа: Тесты импорта (TC-05, TC-13, TC-14, TC-15, TC-17)
-'          TC-16 — ручной тест (требует создания временного листа)
+' Р“СЂСѓРїРїР°: С‚РµСЃС‚С‹ РёРјРїРѕСЂС‚Р° (TC-05, TC-13, TC-14, TC-15, TC-17)
+'          TC-16 РІ СЂРµР·РµСЂРІРµ (С‚СЂРµР±СѓРµС‚ РЅР°Р»РёС‡РёСЏ РѕС‚С‡С‘С‚РЅРѕР№ РєРЅРёРіРё)
 ' ============================================================
 Private Sub RunImportTests()
     Dim GRZResult As String
@@ -320,18 +320,18 @@ Private Sub RunImportTests()
     ' TC-05: ExtractNumberFromGRZ
     ' -------------------------------------------------------
     On Error Resume Next
-    GRZResult = ExtractNumberFromGRZ("А123ВВ77")
+    GRZResult = ExtractNumberFromGRZ("Рђ123РђРќ77")
     If Err.Number <> 0 Then
-        AddResult "TC-05", "ExtractNumberFromGRZ (А123ВВ77)", False, "Ошибка: " & Err.Description
+        AddResult "TC-05", "ExtractNumberFromGRZ (Рђ123РђРќ77)", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
-        AddResult "TC-05", "ExtractNumberFromGRZ (А123ВВ77)", (GRZResult = "12377"), _
-                  "ожидалось '12377', получено '" & GRZResult & "'"
+        AddResult "TC-05", "ExtractNumberFromGRZ (Рђ123РђРќ77)", (GRZResult = "12377"), _
+                  "РћР¶РёРґР°Р»РѕСЃСЊ '12377', РїРѕР»СѓС‡РµРЅРѕ '" & GRZResult & "'"
     End If
     On Error GoTo 0
 
     ' -------------------------------------------------------
-    ' TC-13: ExtractNumberFromGRZ различные форматы
+    ' TC-13: ExtractNumberFromGRZ РіСЂР°РЅРёС‡РЅС‹Рµ СЃР»СѓС‡Р°Рё
     ' -------------------------------------------------------
     On Error Resume Next
     Dim Tc13AllPassed As Boolean
@@ -339,21 +339,21 @@ Private Sub RunImportTests()
     Tc13AllPassed = True
     Tc13Details = ""
 
-    ' Тест 1: "А123ВВ77" > "12377"
-    GRZResult = ExtractNumberFromGRZ("А123ВВ77")
+    ' РљРµР№СЃ 1: "Рђ123РђРќ77" -> "12377"
+    GRZResult = ExtractNumberFromGRZ("Рђ123РђРќ77")
     If GRZResult <> "12377" Then
         Tc13AllPassed = False
         Tc13Details = Tc13Details & "[1: '" & GRZResult & "' != '12377'] "
     End If
 
-    ' Тест 2: "В456ЕК" > "456"
-    GRZResult = ExtractNumberFromGRZ("В456ЕК")
+    ' РљРµР№СЃ 2: "Рђ456Р’РЎ" -> "456"
+    GRZResult = ExtractNumberFromGRZ("Рђ456Р’РЎ")
     If GRZResult <> "456" Then
         Tc13AllPassed = False
         Tc13Details = Tc13Details & "[2: '" & GRZResult & "' != '456'] "
     End If
 
-    ' Тест 3: "" > ""
+    ' РљРµР№СЃ 3: "" -> ""
     GRZResult = ExtractNumberFromGRZ("")
     If GRZResult <> "" Then
         Tc13AllPassed = False
@@ -361,51 +361,51 @@ Private Sub RunImportTests()
     End If
 
     If Err.Number <> 0 Then
-        AddResult "TC-13", "ExtractNumberFromGRZ различные форматы", False, "Ошибка: " & Err.Description
+        AddResult "TC-13", "ExtractNumberFromGRZ РіСЂР°РЅРёС‡РЅС‹Рµ СЃР»СѓС‡Р°Рё", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
         If Tc13AllPassed Then
-            AddResult "TC-13", "ExtractNumberFromGRZ различные форматы", True, ""
+            AddResult "TC-13", "ExtractNumberFromGRZ РіСЂР°РЅРёС‡РЅС‹Рµ СЃР»СѓС‡Р°Рё", True, ""
         Else
-            AddResult "TC-13", "ExtractNumberFromGRZ различные форматы", False, Tc13Details
+            AddResult "TC-13", "ExtractNumberFromGRZ РіСЂР°РЅРёС‡РЅС‹Рµ СЃР»СѓС‡Р°Рё", False, Tc13Details
         End If
     End If
     On Error GoTo 0
 
     ' -------------------------------------------------------
-    ' TC-14: SearchSheetByGRZ существующий
+    ' TC-14: SearchSheetByGRZ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№
     ' -------------------------------------------------------
     On Error Resume Next
     Set wsFound = SearchSheetByGRZ("12345")
     If Err.Number <> 0 Then
-        AddResult "TC-14", "SearchSheetByGRZ существующий", False, "Ошибка: " & Err.Description
+        AddResult "TC-14", "SearchSheetByGRZ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
         If wsFound Is Nothing Then
-            ' Пропускаем, если нет подходящего листа
-            AddResult "TC-14", "SearchSheetByGRZ существующий", True, "", True, "нет листа с GRZ_12345"
+            ' РџСЂРѕРїСѓСЃРєР°РµРј, РµСЃР»Рё РЅРµС‚ РѕС‚С‡С‘С‚РЅРѕР№ РєРЅРёРіРё
+            AddResult "TC-14", "SearchSheetByGRZ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№", True, "", True, "РќРµС‚ РєРЅРёРіРё СЃ GRZ_12345"
         Else
-            AddResult "TC-14", "SearchSheetByGRZ существующий", (Not wsFound Is Nothing), _
-                      "лист не найден"
+            AddResult "TC-14", "SearchSheetByGRZ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№", (Not wsFound Is Nothing), _
+                      "Р»РёСЃС‚ РЅРµ РЅР°Р№РґРµРЅ"
         End If
     End If
     Set wsFound = Nothing
     On Error GoTo 0
 
     ' -------------------------------------------------------
-    ' TC-15: SearchSheetByGRZ несуществующий
+    ' TC-15: SearchSheetByGRZ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№
     ' -------------------------------------------------------
     On Error Resume Next
-    Set wsFound = SearchSheetByGRZ("ЗН")
+    Set wsFound = SearchSheetByGRZ("РђР‘")
     If Err.Number <> 0 Then
-        AddResult "TC-15", "SearchSheetByGRZ несуществующий", False, "Ошибка: " & Err.Description
+        AddResult "TC-15", "SearchSheetByGRZ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№", False, "РћС€РёР±РєР°: " & Err.Description
         Err.Clear
     Else
         If wsFound Is Nothing Then
-            AddResult "TC-15", "SearchSheetByGRZ несуществующий", True, ""
+            AddResult "TC-15", "SearchSheetByGRZ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№", True, ""
         Else
-            ' Если лист всё-таки нашёлся — SKIP, т.к. тест предполагает отсутствие
-            AddResult "TC-15", "SearchSheetByGRZ несуществующий", True, "", True, "лист 'ЗН' существует"
+            ' Р•СЃР»Рё Р»РёСЃС‚ РІСЃС‘-С‚Р°РєРё РЅР°Р№РґРµРЅ вЂ” SKIP, С‚.Рє. СЃСЂРµРґР° РЅРµРїСЂРµРґСЃРєР°Р·СѓРµРјР°
+            AddResult "TC-15", "SearchSheetByGRZ РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№", True, "", True, "Р›РёСЃС‚ 'РђР‘' СЃСѓС‰РµСЃС‚РІСѓРµС‚"
         End If
     End If
     Set wsFound = Nothing
@@ -417,26 +417,26 @@ Private Sub RunImportTests()
     On Error Resume Next
     Set wsReport = GetSheetByName(ThisWorkbook, "report")
     If wsReport Is Nothing Then
-        AddResult "TC-17", "ImportFromReport", True, "", True, "нет листа 'report'"
+        AddResult "TC-17", "ImportFromReport", True, "", True, "РќРµС‚ Р»РёСЃС‚Р° 'report'"
     Else
         Set wsMain = GetSheetByName(ThisWorkbook, "main")
         If wsMain Is Nothing Then
-            AddResult "TC-17", "ImportFromReport", False, "нет листа 'main'"
+            AddResult "TC-17", "ImportFromReport", False, "РќРµС‚ Р»РёСЃС‚Р° 'main'"
         Else
-            ' Сохраняем состояние столбцов A, B, C листа main
+            ' РЎРѕС…СЂР°РЅСЏРµРј СЃРѕСЃС‚РѕСЏРЅРёРµ РґРёР°РїР°Р·РѕРЅР° A, B, C Р»РёСЃС‚Р° main
             SavedState = SaveSheetRange(wsMain, "A:C")
 
-            ' Вызываем импорт
+            ' Р’С‹Р·РѕРІ РїСЂРѕС†РµРґСѓСЂС‹
             Call ImportFromReport
 
             If Err.Number <> 0 Then
-                AddResult "TC-17", "ImportFromReport", False, "Ошибка: " & Err.Description
+                AddResult "TC-17", "ImportFromReport", False, "РћС€РёР±РєР°: " & Err.Description
                 Err.Clear
             Else
                 AddResult "TC-17", "ImportFromReport", True, ""
             End If
 
-            ' Восстанавливаем состояние
+            ' Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРј СЃРѕСЃС‚РѕСЏРЅРёРµ
             RestoreSheetRange wsMain, "A:C", SavedState
         End If
     End If
@@ -448,31 +448,31 @@ Private Sub RunImportTests()
 End Sub
 
 ' ============================================================
-' Группа: Тесты кнопок (TC-18 — ручной)
+' Р“СЂСѓРїРїР°: С‚РµСЃС‚С‹ РєРЅРѕРїРѕРє (TC-18 Рё РґР°Р»РµРµ)
 ' ============================================================
 Private Sub RunButtonTests()
     Debug.Print "--- Mod_ButtonDispatcher Tests ---"
 
-    ' TC-18: Btn_main_Clear_Click — ручной тест
-    ' Требует взаимодействия с MsgBox (подтверждение очистки)
-    ' Не включён в автоматический прогон
-    AddResult "TC-18", "Btn_main_Clear_Click", True, "", True, "ручной тест (требует подтверждения в MsgBox)"
+    ' TC-18: Btn_main_Clear_Click РІ СЂСѓС‡РЅРѕРј СЂРµР¶РёРјРµ
+    ' РўСЂРµР±СѓРµС‚ РІР·Р°РёРјРѕРґРµР№СЃС‚РІРёСЏ СЃ MsgBox (РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РѕС‡РёСЃС‚РєРё)
+    ' РќРµ С‚РµСЃС‚РёСЂСѓРµС‚СЃСЏ РІ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРј СЂРµР¶РёРјРµ
+    AddResult "TC-18", "Btn_main_Clear_Click", True, "", True, "Р СѓС‡РЅРѕР№ С‚РµСЃС‚ (С‚СЂРµР±СѓРµС‚СЃСЏ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РІ MsgBox)"
 
     Debug.Print ""
 End Sub
 
 ' ============================================================
-' Вспомогательные функции
+' Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Рµ С„СѓРЅРєС†РёРё
 ' ============================================================
 
-' Сохраняет диапазон листа в массив
+' РЎРѕС…СЂР°РЅСЏРµС‚ Р·РЅР°С‡РµРЅРёСЏ РґРёР°РїР°Р·РѕРЅР° РІ РјР°СЃСЃРёРІ
 Private Function SaveSheetRange(ws As Worksheet, RangeAddr As String) As Variant
     On Error Resume Next
     SaveSheetRange = ws.Range(RangeAddr).Value
     On Error GoTo 0
 End Function
 
-' Восстанавливает диапазон листа из массива
+' Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ Р·РЅР°С‡РµРЅРёСЏ РґРёР°РїР°Р·РѕРЅР° РёР· РјР°СЃСЃРёРІР°
 Private Sub RestoreSheetRange(ws As Worksheet, RangeAddr As String, data As Variant)
     If ws Is Nothing Then Exit Sub
     If IsEmpty(data) Then Exit Sub
@@ -482,14 +482,14 @@ Private Sub RestoreSheetRange(ws As Worksheet, RangeAddr As String, data As Vari
         If IsArray(data) Then
             ws.Range(RangeAddr).Value = data
         Else
-            ' Одиночное значение
+            ' РћРґРёРЅРѕС‡РЅРѕРµ Р·РЅР°С‡РµРЅРёРµ
             ws.Range(RangeAddr).Value = data
         End If
     End If
     On Error GoTo 0
 End Sub
 
-' Добавляет результат теста в счётчики и выводит в Immediate Window
+' Р”РѕР±Р°РІР»СЏРµС‚ СЂРµР·СѓР»СЊС‚Р°С‚ С‚РµСЃС‚Р° РІ СЃС‚Р°С‚РёСЃС‚РёРєСѓ Рё РІС‹РІРѕРґРёС‚ РІ Immediate Window
 Private Sub AddResult(testId As String, testName As String, _
                       passed As Boolean, Optional failReason As String = "", _
                       Optional skipped As Boolean = False, Optional skipReason As String = "")
@@ -504,39 +504,60 @@ Private Sub AddResult(testId As String, testName As String, _
     Else
         m_Failed = m_Failed + 1
         If failReason <> "" Then
-            Debug.Print "[" & testId & "] " & ChrW(&H2717) & " " & testName & ": FAIL — " & failReason
+            Debug.Print "[" & testId & "] " & ChrW(&H2717) & " " & testName & ": FAIL - " & failReason
         Else
             Debug.Print "[" & testId & "] " & ChrW(&H2717) & " " & testName & ": FAIL"
         End If
     End If
 End Sub
 
-' Выводит итоговый отчёт
+' Р’С‹РІРѕРґ С„РёРЅР°Р»СЊРЅРѕРіРѕ РѕС‚С‡С‘С‚Р°
 Private Sub PrintFinalReport()
     Dim ReportMsg As String
 
     Debug.Print ""
     Debug.Print "=============================================="
-    Debug.Print "  ИТОГОВЫЙ ОТЧЁТ"
+    Debug.Print "  РРўРћР“РћР’Р«Р™ РћРўР§РЃРў"
     Debug.Print "=============================================="
-    Debug.Print "  Всего: " & m_Total
-    Debug.Print "  Пройдено: " & m_Passed
-    Debug.Print "  Провалено: " & m_Failed
-    Debug.Print "  Пропущено: " & m_Skipped
+    Debug.Print "  Р’СЃРµРіРѕ: " & m_Total
+    Debug.Print "  РџСЂРѕР№РґРµРЅРѕ: " & m_Passed
+    Debug.Print "  РџСЂРѕРІР°Р»РµРЅРѕ: " & m_Failed
+    Debug.Print "  РџСЂРѕРїСѓС‰РµРЅРѕ: " & m_Skipped
     Debug.Print "=============================================="
 
-    ' Формируем сообщение для MsgBox
-    ReportMsg = "Результаты тестирования:" & vbCrLf & vbCrLf
-    ReportMsg = ReportMsg & "  Всего: " & m_Total & vbCrLf
-    ReportMsg = ReportMsg & "  Пройдено: " & m_Passed & vbCrLf
-    ReportMsg = ReportMsg & "  Провалено: " & m_Failed & vbCrLf
-    ReportMsg = ReportMsg & "  Пропущено: " & m_Skipped & vbCrLf & vbCrLf
+    ' Р¤РѕСЂРјР°С‚РёСЂРѕРІР°РЅРёРµ СЃРѕРѕР±С‰РµРЅРёСЏ РґР»СЏ MsgBox
+    ReportMsg = "Р Р•Р—РЈР›Р¬РўРђРўР« РўР•РЎРўРР РћР’РђРќРРЇ:" & vbCrLf & vbCrLf
+    ReportMsg = ReportMsg & "  Р’СЃРµРіРѕ: " & m_Total & vbCrLf
+    ReportMsg = ReportMsg & "  РџСЂРѕР№РґРµРЅРѕ: " & m_Passed & vbCrLf
+    ReportMsg = ReportMsg & "  РџСЂРѕРІР°Р»РµРЅРѕ: " & m_Failed & vbCrLf
+    ReportMsg = ReportMsg & "  РџСЂРѕРїСѓС‰РµРЅРѕ: " & m_Skipped & vbCrLf & vbCrLf
 
     If m_Failed = 0 Then
-        ReportMsg = ReportMsg & "Все тесты пройдены успешно!"
+        ReportMsg = ReportMsg & "Р’СЃРµ С‚РµСЃС‚С‹ СѓСЃРїРµС€РЅРѕ РїСЂРѕР№РґРµРЅС‹!"
     Else
-        ReportMsg = ReportMsg & "Обнаружены ошибки! Проверьте Immediate Window для деталей."
+        ReportMsg = ReportMsg & "РћР±РЅР°СЂСѓР¶РµРЅС‹ РѕС€РёР±РєРё! РџСЂРѕРІРµСЂСЊС‚Рµ Immediate Window РґР»СЏ РґРµС‚Р°Р»РµР№."
     End If
 
     MsgBox ReportMsg, vbInformation + vbOKOnly, "Mod_FullTestRunner"
+End Sub
+
+
+' ============================================================
+' _UI-РџР РћР¦Р•Р”РЈР Р« (РѕР±С‘СЂС‚РєРё СЃ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёРј РІРІРѕРґРѕРј/РІС‹РІРѕРґРѕРј)
+' ============================================================
+
+' --------------------------------------------------------------------------
+' RunAllTests_UI
+' Р—Р°РїСѓСЃРєР°РµС‚ РІСЃРµ С‚РµСЃС‚С‹ (TC-01..TC-20) Рё РїРѕРєР°Р·С‹РІР°РµС‚ СЂРµР·СѓР»СЊС‚Р°С‚
+' --------------------------------------------------------------------------
+Public Sub RunAllTests_UI()
+    On Error GoTo ErrHandler
+
+    Call RunAllTests
+
+    Exit Sub
+
+ErrHandler:
+    MsgBox "РћС€РёР±РєР° РІ RunAllTests_UI: " & Err.Description, vbCritical, "РћС€РёР±РєР°"
+    Call Mod_Utils.WriteLog("RunAllTests_UI: " & Err.Description)
 End Sub

@@ -7,52 +7,29 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-Attribute VB_Description = "Лист main в книге заказ-наряда"
+Attribute VB_Description = "Лист main для ввода заказ-наряда"
 Attribute VB_HelpID = 0
 Attribute VB_TemplateDerived = False
 Attribute VB_Customizable = True
-' ============================================================================
-' Лист main
-' Назначение: Автоматическое заполнение полей заказа-наряда
-' ============================================================================
 
 Option Explicit
 
-' --------------------------------------------------------------------------
-' Событие Worksheet_Change
-' Запускает FillHeaderFromOrder при изменении ячейки B2
-' --------------------------------------------------------------------------
 Private Sub Worksheet_Change(ByVal Target As Range)
-    ' Защита от рекурсивного вызова
-    Static IsProcessing As Boolean
-    If IsProcessing Then Exit Sub
-    
-    ' Проверка флага (должен быть True)
-    If Not Application.EnableEvents Then Exit Sub
-    ' Только одна ячейка
-    If Target.CountLarge <> 1 Then Exit Sub
-    ' Только ячейка B2
+    ' обработка изменений
+    Static isProcessing As Boolean
+    If isProcessing Then Exit Sub
+
+    ' проверка ячейки на изменение B2
+    If Target.CountLarge > 1 Then Exit Sub
     If Intersect(Target, Me.Range("B2")) Is Nothing Then Exit Sub
-    ' Исключаем B3:B15 (чтобы не было цикла при заполнении)
-    If Not Intersect(Target, Me.Range("B3:B15")) Is Nothing Then Exit Sub
+    If Target.Address = "$B$2" Then
+        ' очистка B3:B15
+        If Target.Row >= 3 And Target.Row <= 15 Then Exit Sub
 
-    On Error GoTo ErrorHandler
-    IsProcessing = True
-    Application.EnableEvents = False
-    
-    Dim wsSpisok As Worksheet
-    Dim wsModel As Worksheet
-    
-    Set wsSpisok = GetSheetByName(ThisWorkbook, "spisok")
-    Set wsModel = GetSheetByName(ThisWorkbook, "model")
-    
-    Mod_OrderHeader.FillHeaderFromOrder Trim(Target.Value), Me, wsSpisok, wsModel
-
-CleanUp:
-    Application.EnableEvents = True
-    IsProcessing = False
-    Exit Sub
-
-ErrorHandler:
-    Resume CleanUp
+        isProcessing = True
+        On Error Resume Next
+        Call Mod_OrderHeader.FillHeaderFromOrder(Me.Range("B2").Value)
+        On Error GoTo 0
+        isProcessing = False
+    End If
 End Sub
