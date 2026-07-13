@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Run RunMinimalTests macro in work.xlsm via Excel COM.
+Run RunAllTests macro in work.xlsm via Excel COM.
 Shows Excel visible so user can see the MsgBox result.
 """
 import sys
@@ -27,18 +27,18 @@ def main():
         print("[2/4] Otkrytie work.xlsm...")
         workbook = excel.Workbooks.Open(EXCEL_PATH)
 
-        print("[3/4] Zapusk makrosa RunMinimalTests...")
+        print("[3/4] Zapusk makrosa RunAllTests...")
         print()
         print("    Ozhidanie zaversheniya testov...")
         print("    Poyavitsya okno s rezultatami (MsgBox).")
         print("    Zakrojte okno MsgBox dlya prodolzheniya.")
         print()
-        excel.Run("RunMinimalTests")
+        excel.Run("RunAllTests")
 
         print("[4/4] Makros vypolnen!")
         print()
         print("=" * 60)
-        print("REZULTAT: Makros RunMinimalTests zapushchen!")
+        print("REZULTAT: Makros RunAllTests zapushchen!")
         print("=" * 60)
         print()
         print("Posle prosmotra rezultatov zakrojte Excel vruchnuyu.")

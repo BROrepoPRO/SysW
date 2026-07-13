@@ -13,7 +13,7 @@ End Sub
 
 ' Обработчик кнопки "Тест"
 Public Sub Btn_main_Test_Click()
-    Mod_MinimalTestRunner.RunAllTests
+    Mod_FullTestRunner.RunAllTests
 End Sub
 
 ' Обработчик кнопки "Очистить"

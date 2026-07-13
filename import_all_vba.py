@@ -21,7 +21,7 @@ FILES = [
     "Mod_OrderHeader.bas",
     "Mod_Import.bas",
     "Mod_ButtonDispatcher.bas",
-    "Mod_MinimalTestRunner.bas",
+    "Mod_FullTestRunner.bas",
     "Sheet1_main.cls",
 ]
 
@@ -106,10 +106,16 @@ def main():
 
             component_name = file_path.stem
 
-            # Read UTF-8, strip Attribute lines, convert to Windows-1251
+            # Read file (try UTF-8 first, fall back to Windows-1251)
             temp_file = TEMP_DIR / file_name
-            with open(file_path, "r", encoding="utf-8") as f:
-                text = f.read()
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    text = f.read()
+                print(f"    Read encoding: UTF-8")
+            except UnicodeDecodeError:
+                with open(file_path, "r", encoding="cp1251") as f:
+                    text = f.read()
+                print(f"    Read encoding: Windows-1251 (fallback)")
 
             # Strip Attribute lines (different handling for .bas vs .cls)
             is_cls = file_name.lower().endswith('.cls')
