@@ -5,6 +5,9 @@
 *.bas text working-tree-encoding=UTF-8
 *.cls text working-tree-encoding=UTF-8
 
+# PowerShell-скрипты
+*.ps1 text
+
 # Python-файлы
 *.py text
 

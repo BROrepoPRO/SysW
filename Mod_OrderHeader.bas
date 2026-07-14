@@ -74,7 +74,9 @@ Public Function FillHeaderFromOrder(OrderNum As Variant) As Boolean
 
     ' Поиск кода модели в столбце A листа model (начиная со строки 3)
     If Not IsNull(ModelCode) And ModelCode <> "" Then
-        Set ModelRow = wsModel.Columns(1).Find(What:=ModelCode, LookAt:=xlWhole)
+        Dim lastModelRow As Long
+        lastModelRow = wsModel.Cells(wsModel.Rows.Count, 1).End(xlUp).Row
+        Set ModelRow = wsModel.Range("A3:A" & lastModelRow).Find(What:=ModelCode, LookAt:=xlWhole)
         If Not ModelRow Is Nothing And ModelRow.Row >= 3 Then
             wsMain.Cells(11, 2).Value = ModelRow.Cells(1, MODEL_COL_PRICE).Value      ' Цена н/ч
             wsMain.Cells(12, 2).Value = ModelRow.Cells(1, MODEL_COL_GROUP).Value      ' Группа

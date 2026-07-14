@@ -28,7 +28,11 @@ Private Sub Worksheet_Change(ByVal Target As Range)
 
         isProcessing = True
         On Error Resume Next
-        Call Mod_OrderHeader.FillHeaderFromOrder(Me.Range("B2").Value)
+        Dim b2Value As Variant
+        b2Value = Me.Range("B2").Value
+        If Not IsEmpty(b2Value) And b2Value <> "" Then
+            Call Mod_OrderHeader.FillHeaderFromOrder(CStr(b2Value))
+        End If
         On Error GoTo 0
         isProcessing = False
     End If

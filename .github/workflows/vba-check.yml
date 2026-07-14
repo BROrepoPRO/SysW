@@ -1,0 +1,109 @@
+name: VBA Check
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  check-vba:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: Check VBA files exist
+        run: |
+          echo "=== Checking VBA module files ==="
+          for f in Mod_Utils.bas Mod_OrderHeader.bas Mod_Import.bas Mod_ButtonDispatcher.bas Mod_FullTestRunner.bas Sheet1_main.cls; do
+            if [ -f "$f" ]; then
+              echo "  [OK] $f exists"
+            else
+              echo "  [FAIL] $f is MISSING!"
+              exit 1
+            fi
+          done
+
+      - name: Check UTF-8 encoding
+        run: |
+          echo "=== Checking UTF-8 encoding ==="
+          for f in Mod_Utils.bas Mod_OrderHeader.bas Mod_Import.bas Mod_ButtonDispatcher.bas Mod_FullTestRunner.bas Sheet1_main.cls; do
+            if python3 -c "
+import codecs
+with open('$f', 'rb') as f:
+    raw = f.read()
+try:
+    raw.decode('utf-8')
+    print(f'  [OK] $f is valid UTF-8')
+except UnicodeDecodeError:
+    print(f'  [FAIL] $f is NOT valid UTF-8')
+    exit(1)
+"; then
+              :
+            else
+              exit 1
+            fi
+          done
+
+      - name: Check VBA syntax (basic)
+        run: |
+          echo "=== Basic VBA syntax checks ==="
+          for f in *.bas *.cls; do
+            if [ ! -f "$f" ]; then continue; fi
+            echo "--- Checking $f ---"
+            if python3 -c "
+with open('$f', 'rb') as f:
+    raw = f.read()
+text = raw.decode('utf-8')
+for i, ch in enumerate(text):
+    if ord(ch) < 32 and ch not in '\n\r\t':
+        print(f'  [FAIL] Non-printable char U+{ord(ch):04X} at line {text[:i].count(chr(10))+1}')
+        exit(1)
+print(f'  [OK] No binary characters found')
+"; then
+              :
+            else
+              exit 1
+            fi
+          done
+
+      - name: Check CHANGELOG updated
+        run: |
+          echo "=== Checking CHANGELOG.md ==="
+          if [ ! -f CHANGELOG.md ]; then
+            echo "[FAIL] CHANGELOG.md is missing!"
+            exit 1
+          fi
+          TODAY=$(date +%Y-%m-%d)
+          if grep -q "$TODAY" CHANGELOG.md; then
+            echo "  [OK] CHANGELOG.md contains entry for $TODAY"
+          else
+            echo "  [WARN] No CHANGELOG entry found for $TODAY"
+            echo "  (non-blocking — may not be a release version)"
+          fi
+
+      - name: Check .gitignore consistency
+        run: |
+          echo "=== Checking .gitignore ==="
+          if [ ! -f .gitignore ]; then
+            echo "[FAIL] .gitignore is missing!"
+            exit 1
+          fi
+          echo "  [OK] .gitignore exists"
+          if git ls-files --error-unmatch work.xlsm 2>/dev/null; then
+            echo "[FAIL] work.xlsm is tracked by Git! It should be in .gitignore."
+            exit 1
+          else
+            echo "  [OK] work.xlsm is not tracked"
+          fi

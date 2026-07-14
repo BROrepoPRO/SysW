@@ -169,7 +169,10 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
     Set wsMain = ThisWorkbook.Sheets("main")
 
     ' Очистка диапазонов L:N и X:AA
-    lastRow = wsMain.Cells(wsMain.Rows.Count, 1).End(xlUp).Row
+    Dim lastRowL As Long, lastRowX As Long
+    lastRowL = wsMain.Cells(wsMain.Rows.Count, 12).End(xlUp).Row
+    lastRowX = wsMain.Cells(wsMain.Rows.Count, 24).End(xlUp).Row
+    lastRow = Application.WorksheetFunction.Max(lastRowL, lastRowX)
     If lastRow < 2 Then lastRow = 2
 
     wsMain.Range("L2:N" & lastRow).ClearContents
@@ -245,7 +248,7 @@ Public Sub ClearMainSheet_UI()
     response = MsgBox("Очистить все данные на листе main?", vbYesNo + vbQuestion, "Подтверждение")
 
     If response = vbYes Then
-        lastRow = wsMain.Cells(wsMain.Rows.Count, 1).End(xlUp).Row
+        lastRow = wsMain.UsedRange.Rows.Count
         If lastRow >= 2 Then
             wsMain.Range("A2:XFD" & lastRow).ClearContents
         End If

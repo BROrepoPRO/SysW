@@ -1,4 +1,4 @@
-﻿~$*.xls*
+~$*.xls*
 *.tmp
 ~*.*
 *.log
@@ -8,3 +8,20 @@ Thumbs.db
 Desktop.ini
 node_modules/
 .yca/
+
+# Excel — бинарный файл с макросами (не подлежит контролю версий)
+work.xlsm
+
+# Временные директории скриптов
+_temp_export/
+_temp_import/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS
+.DS_Store
