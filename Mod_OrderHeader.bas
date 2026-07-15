@@ -6,6 +6,38 @@ Option Explicit
 ' Назначение: Заполнение заголовка заказа-наряда
 ' ============================================================
 
+' DEPRECATED: use Mod_Constants.SPISOK_COL_*
+Private Const SPISOK_COL_MODEL As Long = 2
+Private Const SPISOK_COL_GRZ As Long = 3
+Private Const SPISOK_COL_VIN As Long = 4
+Private Const SPISOK_COL_GARAGE As Long = 5
+Private Const SPISOK_COL_YEAR As Long = 6
+Private Const SPISOK_COL_MILEAGE As Long = 7
+Private Const SPISOK_COL_DATE As Long = 8
+Private Const SPISOK_COL_NOTE As Long = 10
+
+' DEPRECATED: use Mod_Constants.MODEL_COL_*
+Private Const MODEL_COL_GROUP As Long = 2
+Private Const MODEL_COL_PRICE As Long = 3
+Private Const MODEL_COL_WORKS_ORIG As Long = 4
+Private Const MODEL_COL_WORKS_MOD As Long = 5
+
+' ============================================================
+' Тип для хранения данных заказа-наряда
+' Поля соответствуют столбцам листа "spisok":
+' A=№ п/п, B=Модель, C=ГРЗ, D=VIN, E=гараж.№, F=год вып., G=пробег, H=дата
+' ============================================================
+Public Type OrderHeader
+    OrderNumber As String    ' № п/п (колонка A)
+    ModelName As String      ' Модель (колонка B)
+    grz As String            ' ГРЗ/госномер (колонка C)
+    VIN As String            ' VIN (колонка D)
+    GarageNumber As String   ' Гаражный № (колонка E)
+    YearMade As Integer      ' Год выпуска (колонка F)
+    MileageValue As Long     ' Пробег (колонка G)
+    DateValue As Date        ' Дата (колонка H)
+End Type
+
 ' --------------------------------------------------------------------------
 ' FillHeaderFromOrder
 ' Заполняет B3:B15 на листе main данными из spisok и model по номеру заказа
@@ -18,22 +50,6 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     Dim ModelRow As Range
     Dim ModelCode As Variant
 
-    ' Константы столбцов листа spisok
-    Const SPISOK_COL_MODEL As Long = 2
-    Const SPISOK_COL_GRZ As Long = 3
-    Const SPISOK_COL_VIN As Long = 4
-    Const SPISOK_COL_GARAGE As Long = 5
-    Const SPISOK_COL_YEAR As Long = 6
-    Const SPISOK_COL_MILEAGE As Long = 7
-    Const SPISOK_COL_DATE As Long = 8
-    Const SPISOK_COL_NOTE As Long = 10
-
-    ' Константы столбцов листа model
-    Const MODEL_COL_GROUP As Long = 2
-    Const MODEL_COL_PRICE As Long = 3
-    Const MODEL_COL_WORKS_ORIG As Long = 4
-    Const MODEL_COL_WORKS_MOD As Long = 5
-
     Set wsMain = ThisWorkbook.Sheets("main")
     Set wsSpisok = ThisWorkbook.Sheets("spisok")
     Set wsModel = ThisWorkbook.Sheets("model")
@@ -43,7 +59,7 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
 
     ' Проверка, что OrderNum — число
     If Not IsNumeric(orderNum) Then
-        MsgBox "Номер заказа должен быть числом!", vbExclamation, "Ошибка"
+        Call Mod_Logger.WriteLog("Mod_OrderHeader", "FillHeaderFromOrder: Номер заказа должен быть числом!")
         FillHeaderFromOrder = False
         Exit Function
     End If
@@ -51,7 +67,7 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     ' Поиск заказа в столбце A листа spisok (точное совпадение)
     Set FoundRow = wsSpisok.Columns(1).Find(What:=orderNum, LookAt:=xlWhole)
     If FoundRow Is Nothing Then
-        MsgBox "Заказ с номером " & orderNum & " не найден!", vbExclamation, "Ошибка"
+        Call Mod_Logger.WriteLog("Mod_OrderHeader", "FillHeaderFromOrder: Заказ с номером " & orderNum & " не найден!")
         wsMain.Range("B3:B15").ClearContents
         FillHeaderFromOrder = False
         Exit Function
@@ -61,13 +77,13 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     wsMain.Cells(3, 2).Value = "00" & CStr(orderNum) & "-20"
 
     ' B4:B10 из столбцов B–H найденной строки spisok
-    wsMain.Cells(4, 2).Value = FoundRow.Cells(1, SPISOK_COL_MODEL).Value   ' Модель
-    wsMain.Cells(5, 2).Value = FoundRow.Cells(1, SPISOK_COL_GRZ).Value     ' ГРЗ
-    wsMain.Cells(6, 2).Value = FoundRow.Cells(1, SPISOK_COL_VIN).Value     ' VIN
-    wsMain.Cells(7, 2).Value = FoundRow.Cells(1, SPISOK_COL_GARAGE).Value  ' Гараж.№
-    wsMain.Cells(8, 2).Value = FoundRow.Cells(1, SPISOK_COL_YEAR).Value    ' Год вып.
-    wsMain.Cells(9, 2).Value = FoundRow.Cells(1, SPISOK_COL_MILEAGE).Value ' Пробег
-    wsMain.Cells(10, 2).Value = FoundRow.Cells(1, SPISOK_COL_DATE).Value   ' Дата
+    wsMain.Cells(4, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_MODEL).Value   ' Модель
+    wsMain.Cells(5, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_GRZ).Value     ' ГРЗ
+    wsMain.Cells(6, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_VIN).Value     ' VIN
+    wsMain.Cells(7, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_GARAGE).Value  ' Гараж.№
+    wsMain.Cells(8, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_YEAR).Value    ' Год вып.
+    wsMain.Cells(9, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_MILEAGE).Value ' Пробег
+    wsMain.Cells(10, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_DATE).Value   ' Дата
 
     ' Код модели из столбца I
     ModelCode = FoundRow.Cells(1, 9).Value
@@ -78,15 +94,15 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
         lastModelRow = wsModel.Cells(wsModel.Rows.count, 1).End(xlUp).Row
         Set ModelRow = wsModel.Range("A3:A" & lastModelRow).Find(What:=ModelCode, LookAt:=xlWhole)
         If Not ModelRow Is Nothing And ModelRow.Row >= 3 Then
-            wsMain.Cells(11, 2).Value = ModelRow.Cells(1, MODEL_COL_PRICE).Value      ' Цена н/ч
-            wsMain.Cells(12, 2).Value = ModelRow.Cells(1, MODEL_COL_GROUP).Value      ' Группа
-            wsMain.Cells(13, 2).Value = ModelRow.Cells(1, MODEL_COL_WORKS_ORIG).Value ' Работы исх
-            wsMain.Cells(14, 2).Value = ModelRow.Cells(1, MODEL_COL_WORKS_MOD).Value  ' Работы мод
+            wsMain.Cells(11, 2).Value = ModelRow.Cells(1, Mod_Constants.MODEL_COL_PRICE).Value      ' Цена н/ч
+            wsMain.Cells(12, 2).Value = ModelRow.Cells(1, Mod_Constants.MODEL_COL_GROUP).Value      ' Группа
+            wsMain.Cells(13, 2).Value = ModelRow.Cells(1, Mod_Constants.MODEL_COL_WORKS_ORIG).Value ' Работы исх
+            wsMain.Cells(14, 2).Value = ModelRow.Cells(1, Mod_Constants.MODEL_COL_WORKS_MOD).Value  ' Работы мод
         End If
     End If
 
     ' B15 = примечание из столбца J spisok
-    wsMain.Cells(15, 2).Value = FoundRow.Cells(1, SPISOK_COL_NOTE).Value
+    wsMain.Cells(15, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_NOTE).Value
 
     FillHeaderFromOrder = True
 End Function
@@ -156,7 +172,7 @@ Public Sub FillHeaderFromOrder_UI()
 
 ErrHandler:
     MsgBox "Ошибка в FillHeaderFromOrder_UI: " & Err.Description, vbCritical, "Ошибка"
-    Call Mod_Utils.WriteLog("FillHeaderFromOrder_UI: " & Err.Description)
+    Call Mod_Logger.WriteLog("Mod_OrderHeader", "FillHeaderFromOrder_UI: " & Err.Description)
 End Sub
 
 ' --------------------------------------------------------------------------

@@ -32,20 +32,24 @@ VBEXT_CT_CLASSMODULE = 2  # Class module (.cls)
 VBEXT_CT_MSFORM = 3       # Form
 VBEXT_CT_DOCUMENT = 100   # Document (Worksheet, Workbook, etc.)
 
-FILES = [
-    "Mod_Utils.bas",
-    "Mod_OrderHeader.bas",
-    "Mod_Import.bas",
-    "Mod_ButtonDispatcher.bas",
-    "Mod_FullTestRunner.bas",
-    "Sheet1_main.cls",
-]
+# Dynamically discover all .bas and .cls files in the project root.
+# This ensures all VBA modules are imported without needing to update
+# the list manually when new modules are added.
+FILES = sorted([
+    f.name for f in MODULES_PATH.iterdir()
+    if f.suffix.lower() in (".bas", ".cls") and f.is_file()
+])
 
 # Sheet components that should be imported as Documents (not Class Modules)
 # These go into "Microsoft Excel Objects" folder.
 # VBComponents.Import() handles this automatically when the .cls file
 # contains the correct Attribute VB_Base line with Worksheet CLSID.
-SHEET_COMPONENTS = {"Sheet1_main"}
+# Dynamically discovered: any .cls file whose name starts with "Sheet"
+# is treated as a worksheet document.
+SHEET_COMPONENTS = {
+    f.stem for f in MODULES_PATH.iterdir()
+    if f.suffix.lower() == ".cls" and f.stem.lower().startswith("sheet") and f.is_file()
+}
 
 
 def read_vba_file(file_path):

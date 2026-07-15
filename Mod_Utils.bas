@@ -6,20 +6,6 @@ Option Explicit
 ' Назначение: Вспомогательные функции для работы с Excel
 ' ============================================================
 
-' Тип для хранения данных заказа-наряда
-' Поля соответствуют столбцам листа "spisok":
-' A=№ п/п, B=Модель, C=ГРЗ, D=VIN, E=гараж.№, F=год вып., G=пробег, H=дата
-Public Type OrderHeader
-    OrderNumber As String    ' № п/п (колонка A)
-    ModelName As String      ' Модель (колонка B)
-    grz As String            ' ГРЗ/госномер (колонка C)
-    VIN As String            ' VIN (колонка D)
-    GarageNumber As String   ' Гаражный № (колонка E)
-    YearMade As Integer      ' Год выпуска (колонка F)
-    MileageValue As Long     ' Пробег (колонка G)
-    DateValue As Date        ' Дата (колонка H)
-End Type
-
 ' Функция: получение листа по имени (без ошибки если нет)
 Public Function GetSheetByName(ByVal wb As Workbook, ByVal SheetName As String) As Worksheet
     On Error Resume Next
@@ -49,15 +35,10 @@ Public Function FormatDateSQL(ByVal d As Date) As String
     FormatDateSQL = Format(d, "yyyy-mm-dd")
 End Function
 
-' Процедура: запись в лог-файл
+' Процедура: запись в лог-файл (обёртка для Mod_Logger.WriteLog)
+' Сохраняет обратную совместимость со старым форматом вызова
 Public Sub WriteLog(ByVal message As String)
-    Dim LogPath As String
-    Dim F As Long
-    LogPath = ThisWorkbook.path & "\log.txt"
-    F = FreeFile
-    Open LogPath For Append As #F
-    Print #F, Now & " - " & message
-    Close #F
+    Call Mod_Logger.WriteLog("Mod_Utils", message)
 End Sub
 
 ' ============================================================

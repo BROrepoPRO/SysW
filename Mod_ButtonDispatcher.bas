@@ -16,7 +16,7 @@ Option Explicit
 ' Очищает все данные на листе main
 ' --------------------------------------------------------------------------
 Public Sub Btn_main_Clear_Click()
-    Call Mod_Import.ClearMainSheet_UI
+    Call Mod_SheetOps.ClearMainSheet_UI
 End Sub
 
 ' --------------------------------------------------------------------------
@@ -40,7 +40,7 @@ End Sub
 ' Очищает только шапку заказа (B3:B15) на листе main
 ' --------------------------------------------------------------------------
 Public Sub Btn_main_ClearHeader_Click()
-    Call Mod_Import.ClearHeader_UI
+    Call Mod_SheetOps.ClearHeader_UI
 End Sub
 
 ' --------------------------------------------------------------------------
