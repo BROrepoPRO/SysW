@@ -32,7 +32,7 @@ COMPONENTS = {
     "Mod_Import": "Mod_Import.bas",
     "Mod_ButtonDispatcher": "Mod_ButtonDispatcher.bas",
     "Mod_FullTestRunner": "Mod_FullTestRunner.bas",
-    "Sheet1": "Sheet1_main.cls",
+    "Sheet1_main": "Sheet1_main.cls",
 }
 
 

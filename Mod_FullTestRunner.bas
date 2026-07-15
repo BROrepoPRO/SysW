@@ -55,7 +55,7 @@ Private Sub RunUtilsTests()
     ' -------------------------------------------------------
     On Error Resume Next
     Result = FileExists("C:\Windows\notepad.exe")
-    If Err.Number <> 0 Then
+    If Err.number <> 0 Then
         AddResult "TC-01", "FileExists с существующим файлом", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
@@ -69,7 +69,7 @@ Private Sub RunUtilsTests()
     ' -------------------------------------------------------
     On Error Resume Next
     Result = FileExists("C:\nonexistent_file_12345.txt")
-    If Err.Number <> 0 Then
+    If Err.number <> 0 Then
         AddResult "TC-02", "FileExists с несуществующим файлом", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
@@ -84,7 +84,7 @@ Private Sub RunUtilsTests()
     On Error Resume Next
     Dim FmtResult As String
     FmtResult = FormatDateSQL(DateSerial(2026, 7, 12))
-    If Err.Number <> 0 Then
+    If Err.number <> 0 Then
         AddResult "TC-03", "FormatDateSQL с корректной датой", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
@@ -98,7 +98,7 @@ Private Sub RunUtilsTests()
     ' -------------------------------------------------------
     On Error Resume Next
     FmtResult = FormatDateSQL(0)
-    If Err.Number <> 0 Then
+    If Err.number <> 0 Then
         AddResult "TC-04", "FormatDateSQL с нулевой датой", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
@@ -113,7 +113,7 @@ Private Sub RunUtilsTests()
     On Error Resume Next
     Dim ws As Worksheet
     Set ws = GetSheetByName(ThisWorkbook, "main")
-    If Err.Number <> 0 Then
+    If Err.number <> 0 Then
         AddResult "TC-06", "GetSheetByName существующий лист", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
@@ -128,7 +128,7 @@ Private Sub RunUtilsTests()
     ' -------------------------------------------------------
     On Error Resume Next
     Set ws = GetSheetByName(ThisWorkbook, "NONEXISTENT")
-    If Err.Number <> 0 Then
+    If Err.number <> 0 Then
         AddResult "TC-07", "GetSheetByName несуществующий лист", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
@@ -143,8 +143,8 @@ Private Sub RunUtilsTests()
     ' -------------------------------------------------------
     On Error Resume Next
     Call WriteLog("Mod_FullTestRunner: выполнение проверки TC-19")
-    LogPath = ThisWorkbook.Path & "\log.txt"
-    If Err.Number <> 0 Then
+    LogPath = ThisWorkbook.path & "\log.txt"
+    If Err.number <> 0 Then
         AddResult "TC-19", "WriteLog запись в лог", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
@@ -159,7 +159,7 @@ Private Sub RunUtilsTests()
     On Error Resume Next
     PathResult = GetWorkbookPath()
     UserResult = GetCurrentUser()
-    If Err.Number <> 0 Then
+    If Err.number <> 0 Then
         AddResult "TC-20", "GetWorkbookPath / GetCurrentUser", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
@@ -196,7 +196,7 @@ Private Sub RunOrderHeaderTests()
     ' Очистка Header перед тестом
     Header.OrderNumber = ""
     Header.ModelName = ""
-    Header.GRZ = ""
+    Header.grz = ""
     Header.VIN = ""
     Header.GarageNumber = ""
     Header.YearMade = 0
@@ -204,7 +204,7 @@ Private Sub RunOrderHeaderTests()
     Header.DateValue = 0
 
     FindResult = FindOrder("1", Header)
-    If Err.Number <> 0 Then
+    If Err.number <> 0 Then
         AddResult "TC-08", "FindOrder существующий (по № п/п '1')", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
@@ -225,7 +225,7 @@ Private Sub RunOrderHeaderTests()
     ' -------------------------------------------------------
     On Error Resume Next
     FindResult = FindOrder("999", Header)
-    If Err.Number <> 0 Then
+    If Err.number <> 0 Then
         AddResult "TC-09", "FindOrder несуществующий (по № п/п '999')", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
@@ -235,18 +235,16 @@ Private Sub RunOrderHeaderTests()
     On Error GoTo 0
 
     ' -------------------------------------------------------
-    ' TC-11: FillHeaderFromOrder с Nothing-параметрами
+    ' TC-11: FillHeaderFromOrder существующий заказ
     ' -------------------------------------------------------
     On Error Resume Next
-    Set wsMain = GetSheetByName(ThisWorkbook, "main")
-    ' Передача Nothing в wsSpisok и wsModel
-    Call FillHeaderFromOrder("1", wsMain, Nothing, Nothing)
-    If Err.Number <> 0 Then
-        AddResult "TC-11", "FillHeaderFromOrder с Nothing-параметрами", False, "Ошибка: " & Err.Description
+    Dim fillResult As Boolean
+    fillResult = FillHeaderFromOrder("1")
+    If Err.number <> 0 Then
+        AddResult "TC-11", "FillHeaderFromOrder существующий заказ", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
-        ' Ожидается, что функция выдаст MsgBox и вернёт False
-        AddResult "TC-11", "FillHeaderFromOrder с Nothing-параметрами", True, ""
+        AddResult "TC-11", "FillHeaderFromOrder существующий заказ", fillResult, ""
     End If
     On Error GoTo 0
 
@@ -263,9 +261,9 @@ Private Sub RunOrderHeaderTests()
         SavedState = SaveSheetRange(wsMain, "B3:B15")
 
         ' Вызов с несуществующим заказом
-        Call FillHeaderFromOrder("999", wsMain, wsSpisok, wsModel)
+        fillResult = FillHeaderFromOrder("999")
 
-        If Err.Number <> 0 Then
+        If Err.number <> 0 Then
             AddResult "TC-12", "FillHeaderFromOrder заказ не найден", False, "Ошибка: " & Err.Description
             Err.Clear
         Else
@@ -321,7 +319,7 @@ Private Sub RunImportTests()
     ' -------------------------------------------------------
     On Error Resume Next
     GRZResult = ExtractNumberFromGRZ("А123АН77")
-    If Err.Number <> 0 Then
+    If Err.number <> 0 Then
         AddResult "TC-05", "ExtractNumberFromGRZ (А123АН77)", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
@@ -360,7 +358,7 @@ Private Sub RunImportTests()
         Tc13Details = Tc13Details & "[3: '" & GRZResult & "' != ''] "
     End If
 
-    If Err.Number <> 0 Then
+    If Err.number <> 0 Then
         AddResult "TC-13", "ExtractNumberFromGRZ граничные случаи", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
@@ -377,7 +375,7 @@ Private Sub RunImportTests()
     ' -------------------------------------------------------
     On Error Resume Next
     Set wsFound = SearchSheetByGRZ("12345")
-    If Err.Number <> 0 Then
+    If Err.number <> 0 Then
         AddResult "TC-14", "SearchSheetByGRZ существующий", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
@@ -397,7 +395,7 @@ Private Sub RunImportTests()
     ' -------------------------------------------------------
     On Error Resume Next
     Set wsFound = SearchSheetByGRZ("АБ")
-    If Err.Number <> 0 Then
+    If Err.number <> 0 Then
         AddResult "TC-15", "SearchSheetByGRZ несуществующий", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
@@ -429,7 +427,7 @@ Private Sub RunImportTests()
             ' Вызов процедуры
             Call ImportFromReport
 
-            If Err.Number <> 0 Then
+            If Err.number <> 0 Then
                 AddResult "TC-17", "ImportFromReport", False, "Ошибка: " & Err.Description
                 Err.Clear
             Else

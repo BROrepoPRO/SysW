@@ -14,9 +14,9 @@ Option Explicit
 Public Function ExtractNumberFromGRZ(grz As String) As String
     Dim i As Long
     Dim currentDigits As String
-    Dim result As String
+    Dim Result As String
 
-    result = ""
+    Result = ""
     currentDigits = ""
 
     For i = 1 To Len(grz)
@@ -24,7 +24,7 @@ Public Function ExtractNumberFromGRZ(grz As String) As String
             currentDigits = currentDigits & Mid(grz, i, 1)
         Else
             If Len(currentDigits) = 3 Or Len(currentDigits) = 4 Then
-                result = currentDigits
+                Result = currentDigits
                 Exit For
             End If
             currentDigits = ""
@@ -32,11 +32,11 @@ Public Function ExtractNumberFromGRZ(grz As String) As String
     Next i
 
     ' Проверка в конце строки
-    If result = "" And (Len(currentDigits) = 3 Or Len(currentDigits) = 4) Then
-        result = currentDigits
+    If Result = "" And (Len(currentDigits) = 3 Or Len(currentDigits) = 4) Then
+        Result = currentDigits
     End If
 
-    ExtractNumberFromGRZ = result
+    ExtractNumberFromGRZ = Result
 End Function
 
 ' --------------------------------------------------------------------------

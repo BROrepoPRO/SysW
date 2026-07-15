@@ -169,7 +169,7 @@ Public Sub FindOrder_UI()
 
     Dim orderNum As String
     Dim Header As OrderHeader
-    Dim result As Boolean
+    Dim Result As Boolean
     Dim msg As String
 
     orderNum = InputBox("Введите номер заказа для поиска:", "Поиск заказа")
@@ -178,9 +178,9 @@ Public Sub FindOrder_UI()
         Exit Sub
     End If
 
-    result = FindOrder(orderNum, Header)
+    Result = FindOrder(orderNum, Header)
 
-    If result Then
+    If Result Then
         msg = "Заказ найден:" & vbCrLf & vbCrLf
         msg = msg & "Номер: " & Header.OrderNumber & vbCrLf
         msg = msg & "Модель: " & Header.ModelName & vbCrLf

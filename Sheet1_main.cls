@@ -1,12 +1,4 @@
-VERSION 1.0 CLASS
-BEGIN
-  MultiUse = -1  'True
-END
 Attribute VB_Name = "Sheet1_main"
-Attribute VB_GlobalNameSpace = False
-Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = True
 Attribute VB_Description = "Лист main для ввода заказ-наряда"
 
 Option Explicit
@@ -28,7 +20,8 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         Dim b2Value As Variant
         b2Value = Me.Range("B2").Value
         If Not IsEmpty(b2Value) And b2Value <> "" Then
-            Call Mod_OrderHeader.FillHeaderFromOrder(CStr(b2Value))
+            Dim result As Boolean
+            result = Mod_OrderHeader.FillHeaderFromOrder(CStr(b2Value))
         End If
         On Error GoTo 0
         isProcessing = False
