@@ -141,8 +141,9 @@ End Sub
 ' --------------------------------------------------------------------------
 ' ClearMainSheet_UI
 ' Очищает все данные на листе main с подтверждением пользователя
+' Параметр silent: если True — не показывать MsgBox с подтверждением
 ' --------------------------------------------------------------------------
-Public Sub ClearMainSheet_UI()
+Public Sub ClearMainSheet_UI(Optional ByVal silent As Boolean = False)
     On Error GoTo ErrHandler
 
     Dim wsMain As Worksheet
@@ -151,12 +152,19 @@ Public Sub ClearMainSheet_UI()
 
     Set wsMain = ThisWorkbook.Sheets("main")
 
-    response = MsgBox("Очистить все данные на листе main?", vbYesNo + vbQuestion, "Подтверждение")
-
-    If response = vbYes Then
+    If silent Then
+        ' Без подтверждения — сразу очищаем
         lastRow = wsMain.UsedRange.Rows.count
         If lastRow >= 2 Then
             wsMain.Range("B2:ZZ" & lastRow).ClearContents
+        End If
+    Else
+        response = MsgBox("Очистить все данные на листе main?", vbYesNo + vbQuestion, "Подтверждение")
+        If response = vbYes Then
+            lastRow = wsMain.UsedRange.Rows.count
+            If lastRow >= 2 Then
+                wsMain.Range("B2:ZZ" & lastRow).ClearContents
+            End If
         End If
     End If
 

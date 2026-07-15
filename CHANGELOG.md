@@ -5,6 +5,32 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [0.7.0] — 2026-07-15
+
+### Добавлено
+- Новые тесты TC-21..TC-30: покрытие Mod_Logger (WriteLog, RotateLogIfNeeded, ClearLog),
+  Mod_SheetOps (ClearMainSheet_UI, ClearHeader_UI, RenameSheetsByGRZ),
+  Mod_Import (ImportSheet, ImportDataToMain), граничные случаи FormatDateSQL,
+  автоматизированный тест Btn_main_Clear_Click (silent mode)
+- Функция `GetTestResults()` в Mod_FullTestRunner для программного сбора результатов
+- Параметр `silent` в `ClearMainSheet_UI` для автоматических тестов без MsgBox
+- Раздел "Тестирование" в `docs/DEVELOPER.md` с таблицей TC-01..TC-30, покрытием модулей,
+  инструкцией по добавлению тестов и описанием CI/CD
+
+### Исправлено
+- TC-05: ожидаемое значение `"12377"` → `"123"` (ExtractNumberFromGRZ возвращает первую
+  цифровую группу из 3+ цифр, а не все цифры подряд)
+- TC-13, кейс 1: ожидаемое значение `"12377"` → `"123"` (аналогично TC-05)
+
+### Изменено
+- `scripts/run_tests.py` — полная переработка:
+  - Программный сбор результатов через `excel.Run("GetTestResults")`
+  - Exit code: 0 если все PASS, 1 если есть FAIL
+  - Русский язык вместо транслита
+  - Гарантированное закрытие Excel в `finally` блоке
+  - Сохранение результатов в `test_results.log`
+- `docs/MODERNIZATION_CHECKLIST.md` — отмечены выполненными пункты 3.3 и 3.4
+
 ## [0.6.0] — 2026-07-15
 
 ### Добавлено

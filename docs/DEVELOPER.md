@@ -167,23 +167,30 @@ Mod_FullTestRunner.RunAllTests()
 
 ### 2.5 Mod_FullTestRunner.bas — Тестовый раннер
 
-**Файл:** [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas) (564 строки)
+**Файл:** [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas) (1050+ строк)
 
-**Назначение:** Автоматическое тестирование VBA-модулей. Содержит 20 тестовых сценариев (TC-01..TC-20), из которых 17 активных и 3 пропущенных (SKIP).
+**Назначение:** Автоматическое тестирование VBA-модулей. Содержит 30 тестовых сценариев (TC-01..TC-30).
 
 **Группы тестов:**
 
 | Группа | Сценарии | Тестируемый модуль |
 |--------|----------|-------------------|
 | `RunUtilsTests()` | TC-01..TC-04, TC-06, TC-07, TC-19, TC-20 | Mod_Utils |
-| `RunOrderHeaderTests()` | TC-08..TC-11 | Mod_OrderHeader |
-| `RunImportTests()` | TC-12..TC-15 | Mod_Import |
-| `RunButtonTests()` | TC-16..TC-18 | Mod_ButtonDispatcher |
+| `RunOrderHeaderTests()` | TC-08, TC-09, TC-11, TC-12 | Mod_OrderHeader |
+| `RunImportTests()` | TC-05, TC-13..TC-15, TC-17 | Mod_Import / Mod_SheetOps |
+| `RunButtonTests()` | TC-18 | Mod_ButtonDispatcher |
+| `RunLoggerTests()` | TC-21, TC-22, TC-23 | Mod_Logger |
+| `RunSheetOpsTests()` | TC-24, TC-25, TC-28 | Mod_SheetOps |
+| `RunImportIntegrationTests()` | TC-26, TC-27 | Mod_Import (интеграционные) |
+| `RunUtilsEdgeTests()` | TC-29 | Mod_Utils (граничные случаи) |
+| `RunButtonAutomationTests()` | TC-30 | Mod_SheetOps (автоматизированный) |
 
 **Механизмы:**
 - **SKIP** — тесты, зависящие от отсутствующих данных, пропускаются
 - **Сохранение/восстановление** состояния листов до и после тестов
 - **Статистика** — подсчёт Total, Passed, Failed, Skipped
+- **GetTestResults()** — функция для программного сбора результатов из Python
+- **Silent mode** — параметр `silent` в `ClearMainSheet_UI` для автоматических тестов без MsgBox
 
 **Запуск:**
 ```bash
@@ -452,6 +459,119 @@ python scripts/impVBA.py      # Импорт всех модулей
   Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
   ```
 - **Кодировка скриптов:** UTF-8 with BOM (требование PowerShell для корректной обработки кириллицы)
+
+---
+
+## 5. Тестирование
+
+### 5.1 Полный список тестов (TC-01..TC-30)
+
+| ID | Название | Модуль | Тип | Статус |
+|----|----------|--------|-----|--------|
+| TC-01 | FileExists с существующим файлом | Mod_Utils | Модульный | ✅ |
+| TC-02 | FileExists с несуществующим файлом | Mod_Utils | Модульный | ✅ |
+| TC-03 | FormatDateSQL с корректной датой | Mod_Utils | Модульный | ✅ |
+| TC-04 | FormatDateSQL с нулевой датой | Mod_Utils | Модульный | ✅ |
+| TC-05 | ExtractNumberFromGRZ ("А123АН77" → "123") | Mod_SheetOps | Модульный | ✅ |
+| TC-06 | GetSheetByName существующий лист | Mod_Utils | Модульный | ✅ |
+| TC-07 | GetSheetByName несуществующий лист | Mod_Utils | Модульный | ✅ |
+| TC-08 | FindOrder существующий (по № п/п "1") | Mod_OrderHeader | Интеграционный | ✅ |
+| TC-09 | FindOrder несуществующий (по № п/п "999") | Mod_OrderHeader | Интеграционный | ✅ |
+| TC-10 | FindOrder с пустым номером | Mod_OrderHeader | Модульный | ⏳ (резерв) |
+| TC-11 | FillHeaderFromOrder существующий заказ | Mod_OrderHeader | Интеграционный | ✅ |
+| TC-12 | FillHeaderFromOrder заказ не найден | Mod_OrderHeader | Интеграционный | ✅ |
+| TC-13 | ExtractNumberFromGRZ граничные случаи | Mod_SheetOps | Модульный | ✅ |
+| TC-14 | SearchSheetByGRZ существующий | Mod_SheetOps | Интеграционный | ⚠️ SKIP (нет данных) |
+| TC-15 | SearchSheetByGRZ несуществующий | Mod_SheetOps | Интеграционный | ✅ |
+| TC-16 | ImportFromReport полный цикл | Mod_Import | Интеграционный | ⏳ (резерв) |
+| TC-17 | ImportFromReport | Mod_Import | Интеграционный | ⚠️ SKIP (нет листа) |
+| TC-18 | Btn_main_Clear_Click | Mod_ButtonDispatcher | UI | ⚠️ SKIP (ручной) |
+| TC-19 | WriteLog запись в лог | Mod_Utils | Модульный | ✅ |
+| TC-20 | GetWorkbookPath / GetCurrentUser | Mod_Utils | Модульный | ✅ |
+| TC-21 | WriteLog запись в лог-файл | Mod_Logger | Модульный | ✅ |
+| TC-22 | RotateLogIfNeeded ротация лога | Mod_Logger | Модульный | ✅ |
+| TC-23 | ClearLog очистка лога | Mod_Logger | Модульный | ✅ |
+| TC-24 | ClearMainSheet_UI очистка листа main | Mod_SheetOps | Интеграционный | ✅ |
+| TC-25 | ClearHeader_UI очистка шапки | Mod_SheetOps | Интеграционный | ✅ |
+| TC-26 | ImportSheet импорт листа | Mod_Import | Интеграционный | ⚠️ SKIP (нет report.xlsx) |
+| TC-27 | ImportDataToMain перенос данных | Mod_Import | Интеграционный | ✅ |
+| TC-28 | RenameSheetsByGRZ переименование листов | Mod_SheetOps | Интеграционный | ⚠️ SKIP (нет report.xlsx) |
+| TC-29 | FormatDateSQL граничные случаи | Mod_Utils | Модульный | ✅ |
+| TC-30 | Btn_main_Clear_Click автоматизированный | Mod_SheetOps | Автоматический | ✅ |
+
+**Легенда:**
+- ✅ — тест проходит (PASS)
+- ⚠️ — тест пропущен (SKIP) из-за отсутствия данных/окружения
+- ⏳ — тест в резерве, не реализован
+- ❌ — тест падает (FAIL)
+
+### 5.2 Таблица покрытия модулей
+
+| Модуль | Всего тестов | PASS | SKIP | FAIL | Покрытие |
+|--------|-------------|------|------|------|----------|
+| Mod_Utils | 8 | 8 | 0 | 0 | 100% |
+| Mod_OrderHeader | 4 | 4 | 0 | 0 | 100% |
+| Mod_SheetOps | 6 | 4 | 2 | 0 | 67% |
+| Mod_Import | 4 | 1 | 2 | 0 | 25% |
+| Mod_Logger | 3 | 3 | 0 | 0 | 100% |
+| Mod_ButtonDispatcher | 1 | 0 | 1 | 0 | 0% |
+| **Итого** | **26** | **20** | **5** | **0** | **77%** |
+
+> **Примечание:** TC-10 и TC-16 находятся в резерве и не включены в итоговую статистику.
+> Тесты, помеченные SKIP, считаются непокрытыми, т.к. требуют специальных данных или ручного вмешательства.
+
+### 5.3 Как добавить новый тест
+
+1. Открой [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas)
+2. Выбери подходящую группу тестов или создай новую процедуру-группу
+3. Добавь вызов новой группы в `RunAllTests()`
+4. Используй шаблон:
+
+```vba
+' -------------------------------------------------------
+' TC-XX: Название теста
+' -------------------------------------------------------
+On Error Resume Next
+' ... код теста ...
+If Err.number <> 0 Then
+    AddResult "TC-XX", "Название теста", False, "Ошибка: " & Err.Description
+    Err.Clear
+Else
+    AddResult "TC-XX", "Название теста", (условие), "пояснение при FAIL"
+End If
+On Error GoTo 0
+```
+
+5. Для SKIP используй: `AddResult "TC-XX", "...", True, "", True, "Причина пропуска"`
+6. Запусти тесты: `python scripts/run_tests.py`
+
+### 5.4 Запуск тестов в CI/CD
+
+Тесты запускаются через Python-скрипт [`scripts/run_tests.py`](../scripts/run_tests.py):
+
+```bash
+python scripts/run_tests.py
+```
+
+**Что делает скрипт:**
+1. Создаёт COM-объект Excel (невидимый режим)
+2. Открывает `work.xlsm`
+3. Запускает макрос `RunAllTests`
+4. Собирает результаты через VBA-функцию `GetTestResults()`
+5. Парсит статистику (Total, Passed, Failed, Skipped)
+6. Возвращает exit code: `0` — все PASS, `1` — есть FAIL
+7. Сохраняет результаты в `test_results.log`
+8. Гарантированно закрывает Excel (в `finally` блоке)
+
+**Интеграция с GitHub Actions:**
+
+```yaml
+- name: Run VBA tests
+  run: python scripts/run_tests.py
+  shell: powershell
+```
+
+> **Важно:** GitHub Actions не поддерживает COM-автоматизацию Excel (требуется Windows с установленным Excel). Для CI/CD на Linux/MacOS тесты будут пропущены.
 
 ---
 
