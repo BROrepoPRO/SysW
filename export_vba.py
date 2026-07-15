@@ -30,9 +30,13 @@ COMPONENTS = {
     "Mod_Utils": "Mod_Utils.bas",
     "Mod_OrderHeader": "Mod_OrderHeader.bas",
     "Mod_Import": "Mod_Import.bas",
+    "Mod_MainButtons": "Mod_MainButtons.bas",
+    "Mod_SheetButtons": "Mod_SheetButtons.bas",
     "Mod_ButtonDispatcher": "Mod_ButtonDispatcher.bas",
     "Mod_FullTestRunner": "Mod_FullTestRunner.bas",
     "Sheet1_main": "Sheet1_main.cls",
+    "Sheet_work": "Sheet_work.cls",
+    "Sheet_z4": "Sheet_z4.cls",
 }
 
 
