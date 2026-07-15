@@ -11,7 +11,7 @@ Option Explicit
 ' Извлекает цифровую группу длиной 3 или 4 цифры из строки ГРЗ
 ' Пример: "А123АН77" -> "123", "А12АН34" -> "" (только 2 цифры)
 ' --------------------------------------------------------------------------
-Public Function ExtractNumberFromGRZ(GRZ As String) As String
+Public Function ExtractNumberFromGRZ(grz As String) As String
     Dim i As Long
     Dim currentDigits As String
     Dim result As String
@@ -19,9 +19,9 @@ Public Function ExtractNumberFromGRZ(GRZ As String) As String
     result = ""
     currentDigits = ""
 
-    For i = 1 To Len(GRZ)
-        If Mid(GRZ, i, 1) >= "0" And Mid(GRZ, i, 1) <= "9" Then
-            currentDigits = currentDigits & Mid(GRZ, i, 1)
+    For i = 1 To Len(grz)
+        If Mid(grz, i, 1) >= "0" And Mid(grz, i, 1) <= "9" Then
+            currentDigits = currentDigits & Mid(grz, i, 1)
         Else
             If Len(currentDigits) = 3 Or Len(currentDigits) = 4 Then
                 result = currentDigits
@@ -44,14 +44,14 @@ End Function
 ' Открывает report.xlsx (если не открыт), ищет лист по номеру ГРЗ
 ' Возвращает найденный лист или Nothing, если не найден
 ' --------------------------------------------------------------------------
-Public Function SearchSheetByGRZ(GRZ As String) As Worksheet
+Public Function SearchSheetByGRZ(grz As String) As Worksheet
     Dim wbReport As Workbook
     Dim ws As Worksheet
     Dim grzNumber As String
     Dim wsResult As Worksheet
 
     Set wsResult = Nothing
-    grzNumber = ExtractNumberFromGRZ(GRZ)
+    grzNumber = ExtractNumberFromGRZ(grz)
 
     If grzNumber = "" Then
         Set SearchSheetByGRZ = Nothing
@@ -59,7 +59,7 @@ Public Function SearchSheetByGRZ(GRZ As String) As Worksheet
     End If
 
     On Error Resume Next
-    Set wbReport = Workbooks.Open(ThisWorkbook.Path & "\report.xlsx", ReadOnly:=True)
+    Set wbReport = Workbooks.Open(ThisWorkbook.path & "\report.xlsx", ReadOnly:=True)
     On Error GoTo 0
 
     If wbReport Is Nothing Then
@@ -91,7 +91,7 @@ Public Sub RenameSheetsByGRZ()
     Dim existingWs As Worksheet
 
     On Error Resume Next
-    Set wbReport = Workbooks.Open(ThisWorkbook.Path & "\report.xlsx", ReadOnly:=False)
+    Set wbReport = Workbooks.Open(ThisWorkbook.path & "\report.xlsx", ReadOnly:=False)
     On Error GoTo 0
 
     If wbReport Is Nothing Then
@@ -128,20 +128,20 @@ End Sub
 ' ImportSheet
 ' Импортирует лист из report.xlsx по ГРЗ в текущую книгу
 ' --------------------------------------------------------------------------
-Public Sub ImportSheet(GRZ As String)
+Public Sub ImportSheet(grz As String)
     Dim wsSource As Worksheet
     Dim wsMain As Worksheet
     Dim newName As String
 
     Set wsMain = ThisWorkbook.Sheets("main")
 
-    Set wsSource = SearchSheetByGRZ(GRZ)
+    Set wsSource = SearchSheetByGRZ(grz)
     If wsSource Is Nothing Then
-        MsgBox "Лист с ГРЗ " & GRZ & " не найден!", vbExclamation, "Ошибка"
+        MsgBox "Лист с ГРЗ " & grz & " не найден!", vbExclamation, "Ошибка"
         Exit Sub
     End If
 
-    wsSource.Copy After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count)
+    wsSource.Copy After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.count)
 
     newName = wsMain.Range("B2").Value & "M"
     On Error Resume Next
@@ -170,8 +170,8 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
 
     ' Очистка диапазонов L:N и X:AA
     Dim lastRowL As Long, lastRowX As Long
-    lastRowL = wsMain.Cells(wsMain.Rows.Count, 12).End(xlUp).Row
-    lastRowX = wsMain.Cells(wsMain.Rows.Count, 24).End(xlUp).Row
+    lastRowL = wsMain.Cells(wsMain.Rows.count, 12).End(xlUp).Row
+    lastRowX = wsMain.Cells(wsMain.Rows.count, 24).End(xlUp).Row
     lastRow = Application.WorksheetFunction.Max(lastRowL, lastRowX)
     If lastRow < 2 Then lastRow = 2
 
@@ -190,7 +190,7 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
     If Not cell Is Nothing Then
         foundWorks = True
         startRow = cell.Row + 1
-        srcLastRow = wsSource.Cells(wsSource.Rows.Count, 3).End(xlUp).Row
+        srcLastRow = wsSource.Cells(wsSource.Rows.count, 3).End(xlUp).Row
 
         For i = startRow To srcLastRow
             If wsSource.Cells(i, 3).Value <> "" Then
@@ -207,7 +207,7 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
     If Not cell Is Nothing Then
         foundMaterials = True
         startRow = cell.Row + 1
-        srcLastRow = wsSource.Cells(wsSource.Rows.Count, 2).End(xlUp).Row
+        srcLastRow = wsSource.Cells(wsSource.Rows.count, 2).End(xlUp).Row
 
         For i = startRow To srcLastRow
             If wsSource.Cells(i, 2).Value <> "" Then
@@ -248,7 +248,7 @@ Public Sub ClearMainSheet_UI()
     response = MsgBox("Очистить все данные на листе main?", vbYesNo + vbQuestion, "Подтверждение")
 
     If response = vbYes Then
-        lastRow = wsMain.UsedRange.Rows.Count
+        lastRow = wsMain.UsedRange.Rows.count
         If lastRow >= 2 Then
             wsMain.Range("A2:XFD" & lastRow).ClearContents
         End If

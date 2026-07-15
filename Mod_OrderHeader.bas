@@ -10,7 +10,7 @@ Option Explicit
 ' FillHeaderFromOrder
 ' Заполняет B3:B15 на листе main данными из spisok и model по номеру заказа
 ' --------------------------------------------------------------------------
-Public Function FillHeaderFromOrder(OrderNum As Variant) As Boolean
+Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     Dim wsSpisok As Worksheet
     Dim wsModel As Worksheet
     Dim wsMain As Worksheet
@@ -42,23 +42,23 @@ Public Function FillHeaderFromOrder(OrderNum As Variant) As Boolean
     wsMain.Range("B3:B15").ClearContents
 
     ' Проверка, что OrderNum — число
-    If Not IsNumeric(OrderNum) Then
+    If Not IsNumeric(orderNum) Then
         MsgBox "Номер заказа должен быть числом!", vbExclamation, "Ошибка"
         FillHeaderFromOrder = False
         Exit Function
     End If
 
     ' Поиск заказа в столбце A листа spisok (точное совпадение)
-    Set FoundRow = wsSpisok.Columns(1).Find(What:=OrderNum, LookAt:=xlWhole)
+    Set FoundRow = wsSpisok.Columns(1).Find(What:=orderNum, LookAt:=xlWhole)
     If FoundRow Is Nothing Then
-        MsgBox "Заказ с номером " & OrderNum & " не найден!", vbExclamation, "Ошибка"
+        MsgBox "Заказ с номером " & orderNum & " не найден!", vbExclamation, "Ошибка"
         wsMain.Range("B3:B15").ClearContents
         FillHeaderFromOrder = False
         Exit Function
     End If
 
     ' B3 = "00" & значение B2 & "-20"
-    wsMain.Cells(3, 2).Value = "00" & CStr(OrderNum) & "-20"
+    wsMain.Cells(3, 2).Value = "00" & CStr(orderNum) & "-20"
 
     ' B4:B10 из столбцов B–H найденной строки spisok
     wsMain.Cells(4, 2).Value = FoundRow.Cells(1, SPISOK_COL_MODEL).Value   ' Модель
@@ -75,7 +75,7 @@ Public Function FillHeaderFromOrder(OrderNum As Variant) As Boolean
     ' Поиск кода модели в столбце A листа model (начиная со строки 3)
     If Not IsNull(ModelCode) And ModelCode <> "" Then
         Dim lastModelRow As Long
-        lastModelRow = wsModel.Cells(wsModel.Rows.Count, 1).End(xlUp).Row
+        lastModelRow = wsModel.Cells(wsModel.Rows.count, 1).End(xlUp).Row
         Set ModelRow = wsModel.Range("A3:A" & lastModelRow).Find(What:=ModelCode, LookAt:=xlWhole)
         If Not ModelRow Is Nothing And ModelRow.Row >= 3 Then
             wsMain.Cells(11, 2).Value = ModelRow.Cells(1, MODEL_COL_PRICE).Value      ' Цена н/ч
@@ -96,7 +96,7 @@ End Function
 ' Поиск заказа по номеру (столбец A) на листе spisok
 ' Заполняет структуру OrderHeader полями A–H
 ' --------------------------------------------------------------------------
-Public Function FindOrder(ByVal OrderNum As String, ByRef Header As OrderHeader) As Boolean
+Public Function FindOrder(ByVal orderNum As String, ByRef Header As OrderHeader) As Boolean
     Dim ws As Worksheet
     Dim FoundCell As Range
 
@@ -107,14 +107,14 @@ Public Function FindOrder(ByVal OrderNum As String, ByRef Header As OrderHeader)
     End If
 
     ' Поиск в столбце A (номер заказа)
-    Set FoundCell = ws.Columns("A").Find(What:=OrderNum, LookAt:=xlWhole, LookIn:=xlValues)
+    Set FoundCell = ws.Columns("A").Find(What:=orderNum, LookAt:=xlWhole, LookIn:=xlValues)
 
     If Not FoundCell Is Nothing Then
         ' Заполнение структуры из найденной строки листа spisok:
         ' A=№ заказа, B=Модель, C=ГРЗ, D=VIN, E=Гараж.№, F=Год вып., G=Пробег, H=Дата
         Header.OrderNumber = FoundCell.Value                    ' A: № заказа
         Header.ModelName = FoundCell.Offset(0, 1).Value         ' B: Модель
-        Header.GRZ = FoundCell.Offset(0, 2).Value               ' C: ГРЗ
+        Header.grz = FoundCell.Offset(0, 2).Value               ' C: ГРЗ
         Header.VIN = FoundCell.Offset(0, 3).Value               ' D: VIN
         Header.GarageNumber = FoundCell.Offset(0, 4).Value      ' E: Гараж. №
         Header.YearMade = Val(FoundCell.Offset(0, 5).Value)     ' F: Год вып.
@@ -184,7 +184,7 @@ Public Sub FindOrder_UI()
         msg = "Заказ найден:" & vbCrLf & vbCrLf
         msg = msg & "Номер: " & Header.OrderNumber & vbCrLf
         msg = msg & "Модель: " & Header.ModelName & vbCrLf
-        msg = msg & "ГРЗ: " & Header.GRZ & vbCrLf
+        msg = msg & "ГРЗ: " & Header.grz & vbCrLf
         msg = msg & "VIN: " & Header.VIN & vbCrLf
         msg = msg & "Гараж.№: " & Header.GarageNumber & vbCrLf
         msg = msg & "Год вып.: " & Header.YearMade & vbCrLf

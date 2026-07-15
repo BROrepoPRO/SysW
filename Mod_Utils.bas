@@ -12,7 +12,7 @@ Option Explicit
 Public Type OrderHeader
     OrderNumber As String    ' № п/п (колонка A)
     ModelName As String      ' Модель (колонка B)
-    GRZ As String            ' ГРЗ/госномер (колонка C)
+    grz As String            ' ГРЗ/госномер (колонка C)
     VIN As String            ' VIN (колонка D)
     GarageNumber As String   ' Гаражный № (колонка E)
     YearMade As Integer      ' Год выпуска (колонка F)
@@ -29,13 +29,13 @@ End Function
 
 ' Функция: получение пути к книге
 Public Function GetWorkbookPath() As String
-    GetWorkbookPath = ThisWorkbook.Path
+    GetWorkbookPath = ThisWorkbook.path
 End Function
 
 ' Функция: проверка существования файла
-Public Function FileExists(ByVal FilePath As String) As Boolean
+Public Function FileExists(ByVal filePath As String) As Boolean
     On Error Resume Next
-    FileExists = (Len(Dir(FilePath)) > 0)
+    FileExists = (Len(Dir(filePath)) > 0)
     On Error GoTo 0
 End Function
 
@@ -50,13 +50,13 @@ Public Function FormatDateSQL(ByVal d As Date) As String
 End Function
 
 ' Процедура: запись в лог-файл
-Public Sub WriteLog(ByVal Message As String)
+Public Sub WriteLog(ByVal message As String)
     Dim LogPath As String
     Dim F As Long
-    LogPath = ThisWorkbook.Path & "\log.txt"
+    LogPath = ThisWorkbook.path & "\log.txt"
     F = FreeFile
     Open LogPath For Append As #F
-    Print #F, Now & " - " & Message
+    Print #F, Now & " - " & message
     Close #F
 End Sub
 

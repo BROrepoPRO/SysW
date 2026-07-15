@@ -2,13 +2,16 @@
 # -*- coding: utf-8 -*-
 """
 Import all VBA modules (bas/cls) into work.xlsm via Excel COM.
-Strips ALL Attribute lines before import to avoid VBA syntax errors.
-Converts UTF-8 source to Windows-1251 for VBA compatibility.
 
 Encoding strategy (two-phase model):
   1. Files on disk are stored in UTF-8 (for VS Code and Git)
   2. This script converts them to Windows-1251 before importing into Excel
   3. .gitattributes normalizes encoding for Git
+
+Sheet handling:
+  Sheet1_main.cls is a Worksheet document (not a Class Module).
+  It must be imported using VBComponents.Add with type vbext_ct_Document (100)
+  to place it in "Microsoft Excel Objects" folder, not "Class Modules".
 """
 import os
 import sys
@@ -22,6 +25,12 @@ EXCEL_PATH = r"L:\PROject\SysW\work.xlsm"
 MODULES_PATH = Path(r"L:\PROject\SysW")
 TEMP_DIR = Path(r"L:\PROject\SysW\_temp_import")
 
+# VBA component type constants
+VBEXT_CT_STDMODULE = 1    # Standard module (.bas)
+VBEXT_CT_CLASSMODULE = 2  # Class module (.cls)
+VBEXT_CT_MSFORM = 3       # Form
+VBEXT_CT_DOCUMENT = 100   # Document (Worksheet, Workbook, etc.)
+
 FILES = [
     "Mod_Utils.bas",
     "Mod_OrderHeader.bas",
@@ -31,24 +40,28 @@ FILES = [
     "Sheet1_main.cls",
 ]
 
+# Sheet components that should be imported as Documents (not Class Modules)
+# These go into "Microsoft Excel Objects" folder
+SHEET_COMPONENTS = {"Sheet1_main"}
+
 
 def read_vba_file(file_path):
-    """Читает VBA-файл с автоопределением кодировки.
+    """Reads a VBA file with auto-detection of encoding.
 
-    Приоритет: UTF-8 with BOM > UTF-8 > Windows-1251
+    Priority: UTF-8 with BOM > UTF-8 > Windows-1251
 
     Returns:
-        str: содержимое файла в Unicode
+        str: file contents as Unicode
 
     Raises:
-        FileNotFoundError: если файл не существует
-        ValueError: если не удалось определить кодировку
+        FileNotFoundError: if file does not exist
+        ValueError: if encoding cannot be determined
     """
     file_path = Path(file_path)
     if not file_path.exists():
-        raise FileNotFoundError(f"Файл не найден: {file_path}")
+        raise FileNotFoundError(f"File not found: {file_path}")
 
-    # Проверка BOM (Byte Order Mark)
+    # Check BOM (Byte Order Mark)
     with open(file_path, "rb") as f:
         raw = f.read(4)
 
@@ -59,7 +72,7 @@ def read_vba_file(file_path):
         print(f"    Read encoding: UTF-8 with BOM")
         return text
 
-    # Попытка UTF-8
+    # Try UTF-8
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             text = f.read()
@@ -68,22 +81,22 @@ def read_vba_file(file_path):
     except UnicodeDecodeError:
         pass
 
-    # Fallback на Windows-1251
+    # Fallback to Windows-1251
     try:
         with open(file_path, "r", encoding="cp1251") as f:
             text = f.read()
-        print(f"    ⚠️  Read encoding: Windows-1251 (fallback). "
-              f"Рекомендуется конвертировать файл в UTF-8: {file_path.name}")
+        print(f"    Read encoding: Windows-1251 (fallback). "
+              f"Recommend converting to UTF-8: {file_path.name}")
         return text
     except UnicodeDecodeError:
-        # Последняя попытка: UTF-8 with BOM (если BOM повреждён)
+        # Last attempt: UTF-8 with BOM (if BOM is corrupted)
         try:
             with open(file_path, "r", encoding="utf-8-sig") as f:
                 text = f.read()
             print(f"    Read encoding: UTF-8 with BOM (fallback)")
             return text
         except UnicodeDecodeError as e:
-            raise ValueError(f"Не удалось определить кодировку файла {file_path}: {e}")
+            raise ValueError(f"Cannot determine encoding for {file_path}: {e}")
 
 
 def strip_export_header(text):
@@ -151,6 +164,98 @@ def strip_attribute_lines(text, is_cls=False):
     return '\n'.join(filtered)
 
 
+def get_vba_code_from_cls(text):
+    """Extract pure VBA code from a .cls file, removing export header and Attribute lines.
+
+    This is used for importing Sheet components as Documents via AddFromString.
+    The export header (VERSION, BEGIN...END) and Attribute lines are not valid
+    VBA code and must be removed before passing to AddFromString.
+
+    Returns:
+        str: pure VBA code (Option Explicit, Subs, Functions, etc.)
+    """
+    # Remove export header (VERSION, BEGIN...END)
+    text = strip_export_header(text)
+
+    # Remove ALL Attribute lines (they are set automatically by Excel)
+    lines = text.split('\n')
+    filtered = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped.startswith('Attribute '):
+            filtered.append(line)
+    return '\n'.join(filtered)
+
+
+def import_sheet_component(vb_project, file_path, component_name):
+    """Import a Sheet component as a Document (Worksheet) into VBA project.
+
+    Sheet components must be added as vbext_ct_Document (type 100) to
+    appear in "Microsoft Excel Objects" folder, not "Class Modules".
+
+    Args:
+        vb_project: VBA project object
+        file_path: Path to the .cls file
+        component_name: Name of the component (e.g. "Sheet1_main")
+
+    Returns:
+        The imported component object, or None on failure
+    """
+    print(f"    Importing as Document (Worksheet)...")
+
+    # Read the file
+    try:
+        text = read_vba_file(file_path)
+    except (FileNotFoundError, ValueError) as e:
+        print(f"    [!] {e}")
+        return None
+
+    # Extract pure VBA code (remove header and attributes)
+    vba_code = get_vba_code_from_cls(text)
+    vba_code = vba_code.lstrip('\n\r')
+
+    # Create temp file in UTF-8 for the code
+    temp_file = TEMP_DIR / f"{component_name}_code.txt"
+    with open(temp_file, "w", encoding="utf-8") as f:
+        f.write(vba_code)
+    print(f"    Using UTF-8 encoding")
+
+    # Add a new Document component
+    # vbext_ct_Document = 100 creates a document module (Worksheet-like)
+    try:
+        new_comp = vb_project.VBComponents.Add(100)  # vbext_ct_Document
+        print(f"    Created Document component")
+    except Exception as e:
+        print(f"    [!] Failed to create Document component: {e}")
+        # Fallback: try vbext_ct_MSForm (3)
+        try:
+            new_comp = vb_project.VBComponents.Add(3)  # vbext_ct_MSForm
+            print(f"    Created MSForm component (fallback)")
+        except Exception as e2:
+            print(f"    [!] Failed to create MSForm component: {e2}")
+            return None
+
+    # Rename to the target name
+    try:
+        new_comp.Name = component_name
+        print(f"    Renamed to: {component_name}")
+    except Exception as e:
+        print(f"    [!] Failed to rename component: {e}")
+        return None
+
+    # Import the code from temp file
+    try:
+        # Read the UTF-8 temp file
+        with open(temp_file, "r", encoding="utf-8") as f:
+            code_text = f.read()
+        new_comp.CodeModule.AddFromString(code_text)
+        print(f"    [+] Successfully imported code: {file_path.name}")
+        return new_comp
+    except Exception as e:
+        print(f"    [!] Failed to import code: {e}")
+        return None
+
+
 def main():
     # Ensure temp dir
     if TEMP_DIR.exists():
@@ -201,6 +306,15 @@ def main():
                 continue
 
             component_name = file_path.stem
+            is_cls = file_name.lower().endswith('.cls')
+            is_sheet = component_name in SHEET_COMPONENTS
+
+            if is_sheet:
+                # Import Sheet as Document (Worksheet)
+                result = import_sheet_component(vb_project, file_path, component_name)
+                if result is None:
+                    print(f"    [!] Failed to import sheet: {file_name}")
+                continue
 
             # Read file with auto-detection of encoding
             try:
@@ -211,7 +325,6 @@ def main():
 
             # Strip export-format header (VERSION, BEGIN...END) — only for .bas files
             # .cls files keep the full export format for VBComponents.Import
-            is_cls = file_name.lower().endswith('.cls')
             if not is_cls:
                 text = strip_export_header(text)
                 print(f"    Stripped export header (VERSION, BEGIN...END)")
@@ -225,9 +338,8 @@ def main():
             text = text.lstrip('\n\r')
 
             # Write temp file in Windows-1251 and import via VBComponents.Import
-            # For .cls files, this properly registers event handlers (e.g. Worksheet_Change)
-            # because VBComponents.Import preserves the VBA export format including
-            # Attribute lines and the BEGIN...END designer section.
+            # VBComponents.Import properly registers Public Subs as macros.
+            # On Russian Windows, cp1251 is the correct encoding for VBA.
             temp_file = TEMP_DIR / file_name
             with open(temp_file, "w", encoding="cp1251") as f:
                 f.write(text)
