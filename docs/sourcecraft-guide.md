@@ -92,17 +92,31 @@ L:\PROject\SysW\
 │   ├── button_handlers_plan.md
 │   ├── fix_orderheader_mapping.md
 │   └── ...               # Прочие планы
-├── scripts/              # PowerShell-скрипты автоматизации
+├── scripts/              # Скрипты автоматизации
+│   ├── export_vba.py         # Выгрузка VBA-модулей из Excel (CP1251 → UTF-8)
+│   ├── impVBA.py             # Загрузка VBA-модулей в Excel (UTF-8 → CP1251)
+│   ├── run_tests.py          # Запуск тестов VBA
 │   └── Import-VbaFromExcel.ps1  # Импорт VBA из Excel (альтернатива Python)
+├── src/                  # Исходный код VBA
+│   ├── modules/              # VBA-модули (.bas)
+│   │   ├── Mod_Utils.bas
+│   │   ├── Mod_OrderHeader.bas
+│   │   ├── Mod_Import.bas
+│   │   ├── Mod_ButtonDispatcher.bas
+│   │   ├── Mod_FullTestRunner.bas
+│   │   ├── Mod_MainButtons.bas
+│   │   ├── Mod_SheetButtons.bas
+│   │   ├── Mod_Logger.bas
+│   │   ├── Mod_Constants.bas
+│   │   └── Mod_SheetOps.bas
+│   └── sheets/               # VBA-классы листов (.cls)
+│       ├── Sheet1_main.cls
+│       ├── Sheet_work.cls
+│       └── Sheet_z4.cls
 ├── .gitattributes        # Настройки Git для нормализации кодировок
 ├── .ycarules             # Правила для SourceCraft Code Assistant
 ├── CHANGELOG.md          # История изменений проекта
 ├── README.md             # Основное описание проекта
-├── export_vba.py         # Выгрузка VBA-модулей из Excel (CP1251 → UTF-8)
-├── import_all_vba.py     # Загрузка VBA-модулей в Excel (UTF-8 → CP1251)
-├── run_tests.py          # Запуск тестов VBA
-├── Mod_*.bas             # VBA-модули (исходный код на диске)
-├── Sheet1_main.cls       # VBA-класс листа main
 └── work.xlsm             # Excel-файл с макросами (в .gitignore)
 ```
 
@@ -123,9 +137,9 @@ L:\PROject\SysW\
 
 | Скрипт | Назначение | Кодировка |
 |--------|-----------|-----------|
-| [`export_vba.py`](../export_vba.py) | Выгрузка VBA-модулей из Excel на диск (CP1251 → UTF-8) | UTF-8 |
-| [`import_all_vba.py`](../import_all_vba.py) | Загрузка VBA-модулей с диска в Excel (UTF-8 → CP1251) | UTF-8 |
-| [`run_tests.py`](../run_tests.py) | Запуск тестов VBA | UTF-8 |
+| [`export_vba.py`](../scripts/export_vba.py) | Выгрузка VBA-модулей из Excel на диск (CP1251 → UTF-8) | UTF-8 |
+| [`impVBA.py`](../scripts/impVBA.py) | Загрузка VBA-модулей с диска в Excel (UTF-8 → CP1251) | UTF-8 |
+| [`run_tests.py`](../scripts/run_tests.py) | Запуск тестов VBA | UTF-8 |
 
 ### PowerShell-скрипты (альтернативные)
 
@@ -148,7 +162,7 @@ L:\PROject\SysW\
 
 Параметры:
 - `-ExcelPath` — путь к `.xlsm` файлу (по умолчанию: `L:\PROject\SysW\work.xlsm`)
-- `-OutputDir` — директория для сохранения `.bas`/`.cls` файлов (по умолчанию: `L:\PROject\SysW`)
+- `-OutputDir` — директория для сохранения `.bas`/`.cls` файлов (по умолчанию: `L:\PROject\SysW\src`)
 - `-DryRun` — показать список модулей без реального экспорта
 
 **Важно:** PowerShell-скрипты должны быть в кодировке UTF-8 with BOM (требование PowerShell для корректной обработки кириллицы).

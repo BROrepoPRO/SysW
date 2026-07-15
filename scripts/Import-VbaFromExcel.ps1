@@ -21,18 +21,18 @@
 
 param(
     [string]$ExcelPath = "L:\PROject\SysW\work.xlsm",
-    [string]$OutputDir = "L:\PROject\SysW",
+    [string]$OutputDir = "L:\PROject\SysW\src",
     [switch]$DryRun
 )
 
 # Mapping of VBA component names to file names on disk
 $componentMap = @{
-    "Mod_Utils"           = "Mod_Utils.bas"
-    "Mod_OrderHeader"     = "Mod_OrderHeader.bas"
-    "Mod_Import"          = "Mod_Import.bas"
-    "Mod_ButtonDispatcher" = "Mod_ButtonDispatcher.bas"
-    "Mod_FullTestRunner"  = "Mod_FullTestRunner.bas"
-    "Sheet1"              = "Sheet1_main.cls"
+    "Mod_Utils"           = "modules/Mod_Utils.bas"
+    "Mod_OrderHeader"     = "modules/Mod_OrderHeader.bas"
+    "Mod_Import"          = "modules/Mod_Import.bas"
+    "Mod_ButtonDispatcher" = "modules/Mod_ButtonDispatcher.bas"
+    "Mod_FullTestRunner"  = "modules/Mod_FullTestRunner.bas"
+    "Sheet1"              = "sheets/Sheet1_main.cls"
 }
 
 function Write-Info {

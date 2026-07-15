@@ -21,22 +21,22 @@ from win32com.client import gencache
 from pathlib import Path
 
 EXCEL_PATH = Path(r"L:\PROject\SysW\work.xlsm")
-PROJECT_DIR = Path(r"L:\PROject\SysW")
+PROJECT_DIR = Path(r"L:\PROject\SysW\src")
 TEMP_DIR = Path(r"L:\PROject\SysW\_temp_export")
 
 # Mapping: VBA component name -> output filename
 # .bas = standard module, .cls = class module
 COMPONENTS = {
-    "Mod_Utils": "Mod_Utils.bas",
-    "Mod_OrderHeader": "Mod_OrderHeader.bas",
-    "Mod_Import": "Mod_Import.bas",
-    "Mod_MainButtons": "Mod_MainButtons.bas",
-    "Mod_SheetButtons": "Mod_SheetButtons.bas",
-    "Mod_ButtonDispatcher": "Mod_ButtonDispatcher.bas",
-    "Mod_FullTestRunner": "Mod_FullTestRunner.bas",
-    "Sheet1_main": "Sheet1_main.cls",
-    "Sheet_work": "Sheet_work.cls",
-    "Sheet_z4": "Sheet_z4.cls",
+    "Mod_Utils": "modules/Mod_Utils.bas",
+    "Mod_OrderHeader": "modules/Mod_OrderHeader.bas",
+    "Mod_Import": "modules/Mod_Import.bas",
+    "Mod_MainButtons": "modules/Mod_MainButtons.bas",
+    "Mod_SheetButtons": "modules/Mod_SheetButtons.bas",
+    "Mod_ButtonDispatcher": "modules/Mod_ButtonDispatcher.bas",
+    "Mod_FullTestRunner": "modules/Mod_FullTestRunner.bas",
+    "Sheet1_main": "sheets/Sheet1_main.cls",
+    "Sheet_work": "sheets/Sheet_work.cls",
+    "Sheet_z4": "sheets/Sheet_z4.cls",
 }
 
 

@@ -23,7 +23,7 @@ from win32com.client import gencache
 from pathlib import Path
 
 EXCEL_PATH = r"L:\PROject\SysW\work.xlsm"
-MODULES_PATH = Path(r"L:\PROject\SysW")
+MODULES_PATH = Path(r"L:\PROject\SysW\src")
 TEMP_DIR = Path(r"L:\PROject\SysW\_temp_import")
 
 # VBA component type constants
@@ -36,8 +36,11 @@ VBEXT_CT_DOCUMENT = 100   # Document (Worksheet, Workbook, etc.)
 # This ensures all VBA modules are imported without needing to update
 # the list manually when new modules are added.
 FILES = sorted([
-    f.name for f in MODULES_PATH.iterdir()
-    if f.suffix.lower() in (".bas", ".cls") and f.is_file()
+    f.name for f in (MODULES_PATH / "modules").iterdir()
+    if f.suffix.lower() == ".bas" and f.is_file()
+] + [
+    f.name for f in (MODULES_PATH / "sheets").iterdir()
+    if f.suffix.lower() == ".cls" and f.is_file()
 ])
 
 # Sheet components that should be imported as Documents (not Class Modules)
@@ -47,7 +50,7 @@ FILES = sorted([
 # Dynamically discovered: any .cls file whose name starts with "Sheet"
 # is treated as a worksheet document.
 SHEET_COMPONENTS = {
-    f.stem for f in MODULES_PATH.iterdir()
+    f.stem for f in (MODULES_PATH / "sheets").iterdir()
     if f.suffix.lower() == ".cls" and f.stem.lower().startswith("sheet") and f.is_file()
 }
 
@@ -213,7 +216,10 @@ def main():
         print("")
         print("--- Importing components ---")
         for file_name in FILES:
-            file_path = MODULES_PATH / file_name
+            if file_name.lower().endswith('.cls'):
+                file_path = MODULES_PATH / "sheets" / file_name
+            else:
+                file_path = MODULES_PATH / "modules" / file_name
             print("")
             print(f"  Processing: {file_name}")
 

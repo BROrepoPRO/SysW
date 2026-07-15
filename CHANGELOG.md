@@ -5,6 +5,24 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [0.6.0] — 2026-07-15
+
+### Добавлено
+- Новая структура каталогов: `src/modules/` для `.bas` и `src/sheets/` для `.cls` файлов
+- Директория `src/` для исходного кода VBA
+
+### Изменено
+- Все VBA-модули (.bas) перемещены из корня проекта в `src/modules/`
+- Все VBA-классы листов (.cls) перемещены из корня проекта в `src/sheets/`
+- Python-скрипты (`export_vba.py`, `impVBA.py`, `run_tests.py`) перемещены в `scripts/`
+- `scripts/impVBA.py` — обновлён `MODULES_PATH` на `src`, поиск `.bas`/`.cls` по поддиректориям
+- `scripts/export_vba.py` — обновлён `PROJECT_DIR` на `src`, `COMPONENTS` с путями `modules/` и `sheets/`
+- `.github/workflows/vba-check.yml` — обновлены пути к VBA-файлам
+- `scripts/Import-VbaFromExcel.ps1` — обновлён `$OutputDir` на `src`, `$componentMap` с путями
+- `docs/DEVELOPER.md` — обновлены все относительные ссылки на файлы
+- `docs/sourcecraft-guide.md` — обновлена схема структуры проекта и ссылки
+- `.ycarules` — обновлено правило `[S1]` с описанием новой структуры
+
 ## [0.5.0] — 2026-07-14
 
 ### Добавлено

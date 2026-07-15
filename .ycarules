@@ -97,11 +97,13 @@
 ## 6. Структура проекта (Structura)
 
 [S1] **Организация папок**
+- `src/modules/` — VBA-модули (.bas)
+- `src/sheets/` — VBA-классы листов (.cls)
+- `scripts/` — скрипты автоматизации (Python, PowerShell)
 - `plans/` — планы изменений, архитектурные решения, отчёты
-- `scripts/` — вспомогательные PowerShell-скрипты
 - `docs/` — документация проекта
 - `.vscode/` — настройки VS Code
-- Корень проекта — VBA-модули (.bas, .cls), Python-скрипты, конфиги
+- Корень проекта — конфигурационные файлы (.gitattributes, .ycarules, README.md, CHANGELOG.md)
 
 [S2] **PowerShell-скрипты** в `scripts/`
 - Должны работать с двухфазной моделью кодировки VBA
