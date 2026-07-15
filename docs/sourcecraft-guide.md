@@ -34,8 +34,8 @@ VBA-файлы (`.bas`, `.cls`) используют двухфазную мод
 - **В Excel/VBA Editor** — Windows-1251 (требование COM-автоматизации)
 
 Конвертация выполняется скриптами:
-- [`import_all_vba.py`](../import_all_vba.py) — UTF-8 → CP1251 (перед импортом в Excel)
-- [`export_vba.py`](../export_vba.py) — CP1251 → UTF-8 (после экспорта из Excel)
+- [`impVBA.py`](../scripts/impVBA.py) — UTF-8 → CP1251 (перед импортом в Excel)
+- [`export_vba.py`](../scripts/export_vba.py) — CP1251 → UTF-8 (после экспорта из Excel)
 
 ### Запрет самовольных правок VBA-модулей
 
@@ -69,7 +69,7 @@ VBA-файлы (`.bas`, `.cls`) используют двухфазную мод
 ### Внесение изменений
 
 1. Работа с VBA-модулями — только через скрипты импорта/экспорта
-2. После изменений — запустить тесты: `python run_tests.py`
+2. После изменений — запустить тесты: `python scripts/run_tests.py`
 3. Обновить [`CHANGELOG.md`](../CHANGELOG.md)
 
 ### Обновление CHANGELOG.md
@@ -82,34 +82,33 @@ VBA-файлы (`.bas`, `.cls`) используют двухфазную мод
 
 ```
 L:\PROject\SysW\
+├── .github/              # CI/CD (GitHub Actions)
+│   └── workflows/
+│       └── vba-check.yml
 ├── .vscode/              # Настройки VS Code (терминал, кодировка, VBA Language Server)
 ├── docs/                 # Документация проекта
 │   ├── sourcecraft-guide.md  # Настоящее руководство
 │   ├── git-workflow.md       # Git-инструкции (ветки, коммиты, CI)
 │   └── DEVELOPER.md          # Техническая документация разработчика
 ├── plans/                # Планы изменений, архитектурные решения, отчёты
-│   ├── phase1_sourcecraft_integration.md
-│   ├── button_handlers_plan.md
-│   ├── fix_orderheader_mapping.md
-│   └── ...               # Прочие планы
 ├── scripts/              # Скрипты автоматизации
 │   ├── export_vba.py         # Выгрузка VBA-модулей из Excel (CP1251 → UTF-8)
 │   ├── impVBA.py             # Загрузка VBA-модулей в Excel (UTF-8 → CP1251)
 │   ├── run_tests.py          # Запуск тестов VBA
 │   └── Import-VbaFromExcel.ps1  # Импорт VBA из Excel (альтернатива Python)
 ├── src/                  # Исходный код VBA
-│   ├── modules/              # VBA-модули (.bas)
+│   ├── modules/              # 10 .bas модулей
 │   │   ├── Mod_Utils.bas
 │   │   ├── Mod_OrderHeader.bas
 │   │   ├── Mod_Import.bas
 │   │   ├── Mod_ButtonDispatcher.bas
 │   │   ├── Mod_FullTestRunner.bas
-│   │   ├── Mod_MainButtons.bas
-│   │   ├── Mod_SheetButtons.bas
 │   │   ├── Mod_Logger.bas
 │   │   ├── Mod_Constants.bas
-│   │   └── Mod_SheetOps.bas
-│   └── sheets/               # VBA-классы листов (.cls)
+│   │   ├── Mod_SheetOps.bas
+│   │   ├── Mod_MainButtons.bas
+│   │   └── Mod_SheetButtons.bas
+│   └── sheets/               # 3 .cls листа
 │       ├── Sheet1_main.cls
 │       ├── Sheet_work.cls
 │       └── Sheet_z4.cls

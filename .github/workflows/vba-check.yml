@@ -26,7 +26,7 @@ jobs:
       - name: Check VBA files exist
         run: |
           echo "=== Checking VBA module files ==="
-          for f in src/modules/Mod_Utils.bas src/modules/Mod_OrderHeader.bas src/modules/Mod_Import.bas src/modules/Mod_ButtonDispatcher.bas src/modules/Mod_FullTestRunner.bas src/sheets/Sheet1_main.cls; do
+          for f in src/modules/Mod_ButtonDispatcher.bas src/modules/Mod_Constants.bas src/modules/Mod_FullTestRunner.bas src/modules/Mod_Import.bas src/modules/Mod_Logger.bas src/modules/Mod_MainButtons.bas src/modules/Mod_OrderHeader.bas src/modules/Mod_SheetButtons.bas src/modules/Mod_SheetOps.bas src/modules/Mod_Utils.bas src/sheets/Sheet1_main.cls src/sheets/Sheet_work.cls src/sheets/Sheet_z4.cls; do
             if [ -f "$f" ]; then
               echo "  [OK] $f exists"
             else
@@ -38,7 +38,7 @@ jobs:
       - name: Check UTF-8 encoding
         run: |
           echo "=== Checking UTF-8 encoding ==="
-          for f in src/modules/Mod_Utils.bas src/modules/Mod_OrderHeader.bas src/modules/Mod_Import.bas src/modules/Mod_ButtonDispatcher.bas src/modules/Mod_FullTestRunner.bas src/sheets/Sheet1_main.cls; do
+          for f in src/modules/Mod_ButtonDispatcher.bas src/modules/Mod_Constants.bas src/modules/Mod_FullTestRunner.bas src/modules/Mod_Import.bas src/modules/Mod_Logger.bas src/modules/Mod_MainButtons.bas src/modules/Mod_OrderHeader.bas src/modules/Mod_SheetButtons.bas src/modules/Mod_SheetOps.bas src/modules/Mod_Utils.bas src/sheets/Sheet1_main.cls src/sheets/Sheet_work.cls src/sheets/Sheet_z4.cls; do
             if python3 -c "
 import codecs
 with open('$f', 'rb') as f:

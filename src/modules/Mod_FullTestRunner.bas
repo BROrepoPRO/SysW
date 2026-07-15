@@ -318,7 +318,7 @@ Private Sub RunImportTests()
     ' TC-05: ExtractNumberFromGRZ
     ' -------------------------------------------------------
     On Error Resume Next
-    GRZResult = ExtractNumberFromGRZ("А123АН77")
+    GRZResult = Mod_SheetOps.ExtractNumberFromGRZ("А123АН77")
     If Err.number <> 0 Then
         AddResult "TC-05", "ExtractNumberFromGRZ (А123АН77)", False, "Ошибка: " & Err.Description
         Err.Clear
@@ -338,21 +338,21 @@ Private Sub RunImportTests()
     Tc13Details = ""
 
     ' Кейс 1: "А123АН77" -> "12377"
-    GRZResult = ExtractNumberFromGRZ("А123АН77")
+    GRZResult = Mod_SheetOps.ExtractNumberFromGRZ("А123АН77")
     If GRZResult <> "12377" Then
         Tc13AllPassed = False
         Tc13Details = Tc13Details & "[1: '" & GRZResult & "' != '12377'] "
     End If
 
     ' Кейс 2: "А456ВС" -> "456"
-    GRZResult = ExtractNumberFromGRZ("А456ВС")
+    GRZResult = Mod_SheetOps.ExtractNumberFromGRZ("А456ВС")
     If GRZResult <> "456" Then
         Tc13AllPassed = False
         Tc13Details = Tc13Details & "[2: '" & GRZResult & "' != '456'] "
     End If
 
     ' Кейс 3: "" -> ""
-    GRZResult = ExtractNumberFromGRZ("")
+    GRZResult = Mod_SheetOps.ExtractNumberFromGRZ("")
     If GRZResult <> "" Then
         Tc13AllPassed = False
         Tc13Details = Tc13Details & "[3: '" & GRZResult & "' != ''] "
@@ -374,7 +374,7 @@ Private Sub RunImportTests()
     ' TC-14: SearchSheetByGRZ существующий
     ' -------------------------------------------------------
     On Error Resume Next
-    Set wsFound = SearchSheetByGRZ("12345")
+    Set wsFound = Mod_SheetOps.SearchSheetByGRZ("12345")
     If Err.number <> 0 Then
         AddResult "TC-14", "SearchSheetByGRZ существующий", False, "Ошибка: " & Err.Description
         Err.Clear
@@ -394,7 +394,7 @@ Private Sub RunImportTests()
     ' TC-15: SearchSheetByGRZ несуществующий
     ' -------------------------------------------------------
     On Error Resume Next
-    Set wsFound = SearchSheetByGRZ("АБ")
+    Set wsFound = Mod_SheetOps.SearchSheetByGRZ("АБ")
     If Err.number <> 0 Then
         AddResult "TC-15", "SearchSheetByGRZ несуществующий", False, "Ошибка: " & Err.Description
         Err.Clear

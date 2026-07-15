@@ -7,35 +7,6 @@ Option Explicit
 ' ============================================================
 
 ' ============================================================
-' DEPRECATED — функции перенесены в Mod_SheetOps
-' ============================================================
-
-' DEPRECATED: Use Mod_SheetOps.ExtractNumberFromGRZ instead
-Public Function ExtractNumberFromGRZ(grz As String) As String
-    ExtractNumberFromGRZ = Mod_SheetOps.ExtractNumberFromGRZ(grz)
-End Function
-
-' DEPRECATED: Use Mod_SheetOps.SearchSheetByGRZ instead
-Public Function SearchSheetByGRZ(grz As String) As Worksheet
-    Set SearchSheetByGRZ = Mod_SheetOps.SearchSheetByGRZ(grz)
-End Function
-
-' DEPRECATED: Use Mod_SheetOps.RenameSheetsByGRZ instead
-Public Sub RenameSheetsByGRZ()
-    Call Mod_SheetOps.RenameSheetsByGRZ
-End Sub
-
-' DEPRECATED: Use Mod_SheetOps.ClearMainSheet_UI instead
-Public Sub ClearMainSheet_UI()
-    Call Mod_SheetOps.ClearMainSheet_UI
-End Sub
-
-' DEPRECATED: Use Mod_SheetOps.ClearHeader_UI instead
-Public Sub ClearHeader_UI()
-    Call Mod_SheetOps.ClearHeader_UI
-End Sub
-
-' ============================================================
 ' ОСНОВНЫЕ ФУНКЦИИ ИМПОРТА
 ' ============================================================
 

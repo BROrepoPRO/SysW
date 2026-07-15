@@ -6,22 +6,6 @@ Option Explicit
 ' Назначение: Заполнение заголовка заказа-наряда
 ' ============================================================
 
-' DEPRECATED: use Mod_Constants.SPISOK_COL_*
-Private Const SPISOK_COL_MODEL As Long = 2
-Private Const SPISOK_COL_GRZ As Long = 3
-Private Const SPISOK_COL_VIN As Long = 4
-Private Const SPISOK_COL_GARAGE As Long = 5
-Private Const SPISOK_COL_YEAR As Long = 6
-Private Const SPISOK_COL_MILEAGE As Long = 7
-Private Const SPISOK_COL_DATE As Long = 8
-Private Const SPISOK_COL_NOTE As Long = 10
-
-' DEPRECATED: use Mod_Constants.MODEL_COL_*
-Private Const MODEL_COL_GROUP As Long = 2
-Private Const MODEL_COL_PRICE As Long = 3
-Private Const MODEL_COL_WORKS_ORIG As Long = 4
-Private Const MODEL_COL_WORKS_MOD As Long = 5
-
 ' ============================================================
 ' Тип для хранения данных заказа-наряда
 ' Поля соответствуют столбцам листа "spisok":

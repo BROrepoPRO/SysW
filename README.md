@@ -4,6 +4,14 @@
 
 Система автоматизирует заполнение шапки заказ-наряда, импорт данных из отчётов, поиск по ГРЗ и ведение учёта работ и запчастей. Реализована в виде модульной VBA-надстройки для Excel с поддержкой Git-контроля версий и CI/CD.
 
+### Архитектура
+
+Проект построен на модульной архитектуре VBA с разделением на 10 стандартных модулей (`.bas`) и 3 класса листов (`.cls`). Исходный код организован в директории `src/`:
+- `src/modules/` — бизнес-логика, утилиты, логирование, обработчики кнопок
+- `src/sheets/` — классы-обработчики событий листов Excel
+
+Скрипты автоматизации (Python, PowerShell) вынесены в `scripts/`. Документация — в `docs/`, планы архитектурных изменений — в `plans/`.
+
 ---
 
 ## Технологический стек
@@ -23,25 +31,22 @@
 
 ```
 L:\PROject\SysW\
+├── src/                       # Исходный код VBA
+│   ├── modules/               # 10 .bas модулей
+│   └── sheets/                # 3 .cls листа
+├── scripts/                   # Python + PowerShell скрипты
+│   ├── export_vba.py          # Выгрузка VBA из Excel
+│   ├── impVBA.py              # Загрузка VBA в Excel
+│   ├── run_tests.py           # Запуск тестов
+│   └── Import-VbaFromExcel.ps1
 ├── docs/                      # Документация проекта
 │   ├── sourcecraft-guide.md   # Руководство по SourceCraft
 │   ├── git-workflow.md        # Git-инструкции
 │   └── DEVELOPER.md           # Техническая документация разработчика
 ├── plans/                     # Планы изменений и архитектурные решения
-├── scripts/                   # PowerShell-скрипты автоматизации
-│   └── Import-VbaFromExcel.ps1
 ├── .github/workflows/         # CI/CD (GitHub Actions)
 │   └── vba-check.yml
 ├── .vscode/                   # Настройки VS Code
-├── Mod_Utils.bas              # VBA: утилитарные функции
-├── Mod_OrderHeader.bas        # VBA: шапка заказ-наряда
-├── Mod_Import.bas             # VBA: импорт данных
-├── Mod_ButtonDispatcher.bas   # VBA: диспетчер кнопок
-├── Mod_FullTestRunner.bas     # VBA: тестовый раннер
-├── Sheet1_main.cls            # VBA: класс листа main
-├── export_vba.py              # Python: выгрузка VBA из Excel
-├── import_all_vba.py          # Python: загрузка VBA в Excel
-├── run_tests.py               # Python: запуск тестов
 ├── .ycarules                  # Правила SourceCraft
 ├── .gitattributes             # Нормализация Git
 ├── CHANGELOG.md               # История изменений
@@ -72,17 +77,17 @@ L:\PROject\SysW\
 
 5. **Синхронизировать VBA-модули из Excel на диск** (после работы в Excel):
    ```bash
-   python export_vba.py
+   python scripts/export_vba.py
    ```
 
 6. **Загрузить VBA-модули с диска в Excel** (после редактирования в VS Code):
    ```bash
-   python import_all_vba.py
+   python scripts/impVBA.py
    ```
 
 7. **Запустить тесты:**
    ```bash
-   python run_tests.py
+   python scripts/run_tests.py
    ```
 
 ---

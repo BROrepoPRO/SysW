@@ -27,13 +27,16 @@ TEMP_DIR = Path(r"L:\PROject\SysW\_temp_export")
 # Mapping: VBA component name -> output filename
 # .bas = standard module, .cls = class module
 COMPONENTS = {
-    "Mod_Utils": "modules/Mod_Utils.bas",
-    "Mod_OrderHeader": "modules/Mod_OrderHeader.bas",
-    "Mod_Import": "modules/Mod_Import.bas",
-    "Mod_MainButtons": "modules/Mod_MainButtons.bas",
-    "Mod_SheetButtons": "modules/Mod_SheetButtons.bas",
     "Mod_ButtonDispatcher": "modules/Mod_ButtonDispatcher.bas",
+    "Mod_Constants": "modules/Mod_Constants.bas",
     "Mod_FullTestRunner": "modules/Mod_FullTestRunner.bas",
+    "Mod_Import": "modules/Mod_Import.bas",
+    "Mod_Logger": "modules/Mod_Logger.bas",
+    "Mod_MainButtons": "modules/Mod_MainButtons.bas",
+    "Mod_OrderHeader": "modules/Mod_OrderHeader.bas",
+    "Mod_SheetButtons": "modules/Mod_SheetButtons.bas",
+    "Mod_SheetOps": "modules/Mod_SheetOps.bas",
+    "Mod_Utils": "modules/Mod_Utils.bas",
     "Sheet1_main": "sheets/Sheet1_main.cls",
     "Sheet_work": "sheets/Sheet_work.cls",
     "Sheet_z4": "sheets/Sheet_z4.cls",

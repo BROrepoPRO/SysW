@@ -11,7 +11,14 @@
 - **Импорт** ([`Mod_Import.bas`](../src/modules/Mod_Import.bas)) — импорт данных из Excel в SQLite и обратно
 - **Диспетчер кнопок** ([`Mod_ButtonDispatcher.bas`](../src/modules/Mod_ButtonDispatcher.bas)) — прослойка между UI и бизнес-логикой
 - **Тестовый раннер** ([`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas)) — автоматическое тестирование
+- **Логирование** ([`Mod_Logger.bas`](../src/modules/Mod_Logger.bas)) — логирование с ротацией
+- **Константы** ([`Mod_Constants.bas`](../src/modules/Mod_Constants.bas)) — константы столбцов
+- **Операции с листами** ([`Mod_SheetOps.bas`](../src/modules/Mod_SheetOps.bas)) — операции с листами
+- **Кнопки листа main** ([`Mod_MainButtons.bas`](../src/modules/Mod_MainButtons.bas)) — кнопки листа main
+- **Кнопки листов z4/work** ([`Mod_SheetButtons.bas`](../src/modules/Mod_SheetButtons.bas)) — кнопки листов z4/work
 - **Лист main** ([`Sheet1_main.cls`](../src/sheets/Sheet1_main.cls)) — обработчик событий листа
+- **Лист work** ([`Sheet_work.cls`](../src/sheets/Sheet_work.cls)) — обработчик событий листа work
+- **Лист z4** ([`Sheet_z4.cls`](../src/sheets/Sheet_z4.cls)) — обработчик событий листа z4
 
 ### 1.2 Схема взаимодействия модулей
 
@@ -31,6 +38,17 @@ Mod_ButtonDispatcher (обработчики кнопок)
        ├── Mod_Import.ClearHeader_UI()
        ├── Mod_OrderHeader.FillHeaderFromOrder_UI()
        └── ...
+
+Mod_MainButtons (кнопки листа main)
+       │
+       ├── Mod_Import (вызовы импорта)
+       ├── Mod_OrderHeader (заполнение шапки)
+       └── Mod_SheetOps (операции с листами)
+
+Mod_SheetButtons (кнопки листов z4/work)
+       │
+       ├── Mod_Import (вызовы импорта)
+       └── Mod_SheetOps (операции с листами)
 
 Mod_FullTestRunner.RunAllTests()
        │
@@ -172,7 +190,94 @@ Mod_FullTestRunner.RunAllTests()
 python scripts/run_tests.py
 ```
 
-### 2.6 Sheet1_main.cls — Основной лист
+### 2.6 Mod_Logger.bas — Логирование с ротацией
+
+**Файл:** [`Mod_Logger.bas`](../src/modules/Mod_Logger.bas)
+
+**Назначение:** Централизованное логирование с поддержкой ротации лог-файлов.
+
+**Ключевые функции:**
+
+| Функция | Описание |
+|---------|----------|
+| `LogInfo(Message)` | Запись информационного сообщения |
+| `LogError(Message)` | Запись сообщения об ошибке |
+| `LogWarning(Message)` | Запись предупреждения |
+| `RotateLog()` | Ротация лог-файла при превышении максимального размера |
+
+### 2.7 Mod_Constants.bas — Константы столбцов
+
+**Файл:** [`Mod_Constants.bas`](../src/modules/Mod_Constants.bas)
+
+**Назначение:** Централизованное хранение констант столбцов для всех листов. Ранее константы были разбросаны по разным модулям.
+
+**Константы листа spisok:**
+
+| Константа | Значение | Назначение |
+|-----------|----------|------------|
+| `SPISOK_COL_MODEL` | 2 | Модель |
+| `SPISOK_COL_GRZ` | 3 | ГРЗ |
+| `SPISOK_COL_VIN` | 4 | VIN |
+| `SPISOK_COL_GARAGE` | 5 | Гаражный № |
+| `SPISOK_COL_YEAR` | 6 | Год выпуска |
+| `SPISOK_COL_MILEAGE` | 7 | Пробег |
+| `SPISOK_COL_DATE` | 8 | Дата |
+| `SPISOK_COL_NOTE` | 10 | Примечание |
+
+**Константы листа model:**
+
+| Константа | Значение | Назначение |
+|-----------|----------|------------|
+| `MODEL_COL_GROUP` | 2 | Группа модели |
+| `MODEL_COL_PRICE` | 3 | Цена |
+| `MODEL_COL_WORKS_ORIG` | 4 | Оригинальные работы |
+| `MODEL_COL_WORKS_MOD` | 5 | Модифицированные работы |
+
+### 2.8 Mod_SheetOps.bas — Операции с листами
+
+**Файл:** [`Mod_SheetOps.bas`](../src/modules/Mod_SheetOps.bas)
+
+**Назначение:** Операции по управлению листами: создание, удаление, копирование, переименование.
+
+**Ключевые функции:**
+
+| Функция | Описание |
+|---------|----------|
+| `CreateSheet(SheetName)` | Создание нового листа с указанным именем |
+| `DeleteSheet(SheetName)` | Удаление листа по имени |
+| `CopySheet(SourceName, NewName)` | Копирование листа |
+| `SheetExists(SheetName)` | Проверка существования листа |
+
+### 2.9 Mod_MainButtons.bas — Кнопки листа main
+
+**Файл:** [`Mod_MainButtons.bas`](../src/modules/Mod_MainButtons.bas)
+
+**Назначение:** Обработчики кнопок, расположенных на листе main. Содержит бизнес-логику, специфичную для листа main.
+
+**Обработчики:**
+
+| Процедура | Описание |
+|-----------|----------|
+| `Btn_Import_Click()` | Импорт данных на лист main |
+| `Btn_Clear_Click()` | Очистка листа main |
+| `Btn_FillHeader_Click()` | Заполнение шапки заказ-наряда |
+
+### 2.10 Mod_SheetButtons.bas — Кнопки листов z4/work
+
+**Файл:** [`Mod_SheetButtons.bas`](../src/modules/Mod_SheetButtons.bas)
+
+**Назначение:** Обработчики кнопок, расположенных на листах z4 и work. Содержит бизнес-логику, специфичную для этих листов.
+
+**Обработчики:**
+
+| Процедура | Описание |
+|----------|----------|
+| `Btn_z4_Import_Click()` | Импорт данных на лист z4 |
+| `Btn_work_Import_Click()` | Импорт данных на лист work |
+| `Btn_z4_Clear_Click()` | Очистка листа z4 |
+| `Btn_work_Clear_Click()` | Очистка листа work |
+
+### 2.11 Sheet1_main.cls — Основной лист
 
 **Файл:** [`Sheet1_main.cls`](../src/sheets/Sheet1_main.cls) (40 строк)
 
@@ -183,6 +288,18 @@ python scripts/run_tests.py
 2. Проверка, что изменение произошло в ячейке B2
 3. Очистка диапазона B3:B15
 4. Вызов `Mod_OrderHeader.FillHeaderFromOrder(CStr(b2Value))`
+
+### 2.12 Sheet_work.cls — Лист work
+
+**Файл:** [`Sheet_work.cls`](../src/sheets/Sheet_work.cls)
+
+**Назначение:** Класс листа work. Обрабатывает события, специфичные для листа work.
+
+### 2.13 Sheet_z4.cls — Лист z4
+
+**Файл:** [`Sheet_z4.cls`](../src/sheets/Sheet_z4.cls)
+
+**Назначение:** Класс листа z4. Обрабатывает события, специфичные для листа z4.
 
 ---
 
@@ -206,7 +323,7 @@ python scripts/export_vba.py
 1. Запускает Excel через COM
 2. Экспортирует модули во временную директорию `_temp_export/` (CP1251)
 3. Конвертирует каждый файл из CP1251 в UTF-8
-4. Копирует в корень проекта
+4. Копирует в `src/`
 5. Удаляет `_temp_export/`
 
 **Импорт в Excel (UTF-8 → CP1251):**
@@ -251,7 +368,14 @@ python scripts/impVBA.py
 | `Mod_Import` | `src/modules/Mod_Import.bas` | Стандартный модуль |
 | `Mod_ButtonDispatcher` | `src/modules/Mod_ButtonDispatcher.bas` | Стандартный модуль |
 | `Mod_FullTestRunner` | `src/modules/Mod_FullTestRunner.bas` | Стандартный модуль |
+| `Mod_Logger` | `src/modules/Mod_Logger.bas` | Стандартный модуль |
+| `Mod_Constants` | `src/modules/Mod_Constants.bas` | Стандартный модуль |
+| `Mod_SheetOps` | `src/modules/Mod_SheetOps.bas` | Стандартный модуль |
+| `Mod_MainButtons` | `src/modules/Mod_MainButtons.bas` | Стандартный модуль |
+| `Mod_SheetButtons` | `src/modules/Mod_SheetButtons.bas` | Стандартный модуль |
 | `Sheet1` | `src/sheets/Sheet1_main.cls` | Класс листа |
+| `Sheet_work` | `src/sheets/Sheet_work.cls` | Класс листа |
+| `Sheet_z4` | `src/sheets/Sheet_z4.cls` | Класс листа |
 
 **Использование:**
 ```bash
@@ -345,7 +469,7 @@ python scripts/impVBA.py      # Импорт всех модулей
 
 | Шаг | Что проверяет | Действие при неудаче |
 |-----|--------------|---------------------|
-| 1. Check VBA files exist | Наличие всех 6 VBA-файлов | Fail |
+| 1. Check VBA files exist | Наличие всех 13 VBA-файлов | Fail |
 | 2. Check UTF-8 encoding | Валидная UTF-8 кодировка каждого файла | Fail |
 | 3. Check VBA syntax (basic) | Отсутствие недопустимых символов (коды < 32, кроме \n\r\t) | Fail |
 | 4. Check CHANGELOG updated | Наличие записи за сегодняшнюю дату | Warning (non-blocking) |
@@ -399,15 +523,33 @@ Sheet1_main.cls
   └── Mod_OrderHeader.FillHeaderFromOrder()
         └── Mod_Utils (GetSheetByName, FileExists, FormatDateSQL)
 
+Sheet_work.cls ─── Mod_SheetButtons
+Sheet_z4.cls   ─── Mod_SheetButtons
+
 Mod_ButtonDispatcher
   ├── Mod_Import (ClearMainSheet_UI, ImportSheet_UI, ClearHeader_UI)
   └── Mod_OrderHeader (FillHeaderFromOrder_UI)
+
+Mod_MainButtons
+  ├── Mod_Import (вызовы импорта)
+  ├── Mod_OrderHeader (заполнение шапки)
+  └── Mod_SheetOps (операции с листами)
+
+Mod_SheetButtons
+  ├── Mod_Import (вызовы импорта)
+  └── Mod_SheetOps (операции с листами)
 
 Mod_FullTestRunner
   ├── Mod_Utils (тесты утилит)
   ├── Mod_OrderHeader (тесты OrderHeader)
   ├── Mod_Import (тесты импорта)
   └── Mod_ButtonDispatcher (тесты кнопок)
+
+Mod_Logger
+  └── (используется всеми модулями для логирования)
+
+Mod_Constants
+  └── (используется Mod_OrderHeader, Mod_Import и другими модулями)
 ```
 
 ## Приложение B: Маппинг файлов VBA
@@ -419,7 +561,14 @@ Mod_FullTestRunner
 | `Mod_Import` | `src/modules/Mod_Import.bas` | Стандартный модуль |
 | `Mod_ButtonDispatcher` | `src/modules/Mod_ButtonDispatcher.bas` | Стандартный модуль |
 | `Mod_FullTestRunner` | `src/modules/Mod_FullTestRunner.bas` | Стандартный модуль |
+| `Mod_Logger` | `src/modules/Mod_Logger.bas` | Стандартный модуль |
+| `Mod_Constants` | `src/modules/Mod_Constants.bas` | Стандартный модуль |
+| `Mod_SheetOps` | `src/modules/Mod_SheetOps.bas` | Стандартный модуль |
+| `Mod_MainButtons` | `src/modules/Mod_MainButtons.bas` | Стандартный модуль |
+| `Mod_SheetButtons` | `src/modules/Mod_SheetButtons.bas` | Стандартный модуль |
 | `Sheet1` | `src/sheets/Sheet1_main.cls` | Класс листа |
+| `Sheet_work` | `src/sheets/Sheet_work.cls` | Класс листа |
+| `Sheet_z4` | `src/sheets/Sheet_z4.cls` | Класс листа |
 
 ## Приложение C: Скрипты автоматизации
 
