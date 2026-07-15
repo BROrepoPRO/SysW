@@ -68,6 +68,8 @@ Public Function SearchSheetByGRZ(grz As String) As Worksheet
         Exit Function
     End If
 
+    On Error GoTo CleanUp
+
     For Each ws In wbReport.Sheets
         If InStr(1, ws.Name, grzNumber, vbTextCompare) > 0 Then
             Set wsResult = ws
@@ -75,8 +77,11 @@ Public Function SearchSheetByGRZ(grz As String) As Worksheet
         End If
     Next ws
 
+CleanUp:
+    If Not wbReport Is Nothing Then
+        wbReport.Close SaveChanges:=False
+    End If
     Set SearchSheetByGRZ = wsResult
-    ' Книгу не закрываем
 End Function
 
 ' --------------------------------------------------------------------------
@@ -250,7 +255,7 @@ Public Sub ClearMainSheet_UI()
     If response = vbYes Then
         lastRow = wsMain.UsedRange.Rows.count
         If lastRow >= 2 Then
-            wsMain.Range("A2:XFD" & lastRow).ClearContents
+            wsMain.Range("B2:ZZ" & lastRow).ClearContents
         End If
     End If
 

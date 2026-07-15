@@ -16,14 +16,18 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         If Target.Row >= 3 And Target.Row <= 15 Then Exit Sub
 
         isProcessing = True
-        On Error Resume Next
+
+        On Error GoTo CleanUp
+
         Dim b2Value As Variant
         b2Value = Me.Range("B2").Value
         If Not IsEmpty(b2Value) And b2Value <> "" Then
             Dim result As Boolean
             result = Mod_OrderHeader.FillHeaderFromOrder(CStr(b2Value))
         End If
-        On Error GoTo 0
+
+CleanUp:
         isProcessing = False
+        On Error GoTo 0
     End If
 End Sub
