@@ -9,7 +9,11 @@ Option Explicit
 ' Функция: получение листа по имени (без ошибки если нет)
 Public Function GetSheetByName(ByVal wb As Workbook, ByVal SheetName As String) As Worksheet
     On Error Resume Next
-    Set GetSheetByName = wb.Sheets(SheetName)
+    If wb Is Nothing Then
+        Set GetSheetByName = Nothing
+    Else
+        Set GetSheetByName = wb.Sheets(SheetName)
+    End If
     On Error GoTo 0
 End Function
 

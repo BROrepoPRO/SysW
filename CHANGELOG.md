@@ -5,6 +5,24 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [0.7.1] — 2026-07-16
+
+### Добавлено
+- Защитное программирование и обработка ошибок в модулях VBA (аудит стабильности)
+
+### Исправлено
+- **OH-01** (`Mod_OrderHeader.bas`): добавлены проверки `Nothing` для листов `main`, `spisok`, `model` перед обращением в `FillHeaderFromOrder`
+- **OH-02** (`Mod_OrderHeader.bas`): добавлен обработчик ошибок с восстановлением `Application.EnableEvents` в `FillHeaderFromOrder`
+- **IM-01** (`Mod_Import.bas`): добавлен блок `On Error GoTo ErrHandler` в `ImportSheet` с восстановлением `EnableEvents`, `ScreenUpdating`, `DisplayAlerts`
+- **IM-02** (`Mod_Import.bas`): добавлен обработчик ошибок с восстановлением состояния приложения в `ImportDataToMain`
+- **SO-01** (`Mod_SheetOps.bas`): исправлена утечка объекта Workbook в `SearchSheetByGRZ` — закрытие книги в `ErrHandler`
+- **SO-02** (`Mod_SheetOps.bas`): удаление листов в `RenameSheetsByGRZ` теперь с проверкой существования через цикл по `Sheets`
+- **SO-03** (`Mod_SheetOps.bas`): добавлено восстановление `DisplayAlerts` в обработчиках ошибок `RenameSheetsByGRZ`, `ClearMainSheet_UI`, `ClearHeader_UI`
+- **UT-01** (`Mod_Utils.bas`): добавлена проверка `wb Is Nothing` в `GetSheetByName`
+- **LG-01** (`Mod_Logger.bas`): заменён `On Error GoTo ErrHandler` на `On Error Resume Next` в `RotateLogIfNeeded` и `ClearLog` для игнорирования ошибок файловых операций
+- **SM-01** (`Sheet1_main.cls`): добавлен обработчик ошибок с восстановлением `EnableEvents` и сбросом флага `isProcessing` в `Worksheet_Change`
+- **FB-01** (`Mod_MainButtons.bas`): добавлено восстановление `EnableEvents`, `ScreenUpdating`, `DisplayAlerts` в обработчиках ошибок `Btn_main_Clear` и `Btn_main_Import`
+
 ## [0.7.0] — 2026-07-15
 
 ### Добавлено

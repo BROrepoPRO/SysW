@@ -55,6 +55,8 @@ Public Function SearchSheetByGRZ(grz As String) As Worksheet
     Dim grzNumber As String
     Dim wsResult As Worksheet
 
+    On Error GoTo ErrHandler
+
     Set wsResult = Nothing
     grzNumber = Mod_SheetOps.ExtractNumberFromGRZ(grz)
 
@@ -63,17 +65,7 @@ Public Function SearchSheetByGRZ(grz As String) As Worksheet
         Exit Function
     End If
 
-    On Error Resume Next
     Set wbReport = Workbooks.Open(ThisWorkbook.path & "\report.xlsx", ReadOnly:=True)
-    On Error GoTo 0
-
-    If wbReport Is Nothing Then
-        MsgBox "Не удалось открыть report.xlsx!", vbExclamation, "Ошибка"
-        Set SearchSheetByGRZ = Nothing
-        Exit Function
-    End If
-
-    On Error GoTo CleanUp
 
     For Each ws In wbReport.Sheets
         If InStr(1, ws.Name, grzNumber, vbTextCompare) > 0 Then
@@ -82,11 +74,23 @@ Public Function SearchSheetByGRZ(grz As String) As Worksheet
         End If
     Next ws
 
-CleanUp:
+    ' Закрытие книги
     If Not wbReport Is Nothing Then
         wbReport.Close SaveChanges:=False
     End If
+
     Set SearchSheetByGRZ = wsResult
+    Exit Function
+
+ErrHandler:
+    ' Закрытие книги при ошибке, чтобы избежать утечки объекта
+    If Not wbReport Is Nothing Then
+        wbReport.Close SaveChanges:=False
+    End If
+    Application.DisplayAlerts = True
+    MsgBox "Ошибка при поиске листа по ГРЗ: " & Err.Description, vbCritical, "Ошибка"
+    Call Mod_Logger.WriteLog("Mod_SheetOps", "SearchSheetByGRZ: " & Err.Description)
+    Set SearchSheetByGRZ = Nothing
 End Function
 
 ' --------------------------------------------------------------------------
@@ -94,15 +98,17 @@ End Function
 ' Переименовывает листы в report.xlsx по номеру ГРЗ
 ' --------------------------------------------------------------------------
 Public Sub RenameSheetsByGRZ()
+    On Error GoTo ErrHandler
+
     Dim wbReport As Workbook
     Dim ws As Worksheet
     Dim cell As Range
     Dim grzNumber As String
     Dim existingWs As Worksheet
+    Dim sheetExists As Boolean
+    Dim i As Long
 
-    On Error Resume Next
     Set wbReport = Workbooks.Open(ThisWorkbook.path & "\report.xlsx", ReadOnly:=False)
-    On Error GoTo 0
 
     If wbReport Is Nothing Then
         MsgBox "Не удалось открыть report.xlsx!", vbExclamation, "Ошибка"
@@ -116,13 +122,21 @@ Public Sub RenameSheetsByGRZ()
             If Not cell Is Nothing Then
                 grzNumber = Mod_SheetOps.ExtractNumberFromGRZ(cell.Value)
                 If grzNumber <> "" Then
+                    ' Проверяем, существует ли лист с таким именем
+                    sheetExists = False
+                    For i = 1 To wbReport.Sheets.Count
+                        If wbReport.Sheets(i).Name = grzNumber Then
+                            sheetExists = True
+                            Exit For
+                        End If
+                    Next i
+
                     ' Если лист с таким именем уже существует, удаляем
-                    On Error Resume Next
-                    Set existingWs = wbReport.Sheets(grzNumber)
-                    If Not existingWs Is Nothing Then
-                        existingWs.Delete
+                    If sheetExists Then
+                        Application.DisplayAlerts = False
+                        wbReport.Sheets(grzNumber).Delete
+                        Application.DisplayAlerts = True
                     End If
-                    On Error GoTo 0
 
                     ws.Name = grzNumber
                 End If
@@ -132,6 +146,16 @@ Public Sub RenameSheetsByGRZ()
 
     wbReport.Save
     wbReport.Close
+    Exit Sub
+
+ErrHandler:
+    ' Восстановление DisplayAlerts при ошибке
+    Application.DisplayAlerts = True
+    If Not wbReport Is Nothing Then
+        wbReport.Close SaveChanges:=False
+    End If
+    MsgBox "Ошибка при переименовании листов: " & Err.Description, vbCritical, "Ошибка"
+    Call Mod_Logger.WriteLog("Mod_SheetOps", "RenameSheetsByGRZ: " & Err.Description)
 End Sub
 
 ' ============================================================
@@ -171,6 +195,10 @@ Public Sub ClearMainSheet_UI(Optional ByVal silent As Boolean = False)
     Exit Sub
 
 ErrHandler:
+    ' Восстановление состояния приложения
+    Application.DisplayAlerts = True
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
     MsgBox "Ошибка в ClearMainSheet_UI: " & Err.Description, vbCritical, "Ошибка"
     Call Mod_Utils.WriteLog("ClearMainSheet_UI: " & Err.Description)
 End Sub
@@ -191,6 +219,10 @@ Public Sub ClearHeader_UI()
     Exit Sub
 
 ErrHandler:
+    ' Восстановление состояния приложения
+    Application.DisplayAlerts = True
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
     MsgBox "Ошибка в ClearHeader_UI: " & Err.Description, vbCritical, "Ошибка"
     Call Mod_Utils.WriteLog("ClearHeader_UI: " & Err.Description)
 End Sub

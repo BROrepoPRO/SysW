@@ -70,7 +70,7 @@ End Sub
 ' Если log.txt > maxSizeKB, переименовывает в log_old.txt и создаёт новый
 ' --------------------------------------------------------------------------
 Public Sub RotateLogIfNeeded(ByVal maxSizeKB As Long)
-    On Error GoTo ErrHandler
+    On Error Resume Next
 
     Dim LogPath As String
     Dim OldLogPath As String
@@ -107,10 +107,7 @@ Public Sub RotateLogIfNeeded(ByVal maxSizeKB As Long)
         Close #F
     End If
 
-    Exit Sub
-
-ErrHandler:
-    ' При ошибке ротации — игнорируем
+    ' On Error GoTo 0 не вызываем — ошибки ротации игнорируем
 End Sub
 
 ' --------------------------------------------------------------------------
@@ -118,7 +115,7 @@ End Sub
 ' Очистка файла лога (удаление и создание пустого)
 ' --------------------------------------------------------------------------
 Public Sub ClearLog()
-    On Error GoTo ErrHandler
+    On Error Resume Next
 
     Dim LogPath As String
     Dim F As Long
@@ -135,8 +132,5 @@ Public Sub ClearLog()
     Open LogPath For Output As #F
     Close #F
 
-    Exit Sub
-
-ErrHandler:
-    ' При ошибке очистки — игнорируем
+    ' On Error GoTo 0 не вызываем — ошибки очистки игнорируем
 End Sub

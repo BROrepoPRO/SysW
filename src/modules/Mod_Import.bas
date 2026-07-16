@@ -15,6 +15,8 @@ Option Explicit
 ' Импортирует лист из report.xlsx по ГРЗ в текущую книгу
 ' --------------------------------------------------------------------------
 Public Sub ImportSheet(grz As String)
+    On Error GoTo ErrHandler
+
     Dim wsSource As Worksheet
     Dim wsMain As Worksheet
     Dim newName As String
@@ -35,6 +37,15 @@ Public Sub ImportSheet(grz As String)
     On Error GoTo 0
 
     Call ImportDataToMain(ActiveSheet)
+    Exit Sub
+
+ErrHandler:
+    ' Восстановление состояния приложения
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    MsgBox "Ошибка при импорте данных: " & Err.Description & ". Импорт прерван.", vbCritical, "Ошибка"
+    Call Mod_Logger.WriteLog("Mod_Import", "ImportSheet: " & Err.Description)
 End Sub
 
 ' --------------------------------------------------------------------------
@@ -43,6 +54,8 @@ End Sub
 ' Ищет таблицы "Выполненные работы" и "Расходная накладная" на листе
 ' --------------------------------------------------------------------------
 Public Sub ImportDataToMain(wsSource As Worksheet)
+    On Error GoTo ErrHandler
+
     Dim wsMain As Worksheet
     Dim lastRow As Long
     Dim i As Long
@@ -112,6 +125,15 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
     If Not foundMaterials Then
         MsgBox "Таблица 'Расходная накладная' не найдена!", vbExclamation, "Предупреждение"
     End If
+    Exit Sub
+
+ErrHandler:
+    ' Восстановление состояния приложения
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    MsgBox "Ошибка при импорте данных: " & Err.Description & ". Импорт прерван.", vbCritical, "Ошибка"
+    Call Mod_Logger.WriteLog("Mod_Import", "ImportDataToMain: " & Err.Description)
 End Sub
 
 ' ============================================================

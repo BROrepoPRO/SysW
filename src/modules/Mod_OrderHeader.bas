@@ -27,6 +27,8 @@ End Type
 ' Заполняет B3:B15 на листе main данными из spisok и model по номеру заказа
 ' --------------------------------------------------------------------------
 Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
+    On Error GoTo ErrHandler
+
     Dim wsSpisok As Worksheet
     Dim wsModel As Worksheet
     Dim wsMain As Worksheet
@@ -34,9 +36,29 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     Dim ModelRow As Range
     Dim ModelCode As Variant
 
-    Set wsMain = ThisWorkbook.Sheets("main")
-    Set wsSpisok = ThisWorkbook.Sheets("spisok")
-    Set wsModel = ThisWorkbook.Sheets("model")
+    Set wsMain = GetSheetByName(ThisWorkbook, "main")
+    Set wsSpisok = GetSheetByName(ThisWorkbook, "spisok")
+    Set wsModel = GetSheetByName(ThisWorkbook, "model")
+
+    ' Проверка существования листов
+    If wsMain Is Nothing Then
+        MsgBox "Лист main не найден в книге. Заполнение шапки прервано.", vbCritical, "Ошибка"
+        Call Mod_Logger.WriteLog("Mod_OrderHeader", "FillHeaderFromOrder: Лист main не найден")
+        FillHeaderFromOrder = False
+        Exit Function
+    End If
+    If wsSpisok Is Nothing Then
+        MsgBox "Лист spisok не найден в книге. Заполнение шапки прервано.", vbCritical, "Ошибка"
+        Call Mod_Logger.WriteLog("Mod_OrderHeader", "FillHeaderFromOrder: Лист spisok не найден")
+        FillHeaderFromOrder = False
+        Exit Function
+    End If
+    If wsModel Is Nothing Then
+        MsgBox "Лист model не найден в книге. Заполнение шапки прервано.", vbCritical, "Ошибка"
+        Call Mod_Logger.WriteLog("Mod_OrderHeader", "FillHeaderFromOrder: Лист model не найден")
+        FillHeaderFromOrder = False
+        Exit Function
+    End If
 
     ' Очистка B3:B15
     wsMain.Range("B3:B15").ClearContents
@@ -89,6 +111,13 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     wsMain.Cells(15, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_NOTE).Value
 
     FillHeaderFromOrder = True
+    Exit Function
+
+ErrHandler:
+    ' Восстановление состояния приложения
+    Application.EnableEvents = True
+    Call Mod_Logger.WriteLog("Mod_OrderHeader", "FillHeaderFromOrder: " & Err.Description)
+    FillHeaderFromOrder = False
 End Function
 
 ' --------------------------------------------------------------------------

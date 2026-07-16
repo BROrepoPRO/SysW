@@ -5,6 +5,8 @@ Option Explicit
 
 Private Sub Worksheet_Change(ByVal Target As Range)
     ' обработка изменений
+    On Error GoTo ErrHandler
+
     Static isProcessing As Boolean
     If isProcessing Then Exit Sub
 
@@ -17,8 +19,6 @@ Private Sub Worksheet_Change(ByVal Target As Range)
 
         isProcessing = True
 
-        On Error GoTo CleanUp
-
         Dim b2Value As Variant
         b2Value = Me.Range("B2").Value
         If Not IsEmpty(b2Value) And b2Value <> "" Then
@@ -26,8 +26,14 @@ Private Sub Worksheet_Change(ByVal Target As Range)
             result = Mod_OrderHeader.FillHeaderFromOrder(CStr(b2Value))
         End If
 
-CleanUp:
         isProcessing = False
-        On Error GoTo 0
     End If
+
+    Exit Sub
+
+ErrHandler:
+    ' Восстановление состояния приложения и сброс флага
+    Application.EnableEvents = True
+    isProcessing = False
+    Call Mod_Logger.WriteLog("Sheet1_main", "Worksheet_Change: " & Err.Description)
 End Sub

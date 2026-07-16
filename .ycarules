@@ -67,7 +67,7 @@
 - В Excel/VBA Editor — **Windows-1251** (требование COM-автоматизации)
 
 [K2] **Скрипты конвертации**
-- `import_all_vba.py` — UTF-8 → CP1251 (перед импортом в Excel)
+- `impVBA.py` — UTF-8 → CP1251 (перед импортом в Excel)
 - `export_vba.py` — CP1251 → UTF-8 (после экспорта из Excel)
 - `.gitattributes` — нормализация UTF-8 для Git
 - `.vscode/settings.json` — `files.encoding: "utf8"` для всех VBA-файлов

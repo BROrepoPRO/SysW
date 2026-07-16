@@ -55,6 +55,10 @@ Public Sub Btn_main_Clear()
     Exit Sub
 
 ErrHandler:
+    ' Восстановление состояния приложения
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
     MsgBox "Ошибка при очистке: " & Err.Description, vbCritical, "Ошибка"
     Call Mod_Utils.WriteLog("Btn_main_Clear: " & Err.Description)
 End Sub
@@ -76,6 +80,10 @@ Public Sub Btn_main_Import()
     Exit Sub
 
 ErrHandler:
+    ' Восстановление состояния приложения
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
     MsgBox "Ошибка при импорте: " & Err.Description, vbCritical, "Ошибка"
     Call Mod_Utils.WriteLog("Btn_main_Import: " & Err.Description)
 End Sub
