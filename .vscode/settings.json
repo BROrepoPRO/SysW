@@ -22,8 +22,9 @@
         "*.xlsx": true
     },
     "terminal.integrated.cwd": "L:\\PROject\\SysW",
-    "python.defaultInterpreterPath": "L:\\PROject\\SysW\\.venv\\Scripts\\python.exe",
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
     "python.terminal.activateEnvironment": true,
+    "python.terminal.activateEnvInCurrentTerminal": true,
     "terminal.integrated.defaultProfile": "SourceCraft",
     "terminal.integrated.profiles.windows": {
         "SourceCraft": {
@@ -31,7 +32,7 @@
             "args": [
                 "-NoExit",
                 "-Command",
-                "chcp 65001 | Out-Null; & 'L:\\PROject\\SysW\\.venv\\Scripts\\Activate.ps1'"
+                "chcp 65001 | Out-Null; & '.venv/Scripts/Activate.ps1'"
             ]
         },
         "PowerShell": {

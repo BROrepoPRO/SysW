@@ -5,6 +5,14 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [0.8.0] — 2026-07-19
+
+### Added
+- Новый лист `models` со структурой (русские заголовки + латинские имена)
+- Модуль `Mod_Models` для инициализации листа models
+- Расширение реестра имён `Mod_LibName` записями для models (`col_model_name`, `col_hrpr`)
+- Константы столбцов `MODELS_COL_MODEL`, `MODELS_COL_GROUP`, `MODELS_COL_PRICE` в `Mod_Constants`
+
 ## [0.7.1] — 2026-07-16
 
 ### Добавлено
