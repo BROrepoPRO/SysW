@@ -28,11 +28,11 @@
     "terminal.integrated.defaultProfile": "SourceCraft",
     "terminal.integrated.profiles.windows": {
         "SourceCraft": {
-            "path": "powershell.exe",
+            "path": "pwsh.exe",
             "args": [
                 "-NoExit",
                 "-Command",
-                "chcp 65001 | Out-Null; $env:Path = '.venv\\Scripts;' + $env:Path"
+                "$env:Path = '.venv\\Scripts;' + $env:Path"
             ]
         },
         "PowerShell": {
