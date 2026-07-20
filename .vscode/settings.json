@@ -32,7 +32,7 @@
             "args": [
                 "-NoExit",
                 "-Command",
-                "chcp 65001 | Out-Null; & '.venv/Scripts/Activate.ps1'"
+                "chcp 65001 | Out-Null; $env:Path = '.venv\\Scripts;' + $env:Path"
             ]
         },
         "PowerShell": {
