@@ -48,10 +48,15 @@ FILES = sorted([
 # VBComponents.Import() handles this automatically when the .cls file
 # contains the correct Attribute VB_Base line with Worksheet CLSID.
 # Dynamically discovered: any .cls file whose name starts with "Sheet"
-# is treated as a worksheet document.
+# (English) or "Лист" (Russian) is treated as a worksheet document.
 SHEET_COMPONENTS = {
     f.stem for f in (MODULES_PATH / "sheets").iterdir()
-    if f.suffix.lower() == ".cls" and f.stem.lower().startswith("sheet") and f.is_file()
+    if f.suffix.lower() == ".cls"
+    and (
+        f.stem.lower().startswith("sheet")
+        or f.stem.lower().startswith("лист")
+    )
+    and f.is_file()
 }
 
 
@@ -175,6 +180,16 @@ def strip_attribute_lines(text, is_cls=False):
     return '\n'.join(filtered)
 
 
+def extract_vb_name(text):
+    """Extract VB_Name from VBA source text.
+
+    Looks for 'Attribute VB_Name = "..."' line and returns the name.
+    Returns None if not found.
+    """
+    match = re.search(r'Attribute\s+VB_Name\s*=\s*"([^"]+)"', text)
+    return match.group(1) if match else None
+
+
 def main():
     # Ensure temp dir
     if TEMP_DIR.exists():
@@ -200,17 +215,41 @@ def main():
         print(f"VBA project accessible. Components count: {comp_count}")
 
         # First pass: remove all our components
+        # Read VB_Name from each source file to ensure correct component
+        # identification (file name stem may differ from VB_Name, e.g.
+        # Лист2_main.cls -> VB_Name = "Лист2")
         print("")
         print("--- Removing existing components ---")
         for file_name in FILES:
-            component_name = Path(file_name).stem
+            if file_name.lower().endswith('.cls'):
+                file_path = MODULES_PATH / "sheets" / file_name
+            else:
+                file_path = MODULES_PATH / "modules" / file_name
+
+            if not file_path.exists():
+                print(f"  Not found on disk: {file_name}")
+                continue
+
+            # Read VB_Name from source file
             try:
-                existing = vb_project.VBComponents.Item(component_name)
+                text = read_vba_file(file_path)
+            except (FileNotFoundError, ValueError) as e:
+                print(f"  [!] {e}")
+                continue
+
+            vb_name = extract_vb_name(text)
+            if not vb_name:
+                # Fallback to file stem if VB_Name not found
+                vb_name = Path(file_name).stem
+                print(f"  VB_Name not found in {file_name}, using stem: {vb_name}")
+
+            try:
+                existing = vb_project.VBComponents.Item(vb_name)
                 if existing:
                     vb_project.VBComponents.Remove(existing)
-                    print(f"  Removed: {component_name}")
+                    print(f"  Removed: {vb_name} (from {file_name})")
             except Exception:
-                print(f"  Not found: {component_name}")
+                print(f"  Not found: {vb_name} (from {file_name})")
 
         # Second pass: import all components
         print("")
@@ -260,9 +299,15 @@ def main():
             # For .cls files with VB_Base attribute, it also correctly
             # places the component in "Microsoft Excel Objects" folder.
             # On Russian Windows, cp1251 is the correct encoding for VBA.
+            # Use errors='replace' to handle characters not representable
+            # in cp1251 (e.g. em-dash, typographic quotes) — they become '?'.
             temp_file = TEMP_DIR / file_name
-            with open(temp_file, "w", encoding="cp1251") as f:
-                f.write(text)
+            try:
+                with open(temp_file, "w", encoding="cp1251", errors="replace") as f:
+                    f.write(text)
+            except Exception as e:
+                print(f"    [!] Failed to write temp file: {e}")
+                continue
             print(f"    Converted encoding: UTF-8 -> Windows-1251")
             print(f"    Calling Import on: {temp_file}")
             imported = vb_project.VBComponents.Import(str(temp_file))

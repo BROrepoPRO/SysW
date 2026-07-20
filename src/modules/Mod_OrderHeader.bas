@@ -38,7 +38,7 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
 
     Set wsMain = GetSheetByName(ThisWorkbook, "main")
     Set wsSpisok = GetSheetByName(ThisWorkbook, "spisok")
-    Set wsModel = GetSheetByName(ThisWorkbook, "model")
+    Set wsModel = GetSheetByName(ThisWorkbook, "models")
 
     ' Проверка существования листов
     If wsMain Is Nothing Then
@@ -54,8 +54,8 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
         Exit Function
     End If
     If wsModel Is Nothing Then
-        MsgBox "Лист model не найден в книге. Заполнение шапки прервано.", vbCritical, "Ошибка"
-        Call Mod_Logger.WriteLog("Mod_OrderHeader", "FillHeaderFromOrder: Лист model не найден")
+        MsgBox "Лист models не найден в книге. Заполнение шапки прервано.", vbCritical, "Ошибка"
+        Call Mod_Logger.WriteLog("Mod_OrderHeader", "FillHeaderFromOrder: Лист models не найден")
         FillHeaderFromOrder = False
         Exit Function
     End If
@@ -79,36 +79,31 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
         Exit Function
     End If
 
-    ' B3 = "00" & значение B2 & "-20"
-    wsMain.Cells(3, 2).Value = "00" & CStr(orderNum) & "-20"
+    ' B3:B9 из столбцов B–H найденной строки spisok
+    wsMain.Cells(3, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_MODEL).Value   ' B3 = название ТС
+    wsMain.Cells(4, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_GRZ).Value     ' B4 = ГРЗ
+    wsMain.Cells(5, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_VIN).Value     ' B5 = VIN
+    wsMain.Cells(6, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_GARAGE).Value  ' B6 = Гараж.№
+    wsMain.Cells(7, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_YEAR).Value    ' B7 = Год вып.
+    wsMain.Cells(8, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_MILEAGE).Value ' B8 = Пробег
+    wsMain.Cells(9, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_DATE).Value    ' B9 = Дата
 
-    ' B4:B10 из столбцов B–H найденной строки spisok
-    wsMain.Cells(4, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_MODEL).Value   ' Модель
-    wsMain.Cells(5, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_GRZ).Value     ' ГРЗ
-    wsMain.Cells(6, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_VIN).Value     ' VIN
-    wsMain.Cells(7, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_GARAGE).Value  ' Гараж.№
-    wsMain.Cells(8, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_YEAR).Value    ' Год вып.
-    wsMain.Cells(9, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_MILEAGE).Value ' Пробег
-    wsMain.Cells(10, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_DATE).Value   ' Дата
+    ' B10 = "00" & значение B2 & "-20" (№ ЗН)
+    wsMain.Cells(10, 2).Value = "00" & CStr(orderNum) & "-20"
 
     ' Код модели из столбца I
     ModelCode = FoundRow.Cells(1, 9).Value
 
-    ' Поиск кода модели в столбце A листа model (начиная со строки 3)
+    ' Поиск кода модели в столбце A листа models (начиная со строки 3)
     If Not IsNull(ModelCode) And ModelCode <> "" Then
         Dim lastModelRow As Long
         lastModelRow = wsModel.Cells(wsModel.Rows.count, 1).End(xlUp).Row
         Set ModelRow = wsModel.Range("A3:A" & lastModelRow).Find(What:=ModelCode, LookAt:=xlWhole)
         If Not ModelRow Is Nothing And ModelRow.Row >= 3 Then
-            wsMain.Cells(11, 2).Value = ModelRow.Cells(1, Mod_Constants.MODEL_COL_PRICE).Value      ' Цена н/ч
-            wsMain.Cells(12, 2).Value = ModelRow.Cells(1, Mod_Constants.MODEL_COL_GROUP).Value      ' Группа
-            wsMain.Cells(13, 2).Value = ModelRow.Cells(1, Mod_Constants.MODEL_COL_WORKS_ORIG).Value ' Работы исх
-            wsMain.Cells(14, 2).Value = ModelRow.Cells(1, Mod_Constants.MODEL_COL_WORKS_MOD).Value  ' Работы мод
+            wsMain.Cells(11, 2).Value = ModelRow.Cells(1, Mod_Constants.MODELS_COL_PRICE).Value  ' Цена н/ч
+            wsMain.Cells(12, 2).Value = ModelRow.Cells(1, Mod_Constants.MODELS_COL_GROUP).Value  ' Группа
         End If
     End If
-
-    ' B15 = примечание из столбца J spisok
-    wsMain.Cells(15, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_NOTE).Value
 
     FillHeaderFromOrder = True
     Exit Function
