@@ -23,9 +23,8 @@ Public Const SPISOK_COL_DATE As Long = 8
 Public Const SPISOK_COL_NOTE As Long = 10
 
 ' ============================================================
-' Константы столбцов листа model
+' Константы столбцов листа models
 ' ============================================================
-Public Const MODEL_COL_GROUP As Long = 2
-Public Const MODEL_COL_PRICE As Long = 3
-Public Const MODEL_COL_WORKS_ORIG As Long = 4
-Public Const MODEL_COL_WORKS_MOD As Long = 5
+Public Const MODELS_COL_MODEL As Long = 1
+Public Const MODELS_COL_GROUP As Long = 2
+Public Const MODELS_COL_PRICE As Long = 3

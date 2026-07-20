@@ -274,7 +274,7 @@ Private Sub RunOrderHeaderTests()
     On Error Resume Next
     Set wsMain = GetSheetByName(ThisWorkbook, "main")
     Set wsSpisok = GetSheetByName(ThisWorkbook, "spisok")
-    Set wsModel = GetSheetByName(ThisWorkbook, "model")
+    Set wsModel = GetSheetByName(ThisWorkbook, "models")
 
     If (Not wsMain Is Nothing) And (Not wsSpisok Is Nothing) And (Not wsModel Is Nothing) Then
         ' Сохраняем состояние B3:B15

@@ -214,17 +214,16 @@ def main():
         comp_count = vb_project.VBComponents.Count
         print(f"VBA project accessible. Components count: {comp_count}")
 
-        # First pass: remove all our components
-        # Read VB_Name from each source file to ensure correct component
-        # identification (file name stem may differ from VB_Name, e.g.
-        # Лист2_main.cls -> VB_Name = "Лист2")
+        # First pass: remove standard modules (.bas) only.
+        # Sheet components (.cls) are NOT removed — they are bound to
+        # worksheet objects and must be updated via CodeModule instead.
         print("")
-        print("--- Removing existing components ---")
+        print("--- Removing existing standard modules (.bas) ---")
         for file_name in FILES:
-            if file_name.lower().endswith('.cls'):
-                file_path = MODULES_PATH / "sheets" / file_name
-            else:
-                file_path = MODULES_PATH / "modules" / file_name
+            if not file_name.lower().endswith('.bas'):
+                continue  # skip .cls files (sheet components)
+
+            file_path = MODULES_PATH / "modules" / file_name
 
             if not file_path.exists():
                 print(f"  Not found on disk: {file_name}")
@@ -239,7 +238,6 @@ def main():
 
             vb_name = extract_vb_name(text)
             if not vb_name:
-                # Fallback to file stem if VB_Name not found
                 vb_name = Path(file_name).stem
                 print(f"  VB_Name not found in {file_name}, using stem: {vb_name}")
 
@@ -251,9 +249,9 @@ def main():
             except Exception:
                 print(f"  Not found: {vb_name} (from {file_name})")
 
-        # Second pass: import all components
+        # Second pass: import/update all components
         print("")
-        print("--- Importing components ---")
+        print("--- Importing/updating components ---")
         for file_name in FILES:
             if file_name.lower().endswith('.cls'):
                 file_path = MODULES_PATH / "sheets" / file_name
@@ -278,43 +276,65 @@ def main():
                 continue
 
             # Strip export-format header (VERSION, BEGIN...END)
-            # For .bas files: remove the header (not valid VBA code)
-            # For .cls files: remove the header too — VBComponents.Import
-            #   does NOT need VERSION/BEGIN/END lines, it only needs
-            #   the Attribute lines and the actual code.
             text = strip_export_header(text)
             print(f"    Stripped export header (VERSION, BEGIN...END)")
 
             # Strip/keep Attribute lines (different handling for .bas vs .cls)
-            # .cls files keep ALL Attribute lines for VBComponents.Import
-            # including VB_Base which determines document type
             text = strip_attribute_lines(text, is_cls=is_cls)
             print(f"    Stripped Attribute lines (is_cls={is_cls})")
 
             # Remove leading blank lines
             text = text.lstrip('\n\r')
 
-            # Write temp file in Windows-1251 and import via VBComponents.Import
-            # VBComponents.Import properly registers Public Subs as macros.
-            # For .cls files with VB_Base attribute, it also correctly
-            # places the component in "Microsoft Excel Objects" folder.
-            # On Russian Windows, cp1251 is the correct encoding for VBA.
-            # Use errors='replace' to handle characters not representable
-            # in cp1251 (e.g. em-dash, typographic quotes) — they become '?'.
-            temp_file = TEMP_DIR / file_name
-            try:
-                with open(temp_file, "w", encoding="cp1251", errors="replace") as f:
-                    f.write(text)
-            except Exception as e:
-                print(f"    [!] Failed to write temp file: {e}")
-                continue
-            print(f"    Converted encoding: UTF-8 -> Windows-1251")
-            print(f"    Calling Import on: {temp_file}")
-            imported = vb_project.VBComponents.Import(str(temp_file))
-            if imported is None:
-                print(f"    [!] Import returned None!")
+            # Get VB_Name for component lookup
+            vb_name = extract_vb_name(text)
+            if not vb_name:
+                vb_name = Path(file_name).stem
+                print(f"    VB_Name not found, using stem: {vb_name}")
+
+            if is_sheet:
+                # For sheet components (existing worksheets):
+                # Do NOT use Import() — it creates duplicates.
+                # Instead, update the code of the existing component
+                # via CodeModule.AddFromString.
+                try:
+                    existing = vb_project.VBComponents.Item(vb_name)
+                    print(f"    Found existing component: {vb_name}")
+
+                    # Clear existing code and write new code
+                    code_module = existing.CodeModule
+                    code_module.DeleteLines(1, code_module.CountOfLines)
+                    code_module.AddFromString(text)
+                    print(f"    [+] Updated code for: {file_name}")
+                except Exception as e:
+                    print(f"    [!] Component {vb_name} not found in workbook: {e}")
+                    print(f"    [!] Falling back to Import() for: {file_name}")
+                    # Fallback: import as new component
+                    temp_file = TEMP_DIR / file_name
+                    with open(temp_file, "w", encoding="cp1251", errors="replace") as f:
+                        f.write(text)
+                    imported = vb_project.VBComponents.Import(str(temp_file))
+                    if imported is None:
+                        print(f"    [!] Import returned None!")
+                    else:
+                        print(f"    [+] Successfully imported: {file_name}")
             else:
-                print(f"    [+] Successfully imported: {file_name}")
+                # For standard modules (.bas):
+                # Use VBComponents.Import() as before
+                temp_file = TEMP_DIR / file_name
+                try:
+                    with open(temp_file, "w", encoding="cp1251", errors="replace") as f:
+                        f.write(text)
+                except Exception as e:
+                    print(f"    [!] Failed to write temp file: {e}")
+                    continue
+                print(f"    Converted encoding: UTF-8 -> Windows-1251")
+                print(f"    Calling Import on: {temp_file}")
+                imported = vb_project.VBComponents.Import(str(temp_file))
+                if imported is None:
+                    print(f"    [!] Import returned None!")
+                else:
+                    print(f"    [+] Successfully imported: {file_name}")
 
         print("")
         print("Saving workbook...")

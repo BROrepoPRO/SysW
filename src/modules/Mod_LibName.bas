@@ -71,75 +71,81 @@ End Sub
 ' BuildEntryArray
 ' Возвращает двумерный массив записей для заполнения листа libname.
 ' Столбцы: 0 — NameKey, 1 — England, 2 — Russian.
+'
+' Соглашение об именах NameKey:
+'   {лист}_col_{сущность} — для имён, привязанных к конкретному листу
+'   {имя}                 — для глобальных сущностей (без привязки к листу)
+' Поле England (латинское имя) может быть общим для разных листов,
+' если обозначает одно и то же бизнес-понятие.
 ' ============================================================
 Private Function BuildEntryArray() As Variant
     Dim arr(0 To 12, 0 To 2) As Variant
 
     ' --- Записи для листа spisok ---
 
-    ' col_num — лист spisok с входящим списком авто
-    arr(0, 0) = "col_num"
+    ' spisok_col_num — лист spisok с входящим списком авто
+    arr(0, 0) = "spisok_col_num"
     arr(0, 1) = "spisok"
     arr(0, 2) = "лист spisok с входящим списком авто"
 
-    ' col_model — Модель
-    arr(1, 0) = "col_model"
+    ' spisok_col_model — Модель (столбец B листа spisok)
+    arr(1, 0) = "spisok_col_model"
     arr(1, 1) = "model"
-    arr(1, 2) = "Модель"
+    arr(1, 2) = "Модель (столбец B листа spisok)"
 
-    ' col_grz — ГРЗ
-    arr(2, 0) = "col_grz"
+    ' spisok_col_grz — ГРЗ (столбец C листа spisok)
+    arr(2, 0) = "spisok_col_grz"
     arr(2, 1) = "grz"
-    arr(2, 2) = "ГРЗ"
+    arr(2, 2) = "ГРЗ (столбец C листа spisok)"
 
-    ' col_vin — VIN
-    arr(3, 0) = "col_vin"
+    ' spisok_col_vin — VIN (столбец D листа spisok)
+    arr(3, 0) = "spisok_col_vin"
     arr(3, 1) = "vin"
-    arr(3, 2) = "VIN"
+    arr(3, 2) = "VIN (столбец D листа spisok)"
 
-    ' col_garnum — Гараж. №
-    arr(4, 0) = "col_garnum"
+    ' spisok_col_garnum — Гараж. № (столбец E листа spisok)
+    arr(4, 0) = "spisok_col_garnum"
     arr(4, 1) = "garnum"
-    arr(4, 2) = "Гараж. №"
+    arr(4, 2) = "Гараж. № (столбец E листа spisok)"
 
-    ' col_year — Год выпуска
-    arr(5, 0) = "col_year"
+    ' spisok_col_year — Год выпуска (столбец F листа spisok)
+    arr(5, 0) = "spisok_col_year"
     arr(5, 1) = "year"
-    arr(5, 2) = "Год выпуска"
+    arr(5, 2) = "Год выпуска (столбец F листа spisok)"
 
-    ' col_mileage — Пробег
-    arr(6, 0) = "col_mileage"
+    ' spisok_col_mileage — Пробег (столбец G листа spisok)
+    arr(6, 0) = "spisok_col_mileage"
     arr(6, 1) = "mileage"
-    arr(6, 2) = "Пробег"
+    arr(6, 2) = "Пробег (столбец G листа spisok)"
 
-    ' col_date — Дата
-    arr(7, 0) = "col_date"
+    ' spisok_col_date — Дата (столбец H листа spisok)
+    arr(7, 0) = "spisok_col_date"
     arr(7, 1) = "date"
-    arr(7, 2) = "Дата"
+    arr(7, 2) = "Дата (столбец H листа spisok)"
 
-    ' col_group — Группа
-    arr(8, 0) = "col_group"
+    ' spisok_col_group — Группа (столбец I листа spisok)
+    arr(8, 0) = "spisok_col_group"
     arr(8, 1) = "group"
-    arr(8, 2) = "Группа"
+    arr(8, 2) = "Группа (столбец I листа spisok)"
 
-    ' col_reserve — РЕЗЕРВ
-    arr(9, 0) = "col_reserve"
+    ' spisok_col_reserve — РЕЗЕРВ (столбец J листа spisok)
+    arr(9, 0) = "spisok_col_reserve"
     arr(9, 1) = "reserve"
-    arr(9, 2) = "РЕЗЕРВ"
+    arr(9, 2) = "РЕЗЕРВ (столбец J листа spisok)"
 
     ' --- Записи для листа models ---
 
-    ' col_model_name — Модель (столбец A листа models)
-    arr(10, 0) = "col_model_name"
+    ' models_col_model_name — Модель (столбец A листа models)
+    arr(10, 0) = "models_col_model_name"
     arr(10, 1) = "model_name"
     arr(10, 2) = "Модель (столбец A листа models)"
 
-    ' col_hrpr — Цена н/ч (столбец C листа models)
-    arr(11, 0) = "col_hrpr"
+    ' models_col_hrpr — Цена н/ч (столбец C листа models)
+    arr(11, 0) = "models_col_hrpr"
     arr(11, 1) = "hrpr"
     arr(11, 2) = "Цена н/ч (столбец C листа models)"
 
-    ' --- Запись для файла work.xlsm ---
+    ' --- Запись для файла work.xlsm (глобальная, без привязки к листу) ---
 
     ' work.xlsm — книга Excel с макросами
     arr(12, 0) = "work.xlsm"
