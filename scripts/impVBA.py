@@ -148,30 +148,34 @@ def strip_export_header(text):
     return '\n'.join(filtered)
 
 
-def strip_attribute_lines(text, is_cls=False):
+def strip_attribute_lines(text, is_cls=False, for_codemodule=False):
     """Remove Attribute lines from VBA source.
 
-    For .bas files: keep ONLY Attribute VB_Name (required for named import),
-                    remove all other Attribute lines.
-    For .cls files: keep ALL Attribute lines (VB_Name, VB_PredeclaredId,
-                    VB_Exposed, etc.) — they are required for
-                    VBComponents.Import to properly register the component
+    For .bas files (Import mode): keep ONLY Attribute VB_Name (required
+                    for named import), remove all other Attribute lines.
+    For .cls files (Import mode): keep ALL Attribute lines (VB_Name,
+                    VB_PredeclaredId, VB_Exposed, etc.) — they are required
+                    for VBComponents.Import to properly register the component
                     including event handler bindings and document type.
+    For CodeModule mode (both .bas and .cls): remove ALL Attribute lines
+                    — they cause "Syntax error" when added via AddFromString.
     """
     lines = text.split('\n')
     filtered = []
     for line in lines:
         stripped = line.strip()
         if stripped.startswith('Attribute '):
+            if for_codemodule:
+                # CodeModule.AddFromString does NOT support Attribute lines
+                # Remove ALL of them (VB_Name, VB_PredeclaredId, etc.)
+                continue
             if is_cls:
-                # For .cls files: keep ALL Attribute lines
-                # (VB_Name, VB_PredeclaredId, VB_Exposed, VB_Base, etc.)
-                # These are required by VBComponents.Import for proper
-                # event handler binding (e.g. Worksheet_Change) and
-                # document type detection (VB_Base with Worksheet CLSID).
+                # For .cls files imported via VBComponents.Import:
+                # keep ALL Attribute lines
                 filtered.append(line)
             else:
-                # For .bas files, keep ONLY VB_Name (required for named import)
+                # For .bas files imported via VBComponents.Import:
+                # keep ONLY VB_Name (required for named import)
                 if 'VB_Name' in stripped:
                     filtered.append(line)
                 # else: skip other Attribute lines
@@ -280,8 +284,12 @@ def main():
             print(f"    Stripped export header (VERSION, BEGIN...END)")
 
             # Strip/keep Attribute lines (different handling for .bas vs .cls)
-            text = strip_attribute_lines(text, is_cls=is_cls)
-            print(f"    Stripped Attribute lines (is_cls={is_cls})")
+            # For sheet components updated via CodeModule.AddFromString,
+            # remove all Attribute lines (they cause "Syntax error").
+            # For .bas files imported via VBComponents.Import,
+            # keep VB_Name but remove others.
+            text = strip_attribute_lines(text, is_cls=is_cls, for_codemodule=is_sheet)
+            print(f"    Stripped Attribute lines (is_cls={is_cls}, for_codemodule={is_sheet})")
 
             # Remove leading blank lines
             text = text.lstrip('\n\r')
