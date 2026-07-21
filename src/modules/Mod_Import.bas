@@ -91,7 +91,7 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
     '   Строка 3+: данные
     ' Колонки: B(2)=№, C(3)=№ кат., D(4)=Наименование, E(5)=Кол.оп., F(6)=Цена,
     '          G(7)=Норма, H(8)=н/ч, I(9)=Всего, J(10)=в т.ч. НДС
-    ' Маппинг на main: D(Наименование)→L(12), E(Кол.оп.)→M(13), I(Всего)→N(14)
+    ' Маппинг на main: D(4)→L(12), I(9)→M(13), M(13)→N(14)
     ' ============================================================
     Set cell = wsSource.Cells.Find(What:="Выполненные работы", LookAt:=xlPart, SearchOrder:=xlByRows)
 
@@ -130,9 +130,9 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
         targetRow = 2 ' данные на main начинаем писать со строки 2
         For i = dataStartRow To srcLastRow
             If wsSource.Cells(i, 4).Value <> "" Then
-                wsMain.Cells(targetRow, 12).Value = wsSource.Cells(i, 4).Value ' D(Наименование) -> L
-                wsMain.Cells(targetRow, 13).Value = wsSource.Cells(i, 5).Value ' E(Кол.оп.) -> M
-                wsMain.Cells(targetRow, 14).Value = wsSource.Cells(i, 9).Value ' I(Всего) -> N
+                wsMain.Cells(targetRow, 12).Value = wsSource.Cells(i, 4).Value ' D(4) -> L(12)
+                wsMain.Cells(targetRow, 13).Value = wsSource.Cells(i, 9).Value ' I(9) -> M(13)
+                wsMain.Cells(targetRow, 14).Value = wsSource.Cells(i, 13).Value ' M(13) -> N(14)
                 ' Форматируем числовые колонки: убираем десятичные знаки для целых чисел
                 If IsNumeric(wsMain.Cells(targetRow, 13).Value) Then
                     If wsMain.Cells(targetRow, 13).Value = Int(wsMain.Cells(targetRow, 13).Value) Then
@@ -155,7 +155,7 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
     '   Строка 3+: данные
     ' Колонки: A(1)=№, B(2)=№ кат., C(3)=Наименование, D(4)=Кол-во,
     '          E(5)=Ед.изм., F(6)=Цена, G(7)=Всего, H(8)=в т.ч. НДС
-    ' Маппинг на main: B(№ кат.)→X(24), C(Наименование)→Y(25), D(Кол-во)→Z(26), G(Всего)→AA(27)
+    ' Маппинг на main: C(3)→X(24), D(4)→Y(25), J(10)→Z(26), M(13)→AA(27)
     ' ============================================================
     Set cell = wsSource.Cells.Find(What:="Расходная накладная", LookAt:=xlPart, SearchOrder:=xlByRows)
 
@@ -186,10 +186,10 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
         targetRow = 2 ' данные на main начинаем писать со строки 2
         For i = dataStartRow To srcLastRow
             If wsSource.Cells(i, 2).Value <> "" Then
-                wsMain.Cells(targetRow, 24).Value = wsSource.Cells(i, 2).Value ' B(№ кат.) -> X
-                wsMain.Cells(targetRow, 25).Value = wsSource.Cells(i, 3).Value ' C(Наименование) -> Y
-                wsMain.Cells(targetRow, 26).Value = wsSource.Cells(i, 4).Value ' D(Кол-во) -> Z
-                wsMain.Cells(targetRow, 27).Value = wsSource.Cells(i, 7).Value ' G(Всего) -> AA
+                wsMain.Cells(targetRow, 24).Value = wsSource.Cells(i, 3).Value ' C(3) -> X(24)
+                wsMain.Cells(targetRow, 25).Value = wsSource.Cells(i, 4).Value ' D(4) -> Y(25)
+                wsMain.Cells(targetRow, 26).Value = wsSource.Cells(i, 10).Value ' J(10) -> Z(26)
+                wsMain.Cells(targetRow, 27).Value = wsSource.Cells(i, 13).Value ' M(13) -> AA(27)
                 ' Форматируем числовые колонки
                 If IsNumeric(wsMain.Cells(targetRow, 26).Value) Then
                     If wsMain.Cells(targetRow, 26).Value = Int(wsMain.Cells(targetRow, 26).Value) Then
