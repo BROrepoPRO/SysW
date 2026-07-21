@@ -377,7 +377,7 @@ Private Sub RunLibNameTests()
     Dim wsLib As Worksheet
     Dim entryCount As Long
 
-    Debug.Print "--- Mod_LibName Tests ---"
+    Debug.Print "--- Mod_Constants (libname) Tests ---"
 
     ' -------------------------------------------------------
     ' TC-13: InitLibName — заполнение листа libname
@@ -394,7 +394,7 @@ Private Sub RunLibNameTests()
         ' Проверяем, что лист libname содержит данные (непустая строка 2)
         If IsEmpty(wsLib.Cells(2, 1).Value) Then
             ' Лист пуст — вызываем InitLibName для заполнения
-            Call Mod_LibName.InitLibName
+            Call Mod_Constants.InitLibName
         End If
 
         If Err.number <> 0 Then
@@ -405,11 +405,15 @@ Private Sub RunLibNameTests()
             Dim hasSpisokColModel As Boolean
             Dim hasModelsColModelName As Boolean
             Dim hasModelsColHrpr As Boolean
+            Dim hasModelsColGroup As Boolean
+            Dim hasZ4 As Boolean
             Dim i As Long
 
             hasSpisokColModel = False
             hasModelsColModelName = False
             hasModelsColHrpr = False
+            hasModelsColGroup = False
+            hasZ4 = False
 
             ' Ищем последнюю заполненную строку
             entryCount = wsLib.Cells(wsLib.Rows.Count, 1).End(xlUp).Row
@@ -421,14 +425,19 @@ Private Sub RunLibNameTests()
                 If key = "spisok_col_model" Then hasSpisokColModel = True
                 If key = "models_col_model_name" Then hasModelsColModelName = True
                 If key = "models_col_hrpr" Then hasModelsColHrpr = True
+                If key = "models_col_group" Then hasModelsColGroup = True
+                If key = "z4" Then hasZ4 = True
             Next i
 
             Dim Tc13Passed As Boolean
-            Tc13Passed = hasSpisokColModel And hasModelsColModelName And hasModelsColHrpr
+            Tc13Passed = hasSpisokColModel And hasModelsColModelName _
+                      And hasModelsColHrpr And hasModelsColGroup And hasZ4
             Dim Tc13Reason As String
             If Not hasSpisokColModel Then Tc13Reason = Tc13Reason & "нет spisok_col_model; "
             If Not hasModelsColModelName Then Tc13Reason = Tc13Reason & "нет models_col_model_name; "
             If Not hasModelsColHrpr Then Tc13Reason = Tc13Reason & "нет models_col_hrpr; "
+            If Not hasModelsColGroup Then Tc13Reason = Tc13Reason & "нет models_col_group; "
+            If Not hasZ4 Then Tc13Reason = Tc13Reason & "нет z4; "
 
             AddResult "TC-13", "InitLibName заполнение libname", Tc13Passed, Tc13Reason
         End If

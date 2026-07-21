@@ -91,15 +91,27 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     ' B10 = "00" & значение B2 & "-20" (№ ЗН)
     wsMain.Cells(10, 2).Value = "00" & CStr(orderNum) & "-20"
 
-    ' Ключ поиска по models — название модели из main.B3
-    ModelCode = wsMain.Cells(3, 2).Value   ' B3 = модель
+    ' Ключ поиска по models — название модели из main.B3 (с Trim для удаления лишних пробелов)
+    ModelCode = Trim(wsMain.Cells(3, 2).Value)   ' B3 = модель
 
     ' Поиск модели в столбце A листа models (начиная со строки 3)
     If Not IsNull(ModelCode) And ModelCode <> "" Then
         Dim lastModelRow As Long
         lastModelRow = wsModel.Cells(wsModel.Rows.count, Mod_Constants.MODELS_COL_MODEL).End(xlUp).Row
-        Set ModelRow = wsModel.Range("A3:A" & lastModelRow).Find(What:=ModelCode, LookAt:=xlWhole)
-        If Not ModelRow Is Nothing And ModelRow.Row >= 3 Then
+
+        ' Ручной цикл с Trim() — надёжнее Range.Find при наличии невидимых пробелов/символов
+        Dim cell As Range
+        Dim found As Boolean
+        found = False
+        For Each cell In wsModel.Range("A3:A" & lastModelRow)
+            If Trim(cell.Value) = ModelCode Then
+                Set ModelRow = cell
+                found = True
+                Exit For
+            End If
+        Next cell
+
+        If found And ModelRow.Row >= 3 Then
             ' Модель найдена — заполняем цену н/ч и группу
             wsMain.Cells(11, 2).Value = ModelRow.Cells(1, Mod_Constants.MODELS_COL_PRICE).Value  ' B11 = цена н/ч
             wsMain.Cells(12, 2).Value = ModelRow.Cells(1, Mod_Constants.MODELS_COL_GROUP).Value  ' B12 = группа

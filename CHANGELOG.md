@@ -5,6 +5,18 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [0.9.0] — 2026-07-21
+
+### Changed
+- **Рефакторинг:** модуль `Mod_LibName` объединён с `Mod_Constants` — централизованное управление константами и реестром имён
+- `Mod_LibName.bas` удалён; функциональность (`InitLibName`, `AddWorkEntry`, `BuildEntryArray`) перенесена в `Mod_Constants.bas`
+- Добавлены строковые константы `*_NAME` для листа libname (15 констант)
+- Добавлены числовые константы `SPISOK_COL_NUM` (столбец A) и `SPISOK_COL_GROUP` (столбец I) для листа spisok
+- Добавлены записи в реестр libname: `models_col_group`, `z4`
+- Исправлено несоответствие: `spisok_col_reserve` → `spisok_col_note` (синхронизация с `SPISOK_COL_NOTE`)
+- Обновлён тест TC-13: вызов `Mod_LibName.InitLibName` → `Mod_Constants.InitLibName`, добавлены проверки `models_col_group` и `z4`
+- Обновлена документация: DEVELOPER.md, sourcecraft-guide.md
+
 ## [0.8.0] — 2026-07-19
 
 ### Added

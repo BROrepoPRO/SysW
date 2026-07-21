@@ -8,22 +8,22 @@
 
 - **Утилиты** ([`Mod_Utils.bas`](../src/modules/Mod_Utils.bas)) — вспомогательные функции, общие типы данных
 - **Шапка заказа** ([`Mod_OrderHeader.bas`](../src/modules/Mod_OrderHeader.bas)) — заполнение заголовка заказ-наряда
-- **Импорт** ([`Mod_Import.bas`](../src/modules/Mod_Import.bas)) — импорт данных из Excel в SQLite и обратно
+- **Импорт** ([`Mod_Import.bas`](../src/modules/Mod_Import.bas)) — импорт данных из отчётов Excel
 - **Диспетчер кнопок** ([`Mod_ButtonDispatcher.bas`](../src/modules/Mod_ButtonDispatcher.bas)) — прослойка между UI и бизнес-логикой
 - **Тестовый раннер** ([`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas)) — автоматическое тестирование
 - **Логирование** ([`Mod_Logger.bas`](../src/modules/Mod_Logger.bas)) — логирование с ротацией
-- **Константы** ([`Mod_Constants.bas`](../src/modules/Mod_Constants.bas)) — константы столбцов
 - **Операции с листами** ([`Mod_SheetOps.bas`](../src/modules/Mod_SheetOps.bas)) — операции с листами
 - **Кнопки листа main** ([`Mod_MainButtons.bas`](../src/modules/Mod_MainButtons.bas)) — кнопки листа main
 - **Кнопки листов z4/work** ([`Mod_SheetButtons.bas`](../src/modules/Mod_SheetButtons.bas)) — кнопки листов z4/work
-- **Лист main** ([`Sheet1_main.cls`](../src/sheets/Sheet1_main.cls)) — обработчик событий листа
+- **Константы и реестр имён** ([`Mod_Constants.bas`](../src/modules/Mod_Constants.bas)) — константы столбцов и управление листом libname
+- **Лист main** ([`Лист2_main.cls`](../src/sheets/Лист2_main.cls)) — обработчик событий листа
 - **Лист work** ([`Sheet_work.cls`](../src/sheets/Sheet_work.cls)) — обработчик событий листа work
 - **Лист z4** ([`Sheet_z4.cls`](../src/sheets/Sheet_z4.cls)) — обработчик событий листа z4
 
 ### 1.2 Схема взаимодействия модулей
 
 ```
-Sheet1_main.cls (Worksheet_Change)
+Лист2_main.cls (Worksheet_Change)
        │
        └── Mod_OrderHeader.FillHeaderFromOrder()
               │
@@ -53,9 +53,9 @@ Mod_SheetButtons (кнопки листов z4/work)
 Mod_FullTestRunner.RunAllTests()
        │
        ├── RunUtilsTests()         → Mod_Utils
-       ├── RunOrderHeaderTests()   → Mod_OrderHeader
-       ├── RunImportTests()        → Mod_Import
-       └── RunButtonTests()        → Mod_ButtonDispatcher
+       ├── RunLoggerTests()        → Mod_Logger
+       ├── RunUtilsEdgeTests()     → Mod_Utils
+       └── RunLibNameTests()       → Mod_Constants
 ```
 
 ### 1.3 Принципы модульной архитектуры
@@ -71,7 +71,7 @@ Mod_FullTestRunner.RunAllTests()
 
 ### 2.1 Mod_Utils.bas — Утилитарные функции
 
-**Файл:** [`Mod_Utils.bas`](../src/modules/Mod_Utils.bas) (156 строк)
+**Файл:** [`Mod_Utils.bas`](../src/modules/Mod_Utils.bas) (142 строки)
 
 **Назначение:** Вспомогательные функции для работы с Excel.
 
@@ -97,12 +97,13 @@ Mod_FullTestRunner.RunAllTests()
 | `FileExists(FilePath)` | Проверка существования файла через `Dir()` |
 | `GetCurrentUser()` | Имя пользователя Windows (`Environ("USERNAME")`) |
 | `FormatDateSQL(d)` | Форматирование даты в формат SQLite: `ГГГГ-ММ-ДД` |
+| `WriteLog(message)` | Обёртка для `Mod_Logger.WriteLog` (обратная совместимость) |
 
 ### 2.2 Mod_OrderHeader.bas — Работа с шапкой заказ-наряда
 
-**Файл:** [`Mod_OrderHeader.bas`](../src/modules/Mod_OrderHeader.bas) (203 строки)
+**Файл:** [`Mod_OrderHeader.bas`](../src/modules/Mod_OrderHeader.bas) (265 строк)
 
-**Назначение:** Заполнение заголовка заказа-наряда (B3:B15) на листе main данными из листов spisok и model.
+**Назначение:** Заполнение заголовка заказа-наряда (B3:B15) на листе main данными из листов spisok и models.
 
 **Ключевые функции:**
 
@@ -110,6 +111,8 @@ Mod_FullTestRunner.RunAllTests()
 |---------|----------|
 | `FillHeaderFromOrder(OrderNum)` | Основная функция. Ищет номер заказа в листе spisok, заполняет B3:B15 на листе main. Возвращает `Boolean` — успех/неудача |
 | `FillHeaderFromOrder_UI()` | UI-обёртка: вызывает `FillHeaderFromOrder`, показывает MsgBox с результатом |
+| `FindOrder(orderNum, Header)` | Поиск заказа по номеру, заполняет структуру `OrderHeader` |
+| `FindOrder_UI()` | UI-обёртка: запрашивает номер через InputBox, показывает результат |
 
 **Константы столбцов листа spisok:**
 
@@ -124,30 +127,30 @@ Mod_FullTestRunner.RunAllTests()
 | `SPISOK_COL_DATE` | 8 | Дата |
 | `SPISOK_COL_NOTE` | 10 | Примечание |
 
-**Константы столбцов листа model:**
+**Константы столбцов листа models:**
 
 | Константа | Значение | Назначение |
 |-----------|----------|------------|
-| `MODEL_COL_GROUP` | 2 | Группа модели |
-| `MODEL_COL_PRICE` | 3 | Цена |
-| `MODEL_COL_WORKS_ORIG` | 4 | Оригинальные работы |
-| `MODEL_COL_WORKS_MOD` | 5 | Модифицированные работы |
+| `MODELS_COL_MODEL` | 1 | Модель |
+| `MODELS_COL_GROUP` | 2 | Группа модели |
+| `MODELS_COL_PRICE` | 3 | Цена н/ч |
 
 ### 2.3 Mod_Import.bas — Импорт данных
 
-**Файл:** [`Mod_Import.bas`](../src/modules/Mod_Import.bas) (370 строк)
+**Файл:** [`Mod_Import.bas`](../src/modules/Mod_Import.bas) (229 строк)
 
-**Назначение:** Импорт данных из Excel в SQLite и обратно. Поиск листов в report.xlsx по ГРЗ.
+**Назначение:** Импорт данных из отчётов Excel. Поиск листов в report.xlsx по ГРЗ.
 
 **Ключевые функции:**
 
 | Функция | Описание |
 |---------|----------|
-| `ExtractNumberFromGRZ(GRZ)` | Извлекает цифровую группу длиной 3 или 4 цифры из строки ГРЗ (пример: "А123АН77" → "123") |
-| `SearchSheetByGRZ(GRZ)` | Открывает report.xlsx (если не открыт), ищет лист по номеру ГРЗ. Возвращает найденный лист или Nothing |
-| `ClearMainSheet_UI()` | Очищает все данные на листе main с подтверждением пользователя |
+| `ImportSheet(grz)` | Импортирует лист из report.xlsx по ГРЗ в текущую книгу |
+| `ImportDataToMain(wsSource)` | Переносит данные из листа-источника в лист main по столбцам |
 | `ImportSheet_UI()` | Запускает импорт из отчёта по ГРЗ из ячейки B4 |
-| `ClearHeader_UI()` | Очищает только шапку заказа (B3:B15) на листе main |
+| `ImportByInput_UI()` | Запрашивает ГРЗ через InputBox, вызывает ImportSheet |
+| `RenameSheets_UI()` | Переименовывает листы в report.xlsx по ГРЗ |
+| `ImportDataToMain_UI()` | Переносит данные с активного листа в лист main |
 
 ### 2.4 Mod_ButtonDispatcher.bas — Диспетчер кнопок
 
@@ -159,31 +162,34 @@ Mod_FullTestRunner.RunAllTests()
 
 | Процедура | Вызов |
 |-----------|-------|
-| `Btn_main_Clear_Click()` | `Mod_Import.ClearMainSheet_UI` |
+| `Btn_main_Clear_Click()` | `Mod_SheetOps.ClearMainSheet_UI` |
 | `Btn_main_Import_Click()` | `Mod_Import.ImportSheet_UI` |
 | `Btn_main_FillHeader_Click()` | `Mod_OrderHeader.FillHeaderFromOrder_UI` |
-| `Btn_main_ClearHeader_Click()` | `Mod_Import.ClearHeader_UI` |
+| `Btn_main_ClearHeader_Click()` | `Mod_SheetOps.ClearHeader_UI` |
 | `Btn_main_ImportByInput_Click()` | Импорт по ГРЗ, введённому пользователем через InputBox |
+| `Btn_main_RunTests_Click()` | `Mod_FullTestRunner.RunAllTests_UI` |
+| `Btn_main_WriteLog_Click()` | `Mod_Utils.WriteLog_UI` |
+| `Btn_main_RenameSheets_Click()` | `Mod_Import.RenameSheets_UI` |
+| `Btn_main_ImportDataToMain_Click()` | `Mod_Import.ImportDataToMain_UI` |
+| `Btn_main_FindOrder_Click()` | `Mod_OrderHeader.FindOrder_UI` |
+| `Btn_main_ShowWorkbookPath_Click()` | `Mod_Utils.ShowWorkbookPath_UI` |
+| `Btn_main_ShowCurrentUser_Click()` | `Mod_Utils.ShowCurrentUser_UI` |
+| `Btn_main_CheckFileExists_Click()` | `Mod_Utils.CheckFileExists_UI` |
 
 ### 2.5 Mod_FullTestRunner.bas — Тестовый раннер
 
-**Файл:** [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas) (1050+ строк)
+**Файл:** [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas) (523 строки)
 
-**Назначение:** Автоматическое тестирование VBA-модулей. Содержит 30 тестовых сценариев (TC-01..TC-30).
+**Назначение:** Автоматическое тестирование VBA-модулей. Содержит 13 тестовых сценариев (TC-01..TC-13).
 
 **Группы тестов:**
 
 | Группа | Сценарии | Тестируемый модуль |
 |--------|----------|-------------------|
-| `RunUtilsTests()` | TC-01..TC-04, TC-06, TC-07, TC-19, TC-20 | Mod_Utils |
-| `RunOrderHeaderTests()` | TC-08, TC-09, TC-11, TC-12 | Mod_OrderHeader |
-| `RunImportTests()` | TC-05, TC-13..TC-15, TC-17 | Mod_Import / Mod_SheetOps |
-| `RunButtonTests()` | TC-18 | Mod_ButtonDispatcher |
-| `RunLoggerTests()` | TC-21, TC-22, TC-23 | Mod_Logger |
-| `RunSheetOpsTests()` | TC-24, TC-25, TC-28 | Mod_SheetOps |
-| `RunImportIntegrationTests()` | TC-26, TC-27 | Mod_Import (интеграционные) |
-| `RunUtilsEdgeTests()` | TC-29 | Mod_Utils (граничные случаи) |
-| `RunButtonAutomationTests()` | TC-30 | Mod_SheetOps (автоматизированный) |
+| `RunUtilsTests()` | TC-01..TC-08 | Mod_Utils |
+| `RunLoggerTests()` | TC-09..TC-11 | Mod_Logger |
+| `RunUtilsEdgeTests()` | TC-12 | Mod_Utils (граничные случаи) |
+| `RunLibNameTests()` | TC-13 | Mod_Constants |
 
 **Механизмы:**
 - **SKIP** — тесты, зависящие от отсутствующих данных, пропускаются
@@ -207,16 +213,17 @@ python scripts/run_tests.py
 
 | Функция | Описание |
 |---------|----------|
-| `LogInfo(Message)` | Запись информационного сообщения |
-| `LogError(Message)` | Запись сообщения об ошибке |
-| `LogWarning(Message)` | Запись предупреждения |
-| `RotateLog()` | Ротация лог-файла при превышении максимального размера |
+| `WriteLog(ModuleName, Message)` | Запись сообщения в лог |
+| `WriteLogE(ModuleName, Message)` | Запись сообщения об ошибке с префиксом [ERROR] |
+| `RotateLogIfNeeded(MaxSizeKB)` | Ротация лог-файла при превышении указанного размера |
+| `ClearLog()` | Очистка файла лога |
+| `GetLogPath()` | Возвращает путь к файлу лога |
 
 ### 2.7 Mod_Constants.bas — Константы столбцов
 
 **Файл:** [`Mod_Constants.bas`](../src/modules/Mod_Constants.bas)
 
-**Назначение:** Централизованное хранение констант столбцов для всех листов. Ранее константы были разбросаны по разным модулям.
+**Назначение:** Централизованное хранение констант столбцов для всех листов.
 
 **Константы листа spisok:**
 
@@ -231,29 +238,29 @@ python scripts/run_tests.py
 | `SPISOK_COL_DATE` | 8 | Дата |
 | `SPISOK_COL_NOTE` | 10 | Примечание |
 
-**Константы листа model:**
+**Константы листа models:**
 
 | Константа | Значение | Назначение |
 |-----------|----------|------------|
-| `MODEL_COL_GROUP` | 2 | Группа модели |
-| `MODEL_COL_PRICE` | 3 | Цена |
-| `MODEL_COL_WORKS_ORIG` | 4 | Оригинальные работы |
-| `MODEL_COL_WORKS_MOD` | 5 | Модифицированные работы |
+| `MODELS_COL_MODEL` | 1 | Модель |
+| `MODELS_COL_GROUP` | 2 | Группа модели |
+| `MODELS_COL_PRICE` | 3 | Цена н/ч |
 
 ### 2.8 Mod_SheetOps.bas — Операции с листами
 
 **Файл:** [`Mod_SheetOps.bas`](../src/modules/Mod_SheetOps.bas)
 
-**Назначение:** Операции по управлению листами: создание, удаление, копирование, переименование.
+**Назначение:** Операции по управлению листами: поиск, переименование, очистка, работа с ГРЗ.
 
 **Ключевые функции:**
 
 | Функция | Описание |
 |---------|----------|
-| `CreateSheet(SheetName)` | Создание нового листа с указанным именем |
-| `DeleteSheet(SheetName)` | Удаление листа по имени |
-| `CopySheet(SourceName, NewName)` | Копирование листа |
-| `SheetExists(SheetName)` | Проверка существования листа |
+| `ExtractNumberFromGRZ(GRZ)` | Извлекает цифровую группу длиной 3 или 4 цифры из строки ГРЗ |
+| `SearchSheetByGRZ(GRZ)` | Открывает report.xlsx, ищет лист по номеру ГРЗ |
+| `RenameSheetsByGRZ()` | Переименовывает листы в report.xlsx по номеру ГРЗ |
+| `ClearMainSheet_UI([silent])` | Очищает все данные на листе main с подтверждением |
+| `ClearHeader_UI()` | Очищает шапку заказа (B3:B15) на листе main |
 
 ### 2.9 Mod_MainButtons.bas — Кнопки листа main
 
@@ -265,9 +272,11 @@ python scripts/run_tests.py
 
 | Процедура | Описание |
 |-----------|----------|
-| `Btn_Import_Click()` | Импорт данных на лист main |
-| `Btn_Clear_Click()` | Очистка листа main |
-| `Btn_FillHeader_Click()` | Заполнение шапки заказ-наряда |
+| `Btn_main_Import()` | Импорт данных на лист main |
+| `Btn_main_AUTOz4()` | Заглушка: автоподбор запчастей — в разработке |
+| `Btn_main_AUTOw()` | Заглушка: автоподбор работ — в разработке |
+| `Btn_main_MANz4()` | Заглушка: ручной подбор запчастей — в разработке |
+| `Btn_main_MANw()` | Заглушка: ручной подбор работ — в разработке |
 
 ### 2.10 Mod_SheetButtons.bas — Кнопки листов z4/work
 
@@ -279,14 +288,69 @@ python scripts/run_tests.py
 
 | Процедура | Описание |
 |----------|----------|
-| `Btn_z4_Import_Click()` | Импорт данных на лист z4 |
-| `Btn_work_Import_Click()` | Импорт данных на лист work |
-| `Btn_z4_Clear_Click()` | Очистка листа z4 |
-| `Btn_work_Clear_Click()` | Очистка листа work |
+| `Btn_z4_Action1()` | Заглушка: действие 1 для запчастей — в разработке |
+| `Btn_z4_Action2()` | Заглушка: действие 2 для запчастей — в разработке |
+| `Btn_z4_Action3()` | Заглушка: действие 3 для запчастей — в разработке |
+| `Btn_work_Action1()` | Заглушка: действие 1 для работ — в разработке |
+| `Btn_work_Action2()` | Заглушка: действие 2 для работ — в разработке |
+| `Btn_work_Action3()` | Заглушка: действие 3 для работ — в разработке |
 
-### 2.11 Sheet1_main.cls — Основной лист
+### 2.11 Mod_Constants.bas — Константы и реестр имён
 
-**Файл:** [`Sheet1_main.cls`](../src/sheets/Sheet1_main.cls) (40 строк)
+**Файл:** [`Mod_Constants.bas`](../src/modules/Mod_Constants.bas)
+
+**Назначение:** Централизованное хранение констант проекта и управление листом libname (реестр имён). Объединяет числовые константы столбцов и строковые имена для реестра.
+
+**Числовые константы (столбцы листов):**
+
+| Константа | Значение | Описание |
+|-----------|----------|----------|
+| `SPISOK_COL_NUM` | 1 | № п/п (столбец A листа spisok) |
+| `SPISOK_COL_MODEL` | 2 | Модель (столбец B листа spisok) |
+| `SPISOK_COL_GRZ` | 3 | ГРЗ (столбец C листа spisok) |
+| `SPISOK_COL_VIN` | 4 | VIN (столбец D листа spisok) |
+| `SPISOK_COL_GARAGE` | 5 | Гараж. № (столбец E листа spisok) |
+| `SPISOK_COL_YEAR` | 6 | Год выпуска (столбец F листа spisok) |
+| `SPISOK_COL_MILEAGE` | 7 | Пробег (столбец G листа spisok) |
+| `SPISOK_COL_DATE` | 8 | Дата (столбец H листа spisok) |
+| `SPISOK_COL_GROUP` | 9 | Группа (столбец I листа spisok) |
+| `SPISOK_COL_NOTE` | 10 | РЕЗЕРВ (столбец J листа spisok) |
+| `MODELS_COL_MODEL` | 1 | Модель (столбец A листа models) |
+| `MODELS_COL_GROUP` | 2 | Группа (столбец B листа models) |
+| `MODELS_COL_PRICE` | 3 | Цена н/ч (столбец C листа models) |
+
+**Строковые константы (для листа libname):**
+
+| Константа | Значение |
+|-----------|----------|
+| `SPISOK_COL_NUM_NAME` | "spisok" |
+| `SPISOK_COL_MODEL_NAME` | "model" |
+| `SPISOK_COL_GRZ_NAME` | "grz" |
+| `SPISOK_COL_VIN_NAME` | "vin" |
+| `SPISOK_COL_GARAGE_NAME` | "garnum" |
+| `SPISOK_COL_YEAR_NAME` | "year" |
+| `SPISOK_COL_MILEAGE_NAME` | "mileage" |
+| `SPISOK_COL_DATE_NAME` | "date" |
+| `SPISOK_COL_GROUP_NAME` | "group" |
+| `SPISOK_COL_NOTE_NAME` | "reserve" |
+| `MODELS_COL_MODEL_NAME` | "model_name" |
+| `MODELS_COL_GROUP_NAME` | "group" |
+| `MODELS_COL_PRICE_NAME` | "hrpr" |
+| `WORK_NAME` | "work" |
+| `Z4_NAME` | "z4" |
+
+**Ключевые функции:**
+
+| Функция | Описание |
+|---------|----------|
+| `InitLibName()` | Заполняет лист libname начальными данными реестра имён |
+| `AddWorkEntry()` | Добавляет запись для work.xlsm в конец списка на листе libname |
+
+> **Примечание:** Ранее функциональность реестра имён находилась в отдельном модуле `Mod_LibName.bas`, который был объединён с `Mod_Constants.bas` для централизованного управления константами.
+
+### 2.12 Лист2_main.cls — Основной лист
+
+**Файл:** [`Лист2_main.cls`](../src/sheets/Лист2_main.cls) (48 строк)
 
 **Назначение:** Класс листа main. Обрабатывает событие `Worksheet_Change`.
 
@@ -296,17 +360,23 @@ python scripts/run_tests.py
 3. Очистка диапазона B3:B15
 4. Вызов `Mod_OrderHeader.FillHeaderFromOrder(CStr(b2Value))`
 
-### 2.12 Sheet_work.cls — Лист work
+### 2.13 Sheet_work.cls — Лист work
 
 **Файл:** [`Sheet_work.cls`](../src/sheets/Sheet_work.cls)
 
 **Назначение:** Класс листа work. Обрабатывает события, специфичные для листа work.
 
-### 2.13 Sheet_z4.cls — Лист z4
+**Обработчики:**
+- `Worksheet_Activate` — закрепление первых двух строк при активации листа
+
+### 2.14 Sheet_z4.cls — Лист z4
 
 **Файл:** [`Sheet_z4.cls`](../src/sheets/Sheet_z4.cls)
 
 **Назначение:** Класс листа z4. Обрабатывает события, специфичные для листа z4.
+
+**Обработчики:**
+- `Worksheet_Activate` — закрепление первых двух строк при активации листа
 
 ---
 
@@ -380,7 +450,7 @@ python scripts/impVBA.py
 | `Mod_SheetOps` | `src/modules/Mod_SheetOps.bas` | Стандартный модуль |
 | `Mod_MainButtons` | `src/modules/Mod_MainButtons.bas` | Стандартный модуль |
 | `Mod_SheetButtons` | `src/modules/Mod_SheetButtons.bas` | Стандартный модуль |
-| `Sheet1` | `src/sheets/Sheet1_main.cls` | Класс листа |
+| `Лист2` | `src/sheets/Лист2_main.cls` | Класс листа |
 | `Sheet_work` | `src/sheets/Sheet_work.cls` | Класс листа |
 | `Sheet_z4` | `src/sheets/Sheet_z4.cls` | Класс листа |
 
@@ -390,7 +460,7 @@ python scripts/export_vba.py          # Экспорт всех модулей
 python scripts/export_vba.py --dry    # Просмотр без реального экспорта
 ```
 
-### 4.2 import_all_vba.py
+### 4.2 impVBA.py
 
 **Файл:** [`impVBA.py`](../scripts/impVBA.py) (281 строка)
 
@@ -462,9 +532,9 @@ python scripts/impVBA.py      # Импорт всех модулей
 
 ---
 
-## 5. Тестирование
+## 6. Тестирование
 
-### 5.1 Полный список тестов (TC-01..TC-30)
+### 6.1 Полный список тестов (TC-01..TC-13)
 
 | ID | Название | Модуль | Тип | Статус |
 |----|----------|--------|-----|--------|
@@ -472,63 +542,31 @@ python scripts/impVBA.py      # Импорт всех модулей
 | TC-02 | FileExists с несуществующим файлом | Mod_Utils | Модульный | ✅ |
 | TC-03 | FormatDateSQL с корректной датой | Mod_Utils | Модульный | ✅ |
 | TC-04 | FormatDateSQL с нулевой датой | Mod_Utils | Модульный | ✅ |
-| TC-05 | ExtractNumberFromGRZ ("А123АН77" → "123") | Mod_SheetOps | Модульный | ✅ |
-| TC-06 | GetSheetByName существующий лист | Mod_Utils | Модульный | ✅ |
-| TC-07 | GetSheetByName несуществующий лист | Mod_Utils | Модульный | ✅ |
-| TC-08 | FindOrder существующий (по № п/п "1") | Mod_OrderHeader | Интеграционный | ✅ |
-| TC-09 | FindOrder несуществующий (по № п/п "999") | Mod_OrderHeader | Интеграционный | ✅ |
-| TC-10 | FindOrder с пустым номером | Mod_OrderHeader | Модульный | ⏳ (резерв) |
-| TC-11 | FillHeaderFromOrder существующий заказ | Mod_OrderHeader | Интеграционный | ✅ |
-| TC-12 | FillHeaderFromOrder заказ не найден | Mod_OrderHeader | Интеграционный | ✅ |
-| TC-13 | ExtractNumberFromGRZ граничные случаи | Mod_SheetOps | Модульный | ✅ |
-| TC-14 | SearchSheetByGRZ существующий | Mod_SheetOps | Интеграционный | ⚠️ SKIP (нет данных) |
-| TC-15 | SearchSheetByGRZ несуществующий | Mod_SheetOps | Интеграционный | ✅ |
-| TC-16 | ImportFromReport полный цикл | Mod_Import | Интеграционный | ⏳ (резерв) |
-| TC-17 | ImportFromReport | Mod_Import | Интеграционный | ⚠️ SKIP (нет листа) |
-| TC-18 | Btn_main_Clear_Click | Mod_ButtonDispatcher | UI | ⚠️ SKIP (ручной) |
-| TC-19 | WriteLog запись в лог | Mod_Utils | Модульный | ✅ |
-| TC-20 | GetWorkbookPath / GetCurrentUser | Mod_Utils | Модульный | ✅ |
-| TC-21 | WriteLog запись в лог-файл | Mod_Logger | Модульный | ✅ |
-| TC-22 | RotateLogIfNeeded ротация лога | Mod_Logger | Модульный | ✅ |
-| TC-23 | ClearLog очистка лога | Mod_Logger | Модульный | ✅ |
-| TC-24 | ClearMainSheet_UI очистка листа main | Mod_SheetOps | Интеграционный | ✅ |
-| TC-25 | ClearHeader_UI очистка шапки | Mod_SheetOps | Интеграционный | ✅ |
-| TC-26 | ImportSheet импорт листа | Mod_Import | Интеграционный | ⚠️ SKIP (нет report.xlsx) |
-| TC-27 | ImportDataToMain перенос данных | Mod_Import | Интеграционный | ✅ |
-| TC-28 | RenameSheetsByGRZ переименование листов | Mod_SheetOps | Интеграционный | ⚠️ SKIP (нет report.xlsx) |
-| TC-29 | FormatDateSQL граничные случаи | Mod_Utils | Модульный | ✅ |
-| TC-30 | Btn_main_Clear_Click автоматизированный | Mod_SheetOps | Автоматический | ✅ |
+| TC-05 | GetSheetByName существующий лист | Mod_Utils | Модульный | ✅ |
+| TC-06 | GetSheetByName несуществующий лист | Mod_Utils | Модульный | ✅ |
+| TC-07 | WriteLog запись в лог | Mod_Utils | Модульный | ✅ |
+| TC-08 | GetWorkbookPath / GetCurrentUser | Mod_Utils | Модульный | ✅ |
+| TC-09 | WriteLog запись в лог-файл | Mod_Logger | Модульный | ✅ |
+| TC-10 | RotateLogIfNeeded ротация лога | Mod_Logger | Модульный | ✅ |
+| TC-11 | ClearLog очистка лога | Mod_Logger | Модульный | ✅ |
+| TC-12 | FormatDateSQL граничные случаи | Mod_Utils | Модульный | ✅ |
+| TC-13 | InitLibName заполнение libname | Mod_Constants | Модульный | ✅ |
 
 **Легенда:**
 - ✅ — тест проходит (PASS)
 - ⚠️ — тест пропущен (SKIP) из-за отсутствия данных/окружения
-- ⏳ — тест в резерве, не реализован
 - ❌ — тест падает (FAIL)
 
-### 5.2 Таблица покрытия модулей
+### 6.2 Таблица покрытия модулей
 
 | Модуль | Всего тестов | PASS | SKIP | FAIL | Покрытие |
 |--------|-------------|------|------|------|----------|
 | Mod_Utils | 8 | 8 | 0 | 0 | 100% |
-| Mod_OrderHeader | 4 | 4 | 0 | 0 | 100% |
-| Mod_SheetOps | 6 | 4 | 2 | 0 | 67% |
-| Mod_Import | 4 | 1 | 2 | 0 | 25% |
 | Mod_Logger | 3 | 3 | 0 | 0 | 100% |
-| Mod_ButtonDispatcher | 1 | 0 | 1 | 0 | 0% |
-| **Итого** | **26** | **20** | **5** | **0** | **77%** |
+| Mod_Constants | 1 | 1 | 0 | 0 | 100% |
+| **Итого** | **12** | **12** | **0** | **0** | **100%** |
 
-> **Примечание:** TC-10 и TC-16 находятся в резерве и не включены в итоговую статистику.
-> Тесты, помеченные SKIP, считаются непокрытыми, т.к. требуют специальных данных или ручного вмешательства.
->
-> **Детальный анализ тестов, проверяющих исправленные функции:**
-> - OH-01 / OH-04 (FillHeaderFromOrder): TC-11, TC-12 — автоматические, но без report.xlsx не проверяют полный цикл
-> - IM-01 / IM-02 (ImportSheet): TC-26 — SKIP, требует report.xlsx
-> - IM-03 / IM-04 (ImportDataToMain): TC-27 — автоматический, но без реальных данных
-> - SO-01 (SearchSheetByGRZ): TC-14, TC-15 — SKIP без report.xlsx
-> - SO-02 / SO-03 (RenameSheetsByGRZ): TC-28 — SKIP, требует report.xlsx
-> - SO-04 (ClearMainSheet_UI): TC-24 — автоматический, PASS
-
-### 5.3 Как добавить новый тест
+### 6.3 Как добавить новый тест
 
 1. Открой [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas)
 2. Выбери подходящую группу тестов или создай новую процедуру-группу
@@ -553,7 +591,7 @@ On Error GoTo 0
 5. Для SKIP используй: `AddResult "TC-XX", "...", True, "", True, "Причина пропуска"`
 6. Запусти тесты: `python scripts/run_tests.py`
 
-### 5.4 Запуск тестов в CI/CD
+### 6.4 Запуск тестов в CI/CD
 
 Тесты запускаются через Python-скрипт [`scripts/run_tests.py`](../scripts/run_tests.py):
 
@@ -583,139 +621,9 @@ python scripts/run_tests.py
 
 ---
 
-### 5.5. План тестирования на реальных данных
+## 7. CI/CD
 
-#### 5.5.1. Цель
-
-Валидация исправлений критических проблем стабильности (OH-01, IM-01, SO-01, SO-02) и проверка корректности работы основных функций на реальных данных из `report.xlsx` и `work.xlsm`.
-
-#### 5.5.2. Требуемые файлы от пользователя
-
-| Файл | Назначение | Куда положить |
-|------|-----------|---------------|
-| `work.xlsm` | Основная книга проекта | `L:\PROject\SysW\work.xlsm` |
-| `report.xlsx` | Отчётная книга с данными по ГРЗ | `L:\PROject\SysW\report.xlsx` |
-
-**Требования к `work.xlsm`:**
-- Содержит листы: `main`, `spisok`, `model`, `work`, `z4`
-- Лист `spisok` содержит минимум 1 запись (№ п/п "1")
-- Лист `model` содержит справочник моделей (колонка A: код, колонка B: название)
-- Макросы включены
-
-**Требования к `report.xlsx`:**
-- Содержит хотя бы один лист с именем, содержащим ГРЗ (например, `GRZ_12345`)
-- Лист содержит данные: C3 — заголовок, C4..CN — работы, D4..DN — цены, H4..HN — количество
-
-#### 5.5.3. Классификация тестов TC-01 — TC-30
-
-| Тест | Название | Тип | Требует данных | Может повредить данные | Проверяет исправленные функции |
-|------|----------|-----|----------------|----------------------|-------------------------------|
-| TC-01 | `FileExists` существующий | Авто | Нет | Нет | Нет |
-| TC-02 | `FileExists` несуществующий | Авто | Нет | Нет | Нет |
-| TC-03 | `FormatDateSQL` корректная дата | Авто | Нет | Нет | Нет |
-| TC-04 | `FormatDateSQL` нулевая дата | Авто | Нет | Нет | Нет |
-| TC-05 | `ExtractNumberFromGRZ` | Авто | Нет | Нет | Нет |
-| TC-06 | `GetSheetByName` существующий | Авто | Нет | Нет | Нет |
-| TC-07 | `GetSheetByName` несуществующий | Авто | Нет | Нет | Нет |
-| TC-08 | `FindOrder` существующий | Авто | **Да** (spisok) | Нет | Нет |
-| TC-09 | `FindOrder` несуществующий | Авто | **Да** (spisok) | Нет | Нет |
-| TC-10 | (резерв) | Ручной | **Да** | Нет | Нет |
-| TC-11 | `FillHeaderFromOrder` существующий | Авто | **Да** (spisok, model) | **Да** (B3:B15) | **OH-01, OH-04** |
-| TC-12 | `FillHeaderFromOrder` не найден | Авто | **Да** (spisok, model) | **Да** (B3:B15) | **OH-01, OH-04** |
-| TC-13 | `ExtractNumberFromGRZ` граничные | Авто | Нет | Нет | Нет |
-| TC-14 | `SearchSheetByGRZ` существующий | Авто | **Да** (report.xlsx) | Нет | **SO-01** |
-| TC-15 | `SearchSheetByGRZ` несуществующий | Авто | **Да** (report.xlsx) | Нет | **SO-01** |
-| TC-16 | (резерв) | Ручной | **Да** (report.xlsx) | Нет | Нет |
-| TC-17 | `ImportFromReport` (удалена) | SKIP | Нет | Нет | Нет |
-| TC-18 | `Btn_main_Clear_Click` | Ручной | Нет | **Да** (очистка) | Нет |
-| TC-19 | `WriteLog` (Mod_Utils) | Авто | Нет | Нет | Нет |
-| TC-20 | `GetWorkbookPath` / `GetCurrentUser` | Авто | Нет | Нет | Нет |
-| TC-21 | `WriteLog` запись в лог-файл | Авто | Нет | Нет | Нет |
-| TC-22 | `RotateLogIfNeeded` ротация | Авто | Нет | Нет | Нет |
-| TC-23 | `ClearLog` очистка лога | Авто | Нет | Нет | Нет |
-| TC-24 | `ClearMainSheet_UI` очистка main | Авто | Нет | **Да** (B2:ZZ) | **SO-04** |
-| TC-25 | `ClearHeader_UI` очистка шапки | Авто | Нет | **Да** (B3:B15) | Нет |
-| TC-26 | `ImportSheet` импорт листа | SKIP | **Да** (report.xlsx) | **Да** (копирование) | **IM-01, IM-02** |
-| TC-27 | `ImportDataToMain` перенос | Авто | Нет | **Да** (L:N) | **IM-03, IM-04** |
-| TC-28 | `RenameSheetsByGRZ` | SKIP | **Да** (report.xlsx) | **Да** (удаление) | **SO-02, SO-03** |
-| TC-29 | `FormatDateSQL` граничные | Авто | Нет | Нет | Нет |
-| TC-30 | `Btn_main_Clear_Click` автомат. | Авто | Нет | **Да** (B2:ZZ) | Нет |
-
-#### 5.5.4. Этапы тестирования
-
-##### Этап 1: Базовые автоматические тесты (без данных)
-
-**Запуск:** `python scripts/run_tests.py`
-
-Ожидается 18 тестов PASS: TC-01..07, TC-13, TC-19..25, TC-27, TC-29, TC-30.
-
-##### Этап 2: Тесты с данными из `work.xlsm`
-
-**Запуск:** `python scripts/run_tests.py` (с предварительно заполненными spisok и model)
-
-Ожидается 4 теста PASS: TC-08, TC-09, TC-11, TC-12.
-
-##### Этап 3: Тесты с `report.xlsx`
-
-**Запуск:** `python scripts/run_tests.py` (с report.xlsx в директории проекта)
-
-Ожидается 4 теста PASS: TC-14, TC-15, TC-26, TC-28.
-
-##### Этап 4: Ручное тестирование
-
-| Тест | Действие пользователя | Ожидаемый результат |
-|------|----------------------|--------------------|
-| TC-10 | Ввести в B2 номер со спецсимволами ("A-100/1"), нажать "Заполнить шапку" | B3:B15 заполнены корректно |
-| TC-16 | Ввести ГРЗ в B4, нажать "Импорт" | Данные из report.xlsx скопированы в main |
-| TC-18 | Нажать "Очистить лист", подтвердить MsgBox | B2:ZZ пусты, A1 не тронут |
-
-#### 5.5.5. Проверка исправленных проблем
-
-| Проблема | Как проверить | Ожидаемый результат |
-|----------|--------------|--------------------|
-| **OH-01** (Nothing для wsModel) | Удалить лист model, запустить TC-11 | Сообщение об ошибке, без аварийного завершения |
-| **IM-01** (ошибки в ImportSheet) | Запустить TC-26 с повреждённым report.xlsx | Обработка ошибки, без аварийного завершения |
-| **SO-01** (утечка Workbook) | Запустить TC-14, проверить отсутствие висящих процессов Excel | Excel закрыт после теста |
-| **SO-02** (удаление листа) | Запустить TC-28, проверить report.xlsx | Листы не удалены без подтверждения |
-
-#### 5.5.6. Критерии прохождения
-
-| Уровень | Критерий |
-|---------|----------|
-| **PASS** | Все автоматические тесты PASS, ручные тесты подтверждены |
-| **PASS_WITH_SKIPS** | Все автоматические тесты PASS или SKIP, ручные тесты подтверждены |
-| **FAIL** | Любой автоматический тест FAIL |
-| **FAIL_CRITICAL** | FAIL в TC-11, TC-24, TC-26, TC-27, TC-30 |
-
-#### 5.5.7. Полный чек-лист
-
-**Подготовка:**
-- [ ] `work.xlsm` в `L:\PROject\SysW\`
-- [ ] `report.xlsx` в `L:\PROject\SysW\`
-- [ ] `work.xlsm` содержит листы: main, spisok, model, work, z4
-- [ ] `spisok` содержит минимум 1 запись
-- [ ] `model` содержит справочник моделей
-- [ ] `report.xlsx` содержит минимум 1 лист с ГРЗ
-- [ ] Макросы включены, "Trust access to VBA project object model" включён
-- [ ] `work.xlsm` закрыт, `pywin32` установлен
-
-**Запуск:**
-- [ ] **Этап 1:** `python scripts/run_tests.py` — 18 PASS
-- [ ] **Этап 2:** `python scripts/run_tests.py` — TC-08, TC-09, TC-11, TC-12 PASS
-- [ ] **Этап 3:** `python scripts/run_tests.py` — TC-14, TC-15, TC-26, TC-28 PASS
-- [ ] **Этап 4:** Ручные тесты TC-10, TC-16, TC-18
-
-**Проверка исправлений:**
-- [ ] OH-01: Удалить model, запустить FillHeaderFromOrder — без аварий
-- [ ] IM-01: Импорт с повреждённым report.xlsx — без аварий
-- [ ] SO-01: После тестов нет висящих процессов Excel
-- [ ] SO-02: RenameSheetsByGRZ не удаляет листы без подтверждения
-
----
-
-## 6. CI/CD
-
-### 6.1 GitHub Actions Workflow
+### 7.1 GitHub Actions Workflow
 
 **Файл:** [`.github/workflows/vba-check.yml`](../.github/workflows/vba-check.yml) (109 строк)
 
@@ -733,7 +641,7 @@ python scripts/run_tests.py
 | 4. Check CHANGELOG updated | Наличие записи за сегодняшнюю дату | Warning (non-blocking) |
 | 5. Check .gitignore consistency | Наличие файла `.gitignore` | Fail |
 
-### 6.2 Pre-commit процедура
+### 7.2 Pre-commit процедура
 
 Перед каждым коммитом необходимо выполнить:
 
@@ -770,6 +678,7 @@ git push
 - [`README.md`](../README.md) — общее описание проекта, быстрый старт
 - [`docs/sourcecraft-guide.md`](sourcecraft-guide.md) — руководство по работе с SourceCraft Code Assistant
 - [`docs/git-workflow.md`](git-workflow.md) — Git-инструкции и веточная стратегия
+- [`docs/ARCHITECTURE_SQLITE.md`](ARCHITECTURE_SQLITE.md) — архитектура выноса данных в SQLite
 - [`CHANGELOG.md`](../CHANGELOG.md) — история версий проекта
 
 ---
@@ -777,7 +686,7 @@ git push
 ## Приложение A: Схема зависимостей модулей
 
 ```
-Sheet1_main.cls
+Лист2_main.cls
   └── Mod_OrderHeader.FillHeaderFromOrder()
         └── Mod_Utils (GetSheetByName, FileExists, FormatDateSQL)
 
@@ -785,8 +694,11 @@ Sheet_work.cls ─── Mod_SheetButtons
 Sheet_z4.cls   ─── Mod_SheetButtons
 
 Mod_ButtonDispatcher
-  ├── Mod_Import (ClearMainSheet_UI, ImportSheet_UI, ClearHeader_UI)
-  └── Mod_OrderHeader (FillHeaderFromOrder_UI)
+  ├── Mod_SheetOps (ClearMainSheet_UI, ClearHeader_UI)
+  ├── Mod_Import (ImportSheet_UI, ImportByInput_UI, RenameSheets_UI, ImportDataToMain_UI)
+  ├── Mod_OrderHeader (FillHeaderFromOrder_UI, FindOrder_UI)
+  ├── Mod_FullTestRunner (RunAllTests_UI)
+  └── Mod_Utils (WriteLog_UI, ShowWorkbookPath_UI, ShowCurrentUser_UI, CheckFileExists_UI)
 
 Mod_MainButtons
   ├── Mod_Import (вызовы импорта)
@@ -799,15 +711,18 @@ Mod_SheetButtons
 
 Mod_FullTestRunner
   ├── Mod_Utils (тесты утилит)
-  ├── Mod_OrderHeader (тесты OrderHeader)
-  ├── Mod_Import (тесты импорта)
-  └── Mod_ButtonDispatcher (тесты кнопок)
+  ├── Mod_Logger (тесты логгера)
+  └── Mod_Constants (тесты реестра имён)
 
 Mod_Logger
   └── (используется всеми модулями для логирования)
 
 Mod_Constants
   └── (используется Mod_OrderHeader, Mod_Import и другими модулями)
+
+Mod_Constants
+  └── Mod_Utils (GetSheetByName)
+  └── Mod_Logger (WriteLog)
 ```
 
 ## Приложение B: Маппинг файлов VBA
@@ -824,7 +739,7 @@ Mod_Constants
 | `Mod_SheetOps` | `src/modules/Mod_SheetOps.bas` | Стандартный модуль |
 | `Mod_MainButtons` | `src/modules/Mod_MainButtons.bas` | Стандартный модуль |
 | `Mod_SheetButtons` | `src/modules/Mod_SheetButtons.bas` | Стандартный модуль |
-| `Sheet1` | `src/sheets/Sheet1_main.cls` | Класс листа |
+| `Лист2` | `src/sheets/Лист2_main.cls` | Класс листа |
 | `Sheet_work` | `src/sheets/Sheet_work.cls` | Класс листа |
 | `Sheet_z4` | `src/sheets/Sheet_z4.cls` | Класс листа |
 

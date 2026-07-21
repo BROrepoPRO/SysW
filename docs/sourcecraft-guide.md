@@ -87,9 +87,10 @@ L:\PROject\SysW\
 │       └── vba-check.yml
 ├── .vscode/              # Настройки VS Code (терминал, кодировка, VBA Language Server)
 ├── docs/                 # Документация проекта
-│   ├── sourcecraft-guide.md  # Настоящее руководство
-│   ├── git-workflow.md       # Git-инструкции (ветки, коммиты, CI)
-│   └── DEVELOPER.md          # Техническая документация разработчика
+│   ├── sourcecraft-guide.md      # Настоящее руководство
+│   ├── git-workflow.md           # Git-инструкции (ветки, коммиты, CI)
+│   ├── DEVELOPER.md              # Техническая документация разработчика
+│   └── ARCHITECTURE_SQLITE.md    # Архитектура выноса данных в SQLite
 ├── plans/                # Планы изменений, архитектурные решения, отчёты
 ├── scripts/              # Скрипты автоматизации
 │   ├── export_vba.py         # Выгрузка VBA-модулей из Excel (CP1251 → UTF-8)
@@ -109,7 +110,7 @@ L:\PROject\SysW\
 │   │   ├── Mod_MainButtons.bas
 │   │   └── Mod_SheetButtons.bas
 │   └── sheets/               # 3 .cls листа
-│       ├── Sheet1_main.cls
+│       ├── Лист2_main.cls
 │       ├── Sheet_work.cls
 │       └── Sheet_z4.cls
 ├── .gitattributes        # Настройки Git для нормализации кодировок
@@ -125,7 +126,7 @@ L:\PROject\SysW\
 |-----------|-----------|
 | `plans/` | Планы изменений, архитектурные решения, отчёты. Создаются перед изменением VBA-модулей |
 | `scripts/` | Вспомогательные PowerShell-скрипты автоматизации. Все скрипты в UTF-8 with BOM |
-| `docs/` | Документация проекта: `sourcecraft-guide.md` (руководство по SourceCraft), `git-workflow.md` (Git-инструкции), `DEVELOPER.md` (техническая документация) |
+| `docs/` | Документация проекта: `sourcecraft-guide.md` (руководство по SourceCraft), `git-workflow.md` (Git-инструкции), `DEVELOPER.md` (техническая документация), `ARCHITECTURE_SQLITE.md` (архитектура SQLite) |
 | `.vscode/` | Настройки VS Code (кодировка UTF-8, кастомный терминал, VBA Language Server) |
 
 ---
@@ -172,6 +173,12 @@ L:\PROject\SysW\
 
 | Версия | Дата | Изменения |
 |--------|------|-----------|
-| 0.3.0 | 2026-07-14 | Добавлены `scripts/`, `docs/`, обновлён `.ycarules`, добавлен PowerShell-скрипт импорта |
+| 0.8.0 | 2026-07-19 | Добавлен лист `models`, модуль `Mod_LibName` (позднее объединён с `Mod_Constants`), расширение реестра имён |
+| 0.7.1 | 2026-07-16 | Защитное программирование и обработка ошибок в модулях VBA (аудит стабильности) |
+| 0.7.0 | 2026-07-15 | Новые тесты TC-21..TC-30, функция GetTestResults, silent mode, раздел тестирования в DEVELOPER.md |
+| 0.6.0 | 2026-07-15 | Новая структура каталогов: src/modules/, src/sheets/, scripts/ |
+| 0.5.0 | 2026-07-14 | Техническая документация DEVELOPER.md, расширение README.md |
+| 0.4.0 | 2026-07-14 | GitHub Actions, git-workflow.md, .gitignore |
+| 0.3.0 | 2026-07-14 | Интеграция SourceCraft, .ycarules, scripts/, docs/ |
 | 0.2.0 | 2026-07-13 | Полный тестовый модуль, автоматические тесты |
-| 0.1.0 | 2026-07-09 | Начальная версия: автозаполнение шапки, базовые скрипты, `.ycarules` |
+| 0.1.0 | 2026-07-09 | Начальная версия: автозаполнение шапки, базовые скрипты, .ycarules |
