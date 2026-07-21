@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v0.10.0)
+# Техническая документация разработчика — SysW (v0.12.0)
 
 ## 1. Архитектура проекта
 
@@ -16,6 +16,8 @@
 - **Кнопки листа main** ([`Mod_MainButtons.bas`](../src/modules/Mod_MainButtons.bas)) — кнопки листа main
 - **Кнопки листов z4/work** ([`Mod_SheetButtons.bas`](../src/modules/Mod_SheetButtons.bas)) — кнопки листов z4/work
 - **Константы и реестр имён** ([`Mod_Constants.bas`](../src/modules/Mod_Constants.bas)) — константы столбцов и управление листом libname
+- **Доступ к файлам групп** ([`Mod_ModelDB.bas`](../src/modules/Mod_ModelDB.bas)) — открытие файлов групп, чтение работ/запчастей
+- **Ручной подбор работ** ([`Mod_PickWork.bas`](../src/modules/Mod_PickWork.bas)) — ручной подбор работ из справочника группы
 - **Лист main** ([`Лист2_main.cls`](../src/sheets/Лист2_main.cls)) — обработчик событий листа
 - **Лист work** ([`Sheet_work.cls`](../src/sheets/Sheet_work.cls)) — обработчик событий листа work
 - **Лист z4** ([`Sheet_z4.cls`](../src/sheets/Sheet_z4.cls)) — обработчик событий листа z4
@@ -43,7 +45,10 @@ Mod_MainButtons (кнопки листа main)
        │
        ├── Mod_Import (вызовы импорта)
        ├── Mod_OrderHeader (заполнение шапки)
-       └── Mod_SheetOps (операции с листами)
+       ├── Mod_SheetOps (операции с листами)
+       └── Mod_PickWork (ручной подбор работ)
+              │
+              └── Mod_ModelDB (доступ к файлам групп)
 
 Mod_SheetButtons (кнопки листов z4/work)
        │
@@ -280,7 +285,7 @@ python scripts/run_tests.py
 | `Btn_main_AUTOz4()` | Заглушка: автоподбор запчастей — в разработке |
 | `Btn_main_AUTOw()` | Заглушка: автоподбор работ — в разработке |
 | `Btn_main_MANz4()` | Заглушка: ручной подбор запчастей — в разработке |
-| `Btn_main_MANw()` | Заглушка: ручной подбор работ — в разработке |
+| `Btn_main_MANWRK()` | Ручной подбор работ — открывает файл группы через `Mod_PickWork.PickWork_UI` |
 
 ### 2.10 Mod_SheetButtons.bas — Кнопки листов z4/work
 
@@ -299,7 +304,63 @@ python scripts/run_tests.py
 | `Btn_work_Action2()` | Заглушка: действие 2 для работ — в разработке |
 | `Btn_work_Action3()` | Заглушка: действие 3 для работ — в разработке |
 
-### 2.11 Mod_Constants.bas — Константы и реестр имён
+### 2.11 Mod_ModelDB.bas — Доступ к файлам модельных групп
+
+**Файл:** [`Mod_ModelDB.bas`](../src/modules/Mod_ModelDB.bas) (167 строк)
+
+**Назначение:** Базовый слой абстракции для работы с файлами модельных групп в `base/models/`. Обеспечивает открытие файлов групп и чтение данных работ/запчастей.
+
+**Константы:**
+
+| Константа | Значение | Описание |
+|-----------|----------|----------|
+| `MODELDB_BASE_PATH` | `L:\PROject\SysW\base\models\` | Каталог с файлами групп |
+
+**Типы данных:**
+
+| Тип | Поле | Описание |
+|-----|------|----------|
+| `WorkEntry` | `Code As String` | Код работы |
+| | `Name As String` | Наименование работы |
+| | `Unit As String` | Единица измерения |
+| | `NormHours As Double` | Норматив в нормо-часах |
+| | `Price As Currency` | Цена работы |
+| | `Note As String` | Примечание |
+
+**Ключевые функции:**
+
+| Функция | Описание |
+|---------|----------|
+| `GetModelGroupFilePath(groupName)` | Возвращает полный путь к файлу группы `base/models/{groupName}.xlsx` |
+| `ModelGroupFileExists(groupName)` | Проверяет существование файла группы через `Dir()` |
+| `OpenModelGroupFile(groupName)` | Открывает файл группы (если ещё не открыт), возвращает `Workbook` или `Nothing` |
+| `GetWorks(groupName, filters)` | Возвращает коллекцию `WorkEntry` из листа `{groupName}` файла группы |
+
+### 2.12 Mod_PickWork.bas — Ручной подбор работ
+
+**Файл:** [`Mod_PickWork.bas`](../src/modules/Mod_PickWork.bas) (130 строк)
+
+**Назначение:** Ручной подбор работ из справочника группы. Открывает файл группы, активирует лист работ, пользователь ищет через фильтр и копирует данные вручную в диапазон E4:H на листе main.
+
+**Ключевые функции:**
+
+| Функция | Описание |
+|---------|----------|
+| `GetGroupNameFromMain()` | Читает название группы из ячейки B14 листа main |
+| `GetWorkSheetName(groupName)` | Возвращает имя листа работ (совпадает с именем группы) |
+| `PickWork_UI()` | Главная точка входа: открывает файл группы, активирует лист, показывает инструкцию |
+
+**Процесс работы:**
+1. Пользователь нажимает кнопку **РУЧ РАБ** на листе `main`
+2. Макрос читает группу из **B14**
+3. Открывает файл `base/models/{Group}.xlsx` через `Mod_ModelDB.OpenModelGroupFile`
+4. Активирует лист `{GroupName}` (справочник работ)
+5. Пользователь ищет работы через фильтр (скрипт поиска внутри файла группы)
+6. Проставляет количество в столбце G (Кол-во ЗН)
+7. Фильтрует по G — всё кроме 0
+8. Копирует отфильтрованные строки вручную в **E4:H** на лист `main`
+
+### 2.13 Mod_Constants.bas — Константы и реестр имён
 
 **Файл:** [`Mod_Constants.bas`](../src/modules/Mod_Constants.bas)
 
@@ -322,6 +383,11 @@ python scripts/run_tests.py
 | `MODELS_COL_MODEL` | 1 | Модель (столбец A листа models) |
 | `MODELS_COL_GROUP` | 2 | Группа (столбец B листа models) |
 | `MODELS_COL_PRICE` | 3 | Цена н/ч (столбец C листа models) |
+| `MANWRK_COL_ARTICLE` | 5 | Артикул (столбец E листа main) |
+| `MANWRK_COL_NAME` | 6 | Наименование (столбец F листа main) |
+| `MANWRK_COL_NORMHOURS` | 7 | Кол-во н/ч (столбец G листа main) |
+| `MANWRK_COL_QTY` | 8 | Кол-во оп (столбец H листа main) |
+| `MANWRK_START_ROW` | 4 | Строка начала данных ручного подбора |
 
 **Строковые константы (для листа libname):**
 
@@ -659,7 +725,7 @@ python scripts/run_tests.py
 
 | Шаг | Что проверяет | Действие при неудаче |
 |-----|--------------|---------------------|
-| 1. Check VBA files exist | Наличие всех 13 VBA-файлов (10 `.bas` + 3 `.cls`) | Fail |
+| 1. Check VBA files exist | Наличие всех 15 VBA-файлов (12 `.bas` + 3 `.cls`) | Fail |
 | 2. Check UTF-8 encoding | Валидная UTF-8 кодировка каждого файла | Fail |
 | 3. Check VBA syntax (basic) | Отсутствие недопустимых символов (коды < 32, кроме \n\r\t) | Fail |
 | 4. Check CHANGELOG updated | Наличие записи за сегодняшнюю дату | Warning (non-blocking) |
@@ -765,6 +831,8 @@ Mod_Utils
 | `Mod_SheetOps` | `src/modules/Mod_SheetOps.bas` | Стандартный модуль |
 | `Mod_MainButtons` | `src/modules/Mod_MainButtons.bas` | Стандартный модуль |
 | `Mod_SheetButtons` | `src/modules/Mod_SheetButtons.bas` | Стандартный модуль |
+| `Mod_ModelDB` | `src/modules/Mod_ModelDB.bas` | Стандартный модуль |
+| `Mod_PickWork` | `src/modules/Mod_PickWork.bas` | Стандартный модуль |
 | `Лист2` | `src/sheets/Лист2_main.cls` | Класс листа |
 | `Sheet_work` | `src/sheets/Sheet_work.cls` | Класс листа |
 | `Sheet_z4` | `src/sheets/Sheet_z4.cls` | Класс листа |

@@ -5,6 +5,16 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [0.12.0] — 2026-07-21
+
+### Added
+- **Ручной подбор работ (кнопка РУЧ РАБ):** новый модуль `Mod_PickWork.bas` с процедурой `PickWork_UI` — открывает файл группы из `base/models/` по значению B14, активирует лист работ, пользователь ищет через фильтр и копирует данные вручную в диапазон E4:H
+- **Модуль доступа к файлам групп:** `Mod_ModelDB.bas` с функциями `OpenModelGroupFile` (открытие файла группы) и `GetWorks` (получение списка работ) — базовый слой для работы с `base/models/`
+- Константы колонок ручного подбора работ: `MANWRK_COL_ARTICLE` (E), `MANWRK_COL_NAME` (F), `MANWRK_COL_NORMHOURS` (G), `MANWRK_COL_QTY` (H), `MANWRK_START_ROW` (4)
+
+### Changed
+- Заглушка `Btn_main_MANw` заменена на рабочую `Btn_main_MANWRK` с вызовом `Mod_PickWork.PickWork_UI`
+
 ## [0.11.0] — 2026-07-21
 
 ### Changed

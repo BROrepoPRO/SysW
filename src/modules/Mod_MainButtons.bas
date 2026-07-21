@@ -80,13 +80,24 @@ End Sub
 ' ============================================================
 
 ' --------------------------------------------------------------------------
-' Btn_main_MANw
-' Заглушка: ручной подбор работ — в разработке
-' TODO: implement in Mod_Selection
+' Btn_main_MANWRK
+' Ручной подбор работ из справочника группы.
+' Открывает файл группы, пользователь ищет и копирует данные вручную.
 ' --------------------------------------------------------------------------
-Public Sub Btn_main_MANw()
-    MsgBox "Ручной подбор работ — в разработке.", _
-           vbInformation, "SysW"
+Public Sub Btn_main_MANWRK()
+    On Error GoTo ErrHandler
+
+    Call Mod_PickWork.PickWork_UI
+
+    Exit Sub
+
+ErrHandler:
+    ' Восстановление состояния приложения
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    MsgBox "Ошибка при ручном подборе работ: " & Err.Description, vbCritical, "Ошибка"
+    Call Mod_Logger.WriteLog("Mod_MainButtons", "Btn_main_MANWRK: " & Err.Description)
 End Sub
 
 ' ============================================================

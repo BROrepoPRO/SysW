@@ -68,6 +68,15 @@ Public Const MAIN_CLEAR_START_ROW As Long = 4     ' Строка, с котор�
 Public Const MAIN_HEADER_RANGE As String = "B4:B17" ' Диапазон шапки заказа
 
 ' ============================================================
+' Константы колонок ручного подбора работ (E4:H)
+' ============================================================
+Public Const MANWRK_COL_ARTICLE As Long = 5    ' E — Артикул
+Public Const MANWRK_COL_NAME As Long = 6       ' F — Наименование
+Public Const MANWRK_COL_NORMHOURS As Long = 7  ' G — Кол-во н/ч
+Public Const MANWRK_COL_QTY As Long = 8        ' H — Кол-во оп
+Public Const MANWRK_START_ROW As Long = 4      ' Строка начала данных
+
+' ============================================================
 ' Приватный тип: запись реестра libname
 ' ============================================================
 Private Type LibNameEntry
