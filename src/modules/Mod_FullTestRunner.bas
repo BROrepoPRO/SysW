@@ -388,6 +388,9 @@ Private Sub RunLibNameTests()
     If wsLib Is Nothing Then
         AddResult "TC-13", "InitLibName заполнение libname", False, "Лист 'libname' не найден"
     Else
+        ' Очищаем лист перед тестом, чтобы InitLibName гарантированно заполнил его
+        wsLib.Rows("2:" & wsLib.Rows.Count).ClearContents
+
         ' Проверяем, что лист libname содержит данные (непустая строка 2)
         If IsEmpty(wsLib.Cells(2, 1).Value) Then
             ' Лист пуст — вызываем InitLibName для заполнения
