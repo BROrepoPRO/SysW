@@ -463,10 +463,10 @@ Private Sub RunImportVHTests()
     ' TC-14: ImportFromB2_UI — проверка вызова с пустым B2
     ' -------------------------------------------------------
     On Error Resume Next
-    Set wsMain = ThisWorkbook.Sheets("мэйн")
+    Set wsMain = ThisWorkbook.Sheets("main")
 
     If wsMain Is Nothing Then
-        AddResult "TC-14", "ImportFromB2_UI с пустым B2", False, "Лист 'мэйн' не найден"
+        AddResult "TC-14", "ImportFromB2_UI с пустым B2", False, "Лист 'main' не найден"
     Else
         ' Сохраняем текущее значение B2
         oldB2 = Trim(CStr(wsMain.Range("B2").Value))

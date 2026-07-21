@@ -31,7 +31,7 @@ Public Sub ImportSheet(grz As String)
 
     wsSource.Copy After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.count)
 
-    newName = wsMain.Range("B2").Value & "M"
+    newName = Trim(wsMain.Range("B2").Value) & "M"
     On Error Resume Next
     ActiveSheet.Name = newName
     On Error GoTo 0
@@ -63,7 +63,10 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
     Dim foundWorks As Boolean
     Dim foundMaterials As Boolean
     Dim cell As Range
-    Dim startRow As Long
+    Dim dataStartRow As Long   ' строка, с которой начинаются данные (после 2 строк заголовка)
+    Dim targetRow As Long      ' целевая строка на листе main
+    Dim endRow As Range        ' граница таблицы (строка "Итого")
+    Dim wsRow As Range         ' для поиска границы между таблицами
 
     Set wsMain = ThisWorkbook.Sheets("main")
 
@@ -80,40 +83,123 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
     foundWorks = False
     foundMaterials = False
 
+    ' ============================================================
     ' Поиск таблицы "Выполненные работы"
+    ' Структура листа-источника (реальная):
+    '   Строка 1: заголовок "№ | № кат. | Наименование | Кол. оп. | Цена | Норма | н/ч | Всего | в т.ч. НДС"
+    '   Строка 2: подзаголовок "1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9"
+    '   Строка 3+: данные
+    ' Колонки: B(2)=№, C(3)=№ кат., D(4)=Наименование, E(5)=Кол.оп., F(6)=Цена,
+    '          G(7)=Норма, H(8)=н/ч, I(9)=Всего, J(10)=в т.ч. НДС
+    ' Маппинг на main: D(Наименование)→L(12), E(Кол.оп.)→M(13), I(Всего)→N(14)
+    ' ============================================================
     Set cell = wsSource.Cells.Find(What:="Выполненные работы", LookAt:=xlPart, SearchOrder:=xlByRows)
-    If cell Is Nothing Then
-        Set cell = wsSource.Cells.Find(What:="Наименование", LookAt:=xlPart, SearchOrder:=xlByRows)
-    End If
 
     If Not cell Is Nothing Then
         foundWorks = True
-        startRow = cell.Row + 1
-        srcLastRow = wsSource.Cells(wsSource.Rows.count, 3).End(xlUp).Row
+        ' Определяем последнюю строку таблицы работ:
+        ' сначала ищем "Итого работ" в столбце D на ограниченном диапазоне
+        ' (от начала данных до строки с "Расходная накладная" или до конца листа)
+        Set endRow = Nothing
+        On Error Resume Next
+        Set endRow = wsSource.Range(wsSource.Cells(cell.Row + 1, 4), wsSource.Cells(wsSource.Rows.count, 4)) _
+                     .Find(What:="Итого", LookAt:=xlPart)
+        On Error GoTo 0
+        If Not endRow Is Nothing Then
+            srcLastRow = endRow.Row - 1
+        Else
+            ' Если "Итого" не найдено — ищем последнюю непустую строку
+            ' в столбце D, но не ниже строки с "Расходная накладная"
+            Set wsRow = wsSource.Cells.Find(What:="Расходная накладная", LookAt:=xlPart, SearchOrder:=xlByRows)
+            If Not wsRow Is Nothing Then
+                srcLastRow = wsSource.Range(wsSource.Cells(cell.Row + 1, 4), wsSource.Cells(wsRow.Row - 1, 4)) _
+                             .Find(What:="*", LookIn:=xlValues, SearchDirection:=xlPrevious).Row
+            Else
+                srcLastRow = wsSource.Cells(wsSource.Rows.count, 4).End(xlUp).Row
+            End If
+        End If
+        ' Пропускаем пустые строки после названия таблицы
+        dataStartRow = cell.Row + 1
+        Do While dataStartRow <= srcLastRow
+            If Trim(wsSource.Cells(dataStartRow, 4).Value) <> "" Then Exit Do
+            dataStartRow = dataStartRow + 1
+        Loop
+        ' Пропускаем две строки заголовка (заголовок колонок + подзаголовок с номерами)
+        dataStartRow = dataStartRow + 2
 
-        For i = startRow To srcLastRow
-            If wsSource.Cells(i, 3).Value <> "" Then
-                wsMain.Cells(i - startRow + 2, 12).Value = wsSource.Cells(i, 3).Value ' C -> L
-                wsMain.Cells(i - startRow + 2, 13).Value = wsSource.Cells(i, 4).Value ' D -> M
-                wsMain.Cells(i - startRow + 2, 14).Value = wsSource.Cells(i, 8).Value ' H -> N
+        targetRow = 2 ' данные на main начинаем писать со строки 2
+        For i = dataStartRow To srcLastRow
+            If wsSource.Cells(i, 4).Value <> "" Then
+                wsMain.Cells(targetRow, 12).Value = wsSource.Cells(i, 4).Value ' D(Наименование) -> L
+                wsMain.Cells(targetRow, 13).Value = wsSource.Cells(i, 5).Value ' E(Кол.оп.) -> M
+                wsMain.Cells(targetRow, 14).Value = wsSource.Cells(i, 9).Value ' I(Всего) -> N
+                ' Форматируем числовые колонки: убираем десятичные знаки для целых чисел
+                If IsNumeric(wsMain.Cells(targetRow, 13).Value) Then
+                    If wsMain.Cells(targetRow, 13).Value = Int(wsMain.Cells(targetRow, 13).Value) Then
+                        wsMain.Cells(targetRow, 13).NumberFormat = "0"
+                    End If
+                End If
+                If IsNumeric(wsMain.Cells(targetRow, 14).Value) Then
+                    wsMain.Cells(targetRow, 14).NumberFormat = "# ##0,00"
+                End If
+                targetRow = targetRow + 1
             End If
         Next i
     End If
 
+    ' ============================================================
     ' Поиск таблицы "Расходная накладная"
+    ' Структура листа-источника (реальная):
+    '   Строка 1: заголовок "№ | № кат. | Наименование | Кол-во | Ед.изм. | Цена | Всего | в т.ч. НДС"
+    '   Строка 2: подзаголовок "1 | 2 | 3 | 4 | 5 | 6 | 7 | 8"
+    '   Строка 3+: данные
+    ' Колонки: A(1)=№, B(2)=№ кат., C(3)=Наименование, D(4)=Кол-во,
+    '          E(5)=Ед.изм., F(6)=Цена, G(7)=Всего, H(8)=в т.ч. НДС
+    ' Маппинг на main: B(№ кат.)→X(24), C(Наименование)→Y(25), D(Кол-во)→Z(26), G(Всего)→AA(27)
+    ' ============================================================
     Set cell = wsSource.Cells.Find(What:="Расходная накладная", LookAt:=xlPart, SearchOrder:=xlByRows)
 
     If Not cell Is Nothing Then
         foundMaterials = True
-        startRow = cell.Row + 1
-        srcLastRow = wsSource.Cells(wsSource.Rows.count, 2).End(xlUp).Row
+        ' Определяем последнюю строку таблицы материалов:
+        ' ищем "Итого" в столбце B начиная от строки данных до конца листа
+        Set endRow = Nothing
+        On Error Resume Next
+        Set endRow = wsSource.Range(wsSource.Cells(cell.Row + 1, 2), wsSource.Cells(wsSource.Rows.count, 2)) _
+                     .Find(What:="Итого", LookAt:=xlPart)
+        On Error GoTo 0
+        If Not endRow Is Nothing Then
+            srcLastRow = endRow.Row - 1
+        Else
+            ' Если "Итого" не найдено — ищем последнюю непустую строку в столбце B
+            srcLastRow = wsSource.Cells(wsSource.Rows.count, 2).End(xlUp).Row
+        End If
+        ' Пропускаем пустые строки после названия таблицы
+        dataStartRow = cell.Row + 1
+        Do While dataStartRow <= srcLastRow
+            If Trim(wsSource.Cells(dataStartRow, 2).Value) <> "" Then Exit Do
+            dataStartRow = dataStartRow + 1
+        Loop
+        ' Пропускаем две строки заголовка (заголовок колонок + подзаголовок с номерами)
+        dataStartRow = dataStartRow + 2
 
-        For i = startRow To srcLastRow
+        targetRow = 2 ' данные на main начинаем писать со строки 2
+        For i = dataStartRow To srcLastRow
             If wsSource.Cells(i, 2).Value <> "" Then
-                wsMain.Cells(i - startRow + 2, 24).Value = wsSource.Cells(i, 2).Value ' B -> X
-                wsMain.Cells(i - startRow + 2, 25).Value = wsSource.Cells(i, 3).Value ' C -> Y
-                wsMain.Cells(i - startRow + 2, 26).Value = wsSource.Cells(i, 4).Value ' D -> Z
-                wsMain.Cells(i - startRow + 2, 27).Value = wsSource.Cells(i, 7).Value ' G -> AA
+                wsMain.Cells(targetRow, 24).Value = wsSource.Cells(i, 2).Value ' B(№ кат.) -> X
+                wsMain.Cells(targetRow, 25).Value = wsSource.Cells(i, 3).Value ' C(Наименование) -> Y
+                wsMain.Cells(targetRow, 26).Value = wsSource.Cells(i, 4).Value ' D(Кол-во) -> Z
+                wsMain.Cells(targetRow, 27).Value = wsSource.Cells(i, 7).Value ' G(Всего) -> AA
+                ' Форматируем числовые колонки
+                If IsNumeric(wsMain.Cells(targetRow, 26).Value) Then
+                    If wsMain.Cells(targetRow, 26).Value = Int(wsMain.Cells(targetRow, 26).Value) Then
+                        wsMain.Cells(targetRow, 26).NumberFormat = "0"
+                    End If
+                End If
+                If IsNumeric(wsMain.Cells(targetRow, 27).Value) Then
+                    wsMain.Cells(targetRow, 27).NumberFormat = "# ##0,00"
+                End If
+                targetRow = targetRow + 1
             End If
         Next i
     End If
@@ -242,6 +328,8 @@ Public Sub ImportFromB2_UI()
     Dim wsSource As Worksheet
     Dim wbReport As Workbook
     Dim reportPath As String
+    Dim ws As Worksheet
+    Dim grzNumber As String
 
     ' Отключаем обновление экрана и события для производительности
     Application.ScreenUpdating = False
@@ -249,12 +337,12 @@ Public Sub ImportFromB2_UI()
     Application.DisplayAlerts = False
 
     ' 1. Получаем лист "мэйн" и читаем B2
-    Set wsMain = ThisWorkbook.Sheets("мэйн")
+    Set wsMain = ThisWorkbook.Sheets("main")
     grz = Trim(CStr(wsMain.Range("B2").Value))
 
     ' 2. Проверяем, что B2 не пуст
     If grz = "" Or grz = "0" Then
-        MsgBox "Ячейка B2 на листе 'мэйн' пуста. Укажите номер заказа.", _
+        MsgBox "Ячейка B2 на листе 'main' пуста. Укажите номер заказа.", _
                vbExclamation, "Импорт ВХ"
         GoTo CleanUp
     End If
@@ -276,11 +364,22 @@ Public Sub ImportFromB2_UI()
             GoTo CleanUp
         End If
 
-        ' Открываем report.xlsx (ReadOnly)
+        ' Открываем report.xlsx (ReadOnly) — ЕДИНСТВЕННЫЙ вызов Open
         Set wbReport = Workbooks.Open(reportPath, ReadOnly:=True)
 
-        ' Ищем лист по номеру из B2
-        Set wsSource = Mod_SheetOps.SearchSheetByGRZ(grz)
+        ' Извлекаем цифровой номер из ГРЗ для поиска листа
+        grzNumber = Mod_SheetOps.ExtractNumberFromGRZ(grz)
+
+        ' Ищем лист по номеру в уже открытой книге wbReport (без повторного Open)
+        Set wsSource = Nothing
+        If grzNumber <> "" Then
+            For Each ws In wbReport.Sheets
+                If InStr(1, ws.Name, grzNumber, vbTextCompare) > 0 Then
+                    Set wsSource = ws
+                    Exit For
+                End If
+            Next ws
+        End If
 
         If wsSource Is Nothing Then
             MsgBox "Лист с номером '" & grz & "' не найден в файле report.xlsx.", _
@@ -292,7 +391,7 @@ Public Sub ImportFromB2_UI()
         End If
 
         ' Копируем найденный лист в текущую книгу после листа "мэйн"
-        wsSource.Copy After:=ThisWorkbook.Sheets("мэйн")
+        wsSource.Copy After:=ThisWorkbook.Sheets("main")
 
         ' Закрываем report.xlsx
         wbReport.Close SaveChanges:=False
@@ -315,6 +414,11 @@ Public Sub ImportFromB2_UI()
 
     ' 5. Вызываем ImportDataToMain для переноса данных
     Call ImportDataToMain(wsSource)
+
+    ' 6. Заполняем шапку заказа из spisok и models
+    If grz <> "" Then
+        Call Mod_OrderHeader.FillHeaderFromOrder(grz)
+    End If
 
     MsgBox "Импорт по номеру '" & grz & "' выполнен успешно.", _
            vbInformation, "Импорт ВХ"
