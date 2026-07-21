@@ -7,61 +7,6 @@ Option Explicit
 ' Отдельный модуль, чтобы не смешивать с Mod_ButtonDispatcher
 ' ============================================================
 
-' ============================================================
-' ОЧИСТКА ДАННЫХ
-' ============================================================
-
-' --------------------------------------------------------------------------
-' Btn_main_Clear
-' Безопасная очистка всех данных на листе main:
-'   - очищает диапазон B2:ZZ<lastRow>
-'   - НЕ трогает строку 1 (заголовки)
-'   - НЕ трогает столбец A (метки/номера)
-'   - запрашивает подтверждение перед очисткой
-' --------------------------------------------------------------------------
-Public Sub Btn_main_Clear()
-    On Error GoTo ErrHandler
-
-    Dim wsMain As Worksheet
-    Dim lastRow As Long
-    Dim response As VbMsgBoxResult
-
-    ' 1. Запрос подтверждения
-    response = MsgBox( _
-        "Очистить все данные на листе main?" & vbCrLf & _
-        "Строка 1 (заголовки) и столбец A (метки) будут сохранены.", _
-        vbYesNo + vbQuestion, _
-        "Подтверждение очистки")
-
-    If response <> vbYes Then Exit Sub
-
-    ' 2. Определение последней используемой строки
-    Set wsMain = ThisWorkbook.Sheets("main")
-    lastRow = wsMain.UsedRange.Rows.Count
-
-    ' Если данных для очистки нет — выходим
-    If lastRow < 2 Then
-        MsgBox "Нет данных для очистки.", vbInformation, "SysW"
-        Exit Sub
-    End If
-
-    ' 3. Очистка диапазона B2:ZZ<lastRow>
-    '    Столбец A НЕ очищаем, строку 1 НЕ очищаем
-    wsMain.Range("B2:ZZ" & lastRow).ClearContents
-
-    ' 4. Уведомление об успехе
-    MsgBox "Очистка завершена.", vbInformation, "SysW"
-
-    Exit Sub
-
-ErrHandler:
-    ' Восстановление состояния приложения
-    Application.EnableEvents = True
-    Application.ScreenUpdating = True
-    Application.DisplayAlerts = True
-    MsgBox "Ошибка при очистке: " & Err.Description, vbCritical, "Ошибка"
-    Call Mod_Utils.WriteLog("Btn_main_Clear: " & Err.Description)
-End Sub
 
 ' ============================================================
 ' ИМПОРТ
