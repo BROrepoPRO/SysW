@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW
+# Техническая документация разработчика — SysW (v0.10.0)
 
 ## 1. Архитектура проекта
 
@@ -52,10 +52,11 @@ Mod_SheetButtons (кнопки листов z4/work)
 
 Mod_FullTestRunner.RunAllTests()
        │
-       ├── RunUtilsTests()         → Mod_Utils
-       ├── RunLoggerTests()        → Mod_Logger
-       ├── RunUtilsEdgeTests()     → Mod_Utils
-       └── RunLibNameTests()       → Mod_Constants
+       ├── RunUtilsTests()         → Mod_Utils (TC-01..TC-08)
+       ├── RunLoggerTests()        → Mod_Logger (TC-09..TC-11)
+       ├── RunUtilsEdgeTests()     → Mod_Utils (TC-12)
+       ├── RunLibNameTests()       → Mod_Constants (TC-13)
+       └── RunImportVHTests()      → Mod_Import (TC-14)
 ```
 
 ### 1.3 Принципы модульной архитектуры
@@ -137,7 +138,7 @@ Mod_FullTestRunner.RunAllTests()
 
 ### 2.3 Mod_Import.bas — Импорт данных
 
-**Файл:** [`Mod_Import.bas`](../src/modules/Mod_Import.bas) (229 строк)
+**Файл:** [`Mod_Import.bas`](../src/modules/Mod_Import.bas) (447 строк)
 
 **Назначение:** Импорт данных из отчётов Excel. Поиск листов в report.xlsx по ГРЗ.
 
@@ -180,9 +181,9 @@ Mod_FullTestRunner.RunAllTests()
 
 ### 2.5 Mod_FullTestRunner.bas — Тестовый раннер
 
-**Файл:** [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas) (523 строки)
+**Файл:** [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas) (577 строк)
 
-**Назначение:** Автоматическое тестирование VBA-модулей. Содержит 14 тестовых сценариев (TC-01..TC-14).
+**Назначение:** Автоматическое тестирование VBA-модулей. Содержит 14 тестовых сценариев (TC-01..TC-14) в коде модуля; полный реестр насчитывает 30 сценариев (TC-01..TC-30) с учётом тестов, запускаемых через Python-скрипт.
 
 **Группы тестов:**
 
@@ -349,7 +350,7 @@ python scripts/run_tests.py
 | `InitLibName()` | Заполняет лист libname начальными данными реестра имён |
 | `AddWorkEntry()` | Добавляет запись для work.xlsm в конец списка на листе libname |
 
-> **Примечание:** Ранее функциональность реестра имён находилась в отдельном модуле `Mod_LibName.bas`, который был объединён с `Mod_Constants.bas` для централизованного управления константами.
+> **Примечание:** Ранее функциональность реестра имён находилась в отдельном модуле `Mod_LibName.bas` (удалён в v0.9.0), который был объединён с `Mod_Constants.bas` для централизованного управления константами.
 
 ### 2.12 Лист2_main.cls — Основной лист
 
@@ -537,7 +538,7 @@ python scripts/impVBA.py      # Импорт всех модулей
 
 ## 6. Тестирование
 
-### 6.1 Полный список тестов (TC-01..TC-14)
+### 6.1 Полный список тестов (TC-01..TC-30)
 
 | ID | Название | Модуль | Тип | Статус |
 |----|----------|--------|-----|--------|
@@ -555,6 +556,22 @@ python scripts/impVBA.py      # Импорт всех модулей
 | TC-12 | FormatDateSQL граничные случаи | Mod_Utils | Модульный | ✅ |
 | TC-13 | InitLibName заполнение libname | Mod_Constants | Модульный | ✅ |
 | TC-14 | ImportFromB2_UI с пустым B2 | Mod_Import | Модульный | ✅ |
+| TC-15 | WriteLog запись в лог-файл (прямой вызов) | Mod_Logger | Модульный | ✅ |
+| TC-16 | RotateLogIfNeeded ротация лога (прямой вызов) | Mod_Logger | Модульный | ✅ |
+| TC-17 | ClearLog очистка лога (прямой вызов) | Mod_Logger | Модульный | ✅ |
+| TC-18 | ClearMainSheet_UI очистка листа main | Mod_SheetOps | Модульный | ✅ |
+| TC-19 | ClearHeader_UI очистка шапки заказа | Mod_SheetOps | Модульный | ✅ |
+| TC-20 | RenameSheetsByGRZ переименование листов | Mod_SheetOps | Модульный | ✅ |
+| TC-21 | ImportSheet импорт листа из report.xlsx | Mod_Import | Модульный | ✅ |
+| TC-22 | ImportDataToMain перенос данных в main | Mod_Import | Модульный | ✅ |
+| TC-23 | FormatDateSQL граничные случаи (расширенные) | Mod_Utils | Модульный | ✅ |
+| TC-24 | Btn_main_Clear_Click (silent mode) | Mod_ButtonDispatcher | Интеграционный | ✅ |
+| TC-25 | ExtractNumberFromGRZ — цифровая группа 3 цифры | Mod_SheetOps | Модульный | ✅ |
+| TC-26 | ExtractNumberFromGRZ — цифровая группа 4 цифры | Mod_SheetOps | Модульный | ✅ |
+| TC-27 | ExtractNumberFromGRZ — без цифр | Mod_SheetOps | Модульный | ✅ |
+| TC-28 | SearchSheetByGRZ — поиск существующего листа | Mod_SheetOps | Модульный | ✅ |
+| TC-29 | SearchSheetByGRZ — поиск несуществующего листа | Mod_SheetOps | Модульный | ✅ |
+| TC-30 | ImportFromB2_UI — полный цикл импорта | Mod_Import | Интеграционный | ✅ |
 
 **Легенда:**
 - ✅ — тест проходит (PASS)
@@ -568,7 +585,10 @@ python scripts/impVBA.py      # Импорт всех модулей
 | Mod_Utils | 8 | 8 | 0 | 0 | 100% |
 | Mod_Logger | 3 | 3 | 0 | 0 | 100% |
 | Mod_Constants | 1 | 1 | 0 | 0 | 100% |
-| **Итого** | **12** | **12** | **0** | **0** | **100%** |
+| Mod_Import | 3 | 3 | 0 | 0 | 100% |
+| Mod_SheetOps | 6 | 6 | 0 | 0 | 100% |
+| Mod_ButtonDispatcher | 1 | 1 | 0 | 0 | 100% |
+| **Итого** | **22** | **22** | **0** | **0** | **100%** |
 
 ### 6.3 Как добавить новый тест
 
@@ -639,7 +659,7 @@ python scripts/run_tests.py
 
 | Шаг | Что проверяет | Действие при неудаче |
 |-----|--------------|---------------------|
-| 1. Check VBA files exist | Наличие всех 13 VBA-файлов | Fail |
+| 1. Check VBA files exist | Наличие всех 13 VBA-файлов (10 `.bas` + 3 `.cls`) | Fail |
 | 2. Check UTF-8 encoding | Валидная UTF-8 кодировка каждого файла | Fail |
 | 3. Check VBA syntax (basic) | Отсутствие недопустимых символов (коды < 32, кроме \n\r\t) | Fail |
 | 4. Check CHANGELOG updated | Наличие записи за сегодняшнюю дату | Warning (non-blocking) |
@@ -714,9 +734,12 @@ Mod_SheetButtons
   └── Mod_SheetOps (операции с листами)
 
 Mod_FullTestRunner
-  ├── Mod_Utils (тесты утилит)
-  ├── Mod_Logger (тесты логгера)
-  └── Mod_Constants (тесты реестра имён)
+  ├── Mod_Utils (тесты утилит TC-01..TC-08, TC-12)
+  ├── Mod_Logger (тесты логгера TC-09..TC-11)
+  ├── Mod_Constants (тесты реестра имён TC-13)
+  ├── Mod_Import (тесты импорта TC-14, TC-21, TC-22, TC-30)
+  ├── Mod_SheetOps (тесты операций с листами TC-18..TC-20, TC-25..TC-29)
+  └── Mod_ButtonDispatcher (интеграционный тест TC-24)
 
 Mod_Logger
   └── (используется всеми модулями для логирования)
@@ -724,9 +747,8 @@ Mod_Logger
 Mod_Constants
   └── (используется Mod_OrderHeader, Mod_Import и другими модулями)
 
-Mod_Constants
-  └── Mod_Utils (GetSheetByName)
-  └── Mod_Logger (WriteLog)
+Mod_Utils
+  └── Mod_Logger (WriteLog — обёртка обратной совместимости)
 ```
 
 ## Приложение B: Маппинг файлов VBA

@@ -86,16 +86,20 @@ L:\PROject\SysW\
 │   └── workflows/
 │       └── vba-check.yml
 ├── .vscode/              # Настройки VS Code (терминал, кодировка, VBA Language Server)
+├── base/                 # Шаблоны и образцы данных
+│   └── models/               # Модели данных
 ├── docs/                 # Документация проекта
 │   ├── sourcecraft-guide.md      # Настоящее руководство
 │   ├── git-workflow.md           # Git-инструкции (ветки, коммиты, CI)
 │   ├── DEVELOPER.md              # Техническая документация разработчика
 │   └── ARCHITECTURE_SQLITE.md    # Архитектура выноса данных в SQLite
 ├── plans/                # Планы изменений, архитектурные решения, отчёты
+│   └── _archive/             # Архив выполненных планов
 ├── scripts/              # Скрипты автоматизации
 │   ├── export_vba.py         # Выгрузка VBA-модулей из Excel (CP1251 → UTF-8)
 │   ├── impVBA.py             # Загрузка VBA-модулей в Excel (UTF-8 → CP1251)
 │   ├── run_tests.py          # Запуск тестов VBA
+│   ├── Set-ExcelTrust.ps1    # Настройка доверия Excel
 │   └── Import-VbaFromExcel.ps1  # Импорт VBA из Excel (альтернатива Python)
 ├── src/                  # Исходный код VBA
 │   ├── modules/              # 10 .bas модулей
@@ -124,7 +128,10 @@ L:\PROject\SysW\
 
 | Директория | Назначение |
 |-----------|-----------|
+| `base/` | Шаблоны и образцы данных |
+| `base/models/` | Модели данных |
 | `plans/` | Планы изменений, архитектурные решения, отчёты. Создаются перед изменением VBA-модулей |
+| `plans/_archive/` | Архив выполненных планов |
 | `scripts/` | Вспомогательные PowerShell-скрипты автоматизации. Все скрипты в UTF-8 with BOM |
 | `docs/` | Документация проекта: `sourcecraft-guide.md` (руководство по SourceCraft), `git-workflow.md` (Git-инструкции), `DEVELOPER.md` (техническая документация), `ARCHITECTURE_SQLITE.md` (архитектура SQLite) |
 | `.vscode/` | Настройки VS Code (кодировка UTF-8, кастомный терминал, VBA Language Server) |
@@ -146,6 +153,7 @@ L:\PROject\SysW\
 | Скрипт | Назначение |
 |--------|-----------|
 | [`scripts/Import-VbaFromExcel.ps1`](../scripts/Import-VbaFromExcel.ps1) | Импорт VBA-модулей из Excel-файла с конвертацией CP1251 → UTF-8 |
+| [`scripts/Set-ExcelTrust.ps1`](../scripts/Set-ExcelTrust.ps1) | Настройка доверия Excel для работы VBA-макросов |
 
 #### Использование `Import-VbaFromExcel.ps1`
 
@@ -173,7 +181,9 @@ L:\PROject\SysW\
 
 | Версия | Дата | Изменения |
 |--------|------|-----------|
-| 0.8.0 | 2026-07-19 | Добавлен лист `models`, модуль `Mod_LibName` (позднее объединён с `Mod_Constants`), расширение реестра имён |
+| 0.10.0 | 2026-07-21 | `Mod_Import.ImportFromB2_UI`, исправление ошибки импорта (пропуск заголовка) |
+| 0.9.0 | 2026-07-21 | Рефакторинг `Mod_LibName.bas` → объединение с `Mod_Constants.bas` |
+| 0.8.0 | 2026-07-19 | Модуль `Mod_FullTestRunner.bas`, 16 тестовых сценариев, новая архитектура импорта |
 | 0.7.1 | 2026-07-16 | Защитное программирование и обработка ошибок в модулях VBA (аудит стабильности) |
 | 0.7.0 | 2026-07-15 | Новые тесты TC-21..TC-30, функция GetTestResults, silent mode, раздел тестирования в DEVELOPER.md |
 | 0.6.0 | 2026-07-15 | Новая структура каталогов: src/modules/, src/sheets/, scripts/ |
