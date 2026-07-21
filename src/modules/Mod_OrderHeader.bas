@@ -91,17 +91,42 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     ' B10 = "00" & значение B2 & "-20" (№ ЗН)
     wsMain.Cells(10, 2).Value = "00" & CStr(orderNum) & "-20"
 
-    ' Код модели из столбца I
-    ModelCode = FoundRow.Cells(1, 9).Value
+    ' Ключ поиска по models — название модели из main.B3
+    ModelCode = wsMain.Cells(3, 2).Value   ' B3 = модель
 
-    ' Поиск кода модели в столбце A листа models (начиная со строки 3)
+    ' Поиск модели в столбце A листа models (начиная со строки 3)
     If Not IsNull(ModelCode) And ModelCode <> "" Then
         Dim lastModelRow As Long
-        lastModelRow = wsModel.Cells(wsModel.Rows.count, 1).End(xlUp).Row
+        lastModelRow = wsModel.Cells(wsModel.Rows.count, Mod_Constants.MODELS_COL_MODEL).End(xlUp).Row
         Set ModelRow = wsModel.Range("A3:A" & lastModelRow).Find(What:=ModelCode, LookAt:=xlWhole)
         If Not ModelRow Is Nothing And ModelRow.Row >= 3 Then
-            wsMain.Cells(11, 2).Value = ModelRow.Cells(1, Mod_Constants.MODELS_COL_PRICE).Value  ' Цена н/ч
-            wsMain.Cells(12, 2).Value = ModelRow.Cells(1, Mod_Constants.MODELS_COL_GROUP).Value  ' Группа
+            ' Модель найдена — заполняем цену н/ч и группу
+            wsMain.Cells(11, 2).Value = ModelRow.Cells(1, Mod_Constants.MODELS_COL_PRICE).Value  ' B11 = цена н/ч
+            wsMain.Cells(12, 2).Value = ModelRow.Cells(1, Mod_Constants.MODELS_COL_GROUP).Value  ' B12 = группа
+
+            ' Проверка: если группа (B) пуста И цена (C) пуста — предупредить пользователя
+            Dim modelGroup As Variant
+            Dim modelPrice As Variant
+            modelGroup = ModelRow.Cells(1, Mod_Constants.MODELS_COL_GROUP).Value
+            modelPrice = ModelRow.Cells(1, Mod_Constants.MODELS_COL_PRICE).Value
+            If (IsNull(modelGroup) Or modelGroup = "") _
+               And (IsNull(modelPrice) Or modelPrice = "") Then
+                MsgBox "Для модели '" & ModelCode & "' не заданы группа и цена н/ч на листе models", _
+                       vbExclamation, "Предупреждение"
+            End If
+        Else
+            ' Модель не найдена — автодобавление новой записи в models
+            Dim newRow As Long
+            ' Ищем первую пустую ячейку в столбце A, начиная с A3
+            If lastModelRow < 3 Then
+                newRow = 3
+            Else
+                newRow = lastModelRow + 1
+            End If
+            wsModel.Cells(newRow, Mod_Constants.MODELS_COL_MODEL).Value = ModelCode
+            ' B11 и B12 оставляем пустыми (цена и группа не заданы)
+            Call Mod_Logger.WriteLog("Mod_OrderHeader", _
+                "FillHeaderFromOrder: Модель '" & ModelCode & "' добавлена в models (строка " & newRow & ")")
         End If
     End If
 
