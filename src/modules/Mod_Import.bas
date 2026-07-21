@@ -31,7 +31,7 @@ Public Sub ImportSheet(grz As String)
 
     wsSource.Copy After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.count)
 
-    newName = Trim(wsMain.Range("B2").Value) & "M"
+    newName = Trim(wsMain.Range("B4").Value) & "M"
     On Error Resume Next
     ActiveSheet.Name = newName
     On Error GoTo 0
@@ -75,10 +75,10 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
     lastRowL = wsMain.Cells(wsMain.Rows.count, 12).End(xlUp).Row
     lastRowX = wsMain.Cells(wsMain.Rows.count, 24).End(xlUp).Row
     lastRow = Application.WorksheetFunction.Max(lastRowL, lastRowX)
-    If lastRow < 2 Then lastRow = 2
+    If lastRow < 4 Then lastRow = 4
 
-    wsMain.Range("L2:N" & lastRow).ClearContents
-    wsMain.Range("X2:AA" & lastRow).ClearContents
+    wsMain.Range("L4:N" & lastRow).ClearContents
+    wsMain.Range("X4:AA" & lastRow).ClearContents
 
     foundWorks = False
     foundMaterials = False
@@ -127,7 +127,7 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
         ' Пропускаем две строки заголовка (заголовок колонок + подзаголовок с номерами)
         dataStartRow = dataStartRow + 2
 
-        targetRow = 2 ' данные на main начинаем писать со строки 2
+        targetRow = 4 ' данные на main начинаем писать со строки 4
         For i = dataStartRow To srcLastRow
             If wsSource.Cells(i, 4).Value <> "" Then
                 wsMain.Cells(targetRow, 12).Value = wsSource.Cells(i, 4).Value ' D(4) -> L(12)
@@ -183,7 +183,7 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
         ' Пропускаем две строки заголовка (заголовок колонок + подзаголовок с номерами)
         dataStartRow = dataStartRow + 2
 
-        targetRow = 2 ' данные на main начинаем писать со строки 2
+        targetRow = 4 ' данные на main начинаем писать со строки 4
         For i = dataStartRow To srcLastRow
             If wsSource.Cells(i, 2).Value <> "" Then
                 wsMain.Cells(targetRow, 24).Value = wsSource.Cells(i, 3).Value ' C(3) -> X(24)
@@ -233,7 +233,7 @@ End Sub
 Public Sub ImportSheet_UI()
     On Error GoTo ErrHandler
 
-    Call ImportSheet(ThisWorkbook.Sheets("main").Range("B4").Value)
+    Call ImportSheet(ThisWorkbook.Sheets("main").Range("B6").Value)
 
     Exit Sub
 
@@ -338,11 +338,11 @@ Public Sub ImportFromB2_UI()
 
     ' 1. Получаем лист "мэйн" и читаем B2
     Set wsMain = ThisWorkbook.Sheets("main")
-    grz = Trim(CStr(wsMain.Range("B2").Value))
+    grz = Trim(CStr(wsMain.Range("B4").Value))
 
     ' 2. Проверяем, что B2 не пуст
     If grz = "" Or grz = "0" Then
-        MsgBox "Ячейка B2 на листе 'main' пуста. Укажите номер заказа.", _
+        MsgBox "Ячейка B4 на листе 'main' пуста. Укажите номер заказа.", _
                vbExclamation, "Импорт ВХ"
         GoTo CleanUp
     End If

@@ -24,7 +24,7 @@ End Type
 
 ' --------------------------------------------------------------------------
 ' FillHeaderFromOrder
-' Заполняет B3:B15 на листе main данными из spisok и model по номеру заказа
+' Заполняет B5:B17 на листе main данными из spisok и model по номеру заказа
 ' --------------------------------------------------------------------------
 Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     On Error GoTo ErrHandler
@@ -60,8 +60,8 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
         Exit Function
     End If
 
-    ' Очистка B3:B15
-    wsMain.Range("B3:B15").ClearContents
+    ' Очистка B5:B17
+    wsMain.Range("B5:B17").ClearContents
 
     ' Проверка, что OrderNum — число
     If Not IsNumeric(orderNum) Then
@@ -74,25 +74,25 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     Set FoundRow = wsSpisok.Columns(1).Find(What:=orderNum, LookAt:=xlWhole)
     If FoundRow Is Nothing Then
         Call Mod_Logger.WriteLog("Mod_OrderHeader", "FillHeaderFromOrder: Заказ с номером " & orderNum & " не найден!")
-        wsMain.Range("B3:B15").ClearContents
+        wsMain.Range("B5:B17").ClearContents
         FillHeaderFromOrder = False
         Exit Function
     End If
 
     ' B3:B9 из столбцов B–H найденной строки spisok
-    wsMain.Cells(3, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_MODEL).Value   ' B3 = название ТС
-    wsMain.Cells(4, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_GRZ).Value     ' B4 = ГРЗ
-    wsMain.Cells(5, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_VIN).Value     ' B5 = VIN
-    wsMain.Cells(6, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_GARAGE).Value  ' B6 = Гараж.№
-    wsMain.Cells(7, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_YEAR).Value    ' B7 = Год вып.
-    wsMain.Cells(8, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_MILEAGE).Value ' B8 = Пробег
-    wsMain.Cells(9, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_DATE).Value    ' B9 = Дата
+    wsMain.Cells(5, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_MODEL).Value   ' B5 = название ТС
+    wsMain.Cells(6, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_GRZ).Value     ' B6 = ГРЗ
+    wsMain.Cells(7, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_VIN).Value     ' B7 = VIN
+    wsMain.Cells(8, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_GARAGE).Value  ' B8 = Гараж.№
+    wsMain.Cells(9, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_YEAR).Value    ' B9 = Год вып.
+    wsMain.Cells(10, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_MILEAGE).Value ' B10 = Пробег
+    wsMain.Cells(11, 2).Value = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_DATE).Value    ' B11 = Дата
 
     ' B10 = "00" & значение B2 & "-20" (№ ЗН)
-    wsMain.Cells(10, 2).Value = "00" & CStr(orderNum) & "-20"
+    wsMain.Cells(12, 2).Value = "00" & CStr(orderNum) & "-20"
 
     ' Ключ поиска по models — название модели из main.B3 (с Trim для удаления лишних пробелов)
-    ModelCode = Trim(wsMain.Cells(3, 2).Value)   ' B3 = модель
+    ModelCode = Trim(wsMain.Cells(5, 2).Value)   ' B5 = модель
 
     ' Поиск модели в столбце A листа models (начиная со строки 3)
     If Not IsNull(ModelCode) And ModelCode <> "" Then
@@ -113,8 +113,8 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
 
         If found And ModelRow.Row >= 3 Then
             ' Модель найдена — заполняем цену н/ч и группу
-            wsMain.Cells(11, 2).Value = ModelRow.Cells(1, Mod_Constants.MODELS_COL_PRICE).Value  ' B11 = цена н/ч
-            wsMain.Cells(12, 2).Value = ModelRow.Cells(1, Mod_Constants.MODELS_COL_GROUP).Value  ' B12 = группа
+            wsMain.Cells(13, 2).Value = ModelRow.Cells(1, Mod_Constants.MODELS_COL_PRICE).Value  ' B13 = цена н/ч
+            wsMain.Cells(14, 2).Value = ModelRow.Cells(1, Mod_Constants.MODELS_COL_GROUP).Value  ' B14 = группа
 
             ' Проверка: если группа (B) пуста И цена (C) пуста — предупредить пользователя
             Dim modelGroup As Variant
@@ -193,17 +193,17 @@ End Function
 
 ' --------------------------------------------------------------------------
 ' FillHeaderFromOrder_UI
-' Запрашивает номер заказа из B2, вызывает FillHeaderFromOrder,
+' Запрашивает номер заказа из B4, вызывает FillHeaderFromOrder,
 ' показывает результат пользователю
 ' --------------------------------------------------------------------------
 Public Sub FillHeaderFromOrder_UI()
     On Error GoTo ErrHandler
 
     Dim orderNum As Variant
-    orderNum = ThisWorkbook.Sheets("main").Range("B2").Value
+    orderNum = ThisWorkbook.Sheets("main").Range("B4").Value
 
     If IsEmpty(orderNum) Or orderNum = "" Then
-        MsgBox "Введите номер заказа в ячейку B2!", vbExclamation, "Предупреждение"
+        MsgBox "Введите номер заказа в ячейку B4!", vbExclamation, "Предупреждение"
         Exit Sub
     End If
 

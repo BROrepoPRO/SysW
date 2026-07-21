@@ -104,13 +104,13 @@ Mod_FullTestRunner.RunAllTests()
 
 **Файл:** [`Mod_OrderHeader.bas`](../src/modules/Mod_OrderHeader.bas) (265 строк)
 
-**Назначение:** Заполнение заголовка заказа-наряда (B3:B15) на листе main данными из листов spisok и models.
+**Назначение:** Заполнение заголовка заказа-наряда (B5:B17) на листе main данными из листов spisok и models.
 
 **Ключевые функции:**
 
 | Функция | Описание |
 |---------|----------|
-| `FillHeaderFromOrder(OrderNum)` | Основная функция. Ищет номер заказа в листе spisok, заполняет B3:B15 на листе main. Возвращает `Boolean` — успех/неудача |
+| `FillHeaderFromOrder(OrderNum)` | Основная функция. Ищет номер заказа в листе spisok, заполняет B5:B17 на листе main. Возвращает `Boolean` — успех/неудача |
 | `FillHeaderFromOrder_UI()` | UI-обёртка: вызывает `FillHeaderFromOrder`, показывает MsgBox с результатом |
 | `FindOrder(orderNum, Header)` | Поиск заказа по номеру, заполняет структуру `OrderHeader` |
 | `FindOrder_UI()` | UI-обёртка: запрашивает номер через InputBox, показывает результат |
@@ -148,7 +148,7 @@ Mod_FullTestRunner.RunAllTests()
 |---------|----------|
 | `ImportSheet(grz)` | Импортирует лист из report.xlsx по ГРЗ в текущую книгу |
 | `ImportDataToMain(wsSource)` | Переносит данные из листа-источника в лист main по столбцам |
-| `ImportSheet_UI()` | Запускает импорт из отчёта по ГРЗ из ячейки B4 |
+| `ImportSheet_UI()` | Запускает импорт из отчёта по ГРЗ из ячейки B6 |
 | `ImportByInput_UI()` | Запрашивает ГРЗ через InputBox, вызывает ImportSheet |
 | `RenameSheets_UI()` | Переименовывает листы в report.xlsx по ГРЗ |
 | `ImportDataToMain_UI()` | Переносит данные с активного листа в лист main |
@@ -165,8 +165,8 @@ Mod_FullTestRunner.RunAllTests()
 | Процедура | Вызов |
 |-----------|-------|
 | `Btn_main_Clear_Click()` | `Mod_SheetOps.ClearMainSheet_UI` |
-| `Btn_main_Import_Click()` | `Mod_Import.ImportSheet_UI` — импорт из report.xlsx по B4 |
-| `Btn_main_ImportVH_Click()` | `Mod_Import.ImportFromB2_UI` — импорт + перенос данных по B2 |
+| `Btn_main_Import_Click()` | `Mod_Import.ImportSheet_UI` — импорт из report.xlsx по B6 |
+| `Btn_main_ImportVH_Click()` | `Mod_Import.ImportFromB2_UI` — импорт + перенос данных по B4 |
 | `Btn_main_FillHeader_Click()` | `Mod_OrderHeader.FillHeaderFromOrder_UI` |
 | `Btn_main_ClearHeader_Click()` | `Mod_SheetOps.ClearHeader_UI` |
 | `Btn_main_ImportByInput_Click()` | Импорт по ГРЗ, введённому пользователем через InputBox |
@@ -264,7 +264,7 @@ python scripts/run_tests.py
 | `SearchSheetByGRZ(GRZ)` | Открывает report.xlsx, ищет лист по номеру ГРЗ |
 | `RenameSheetsByGRZ()` | Переименовывает листы в report.xlsx по номеру ГРЗ |
 | `ClearMainSheet_UI([silent])` | Очищает все данные на листе main с подтверждением |
-| `ClearHeader_UI()` | Очищает шапку заказа (B3:B15) на листе main |
+| `ClearHeader_UI()` | Очищает шапку заказа (B5:B17) на листе main |
 
 ### 2.9 Mod_MainButtons.bas — Кнопки листа main
 
@@ -360,9 +360,9 @@ python scripts/run_tests.py
 
 **Логика обработчика:**
 1. Защита от рекурсии через `Static isProcessing As Boolean`
-2. Проверка, что изменение произошло в ячейке B2
-3. Очистка диапазона B3:B15
-4. Вызов `Mod_OrderHeader.FillHeaderFromOrder(CStr(b2Value))`
+2. Проверка, что изменение произошло в ячейке B4
+3. Очистка диапазона B5:B17
+4. Вызов `Mod_OrderHeader.FillHeaderFromOrder(CStr(b4Value))`
 
 ### 2.13 Sheet_work.cls — Лист work
 

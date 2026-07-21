@@ -59,6 +59,15 @@ Public Const WORK_NAME As String = "work"
 Public Const Z4_NAME As String = "z4"
 
 ' ============================================================
+' Константы строк листа main
+' ============================================================
+Public Const MAIN_HEADER_START_ROW As Long = 4   ' B4 — номер заказа (ввод пользователя)
+Public Const MAIN_HEADER_END_ROW As Long = 17     ' B17 — последняя строка шапки (заглушка)
+Public Const MAIN_DATA_START_ROW As Long = 4      ' Строка, с которой начинаются таблицы работ/материалов
+Public Const MAIN_CLEAR_START_ROW As Long = 4     ' Строка, с которой начинается очистка данных
+Public Const MAIN_HEADER_RANGE As String = "B4:B17" ' Диапазон шапки заказа
+
+' ============================================================
 ' Приватный тип: запись реестра libname
 ' ============================================================
 Private Type LibNameEntry

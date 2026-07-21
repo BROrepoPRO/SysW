@@ -179,15 +179,15 @@ Public Sub ClearMainSheet_UI(Optional ByVal silent As Boolean = False)
     If silent Then
         ' Без подтверждения — сразу очищаем
         lastRow = wsMain.UsedRange.Rows.count
-        If lastRow >= 2 Then
-            wsMain.Range("B2:ZZ" & lastRow).ClearContents
+        If lastRow >= 4 Then
+            wsMain.Range("B4:ZZ" & lastRow).ClearContents
         End If
     Else
         response = MsgBox("Очистить все данные на листе main?", vbYesNo + vbQuestion, "Подтверждение")
         If response = vbYes Then
             lastRow = wsMain.UsedRange.Rows.count
-            If lastRow >= 2 Then
-                wsMain.Range("B2:ZZ" & lastRow).ClearContents
+            If lastRow >= 4 Then
+                wsMain.Range("B4:ZZ" & lastRow).ClearContents
             End If
         End If
     End If
@@ -205,7 +205,7 @@ End Sub
 
 ' --------------------------------------------------------------------------
 ' ClearHeader_UI
-' Очищает шапку заказа B3:B15 на листе main
+' Очищает шапку заказа B5:B17 на листе main
 ' --------------------------------------------------------------------------
 Public Sub ClearHeader_UI()
     On Error GoTo ErrHandler
@@ -213,9 +213,9 @@ Public Sub ClearHeader_UI()
     Dim wsMain As Worksheet
     Set wsMain = ThisWorkbook.Sheets("main")
 
-    wsMain.Range("B3:B15").ClearContents
+    wsMain.Range("B5:B17").ClearContents
 
-    MsgBox "Шапка заказа (B3:B15) очищена.", vbInformation, "SysW"
+    MsgBox "Шапка заказа (B5:B17) очищена.", vbInformation, "SysW"
     Exit Sub
 
 ErrHandler:

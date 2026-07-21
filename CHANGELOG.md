@@ -5,6 +5,13 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [0.11.0] — 2026-07-21
+
+### Changed
+- Сдвиг структуры листа main на 2 строки вниз для резервирования места под будущую логику
+- Все жёсткие ссылки на строки обновлены (+2)
+- Добавлены константы `MAIN_HEADER_START_ROW`, `MAIN_DATA_START_ROW` и др.
+
 ## [0.10.0] — 2026-07-21
 
 ### Added

@@ -469,10 +469,10 @@ Private Sub RunImportVHTests()
         AddResult "TC-14", "ImportFromB2_UI с пустым B2", False, "Лист 'main' не найден"
     Else
         ' Сохраняем текущее значение B2
-        oldB2 = Trim(CStr(wsMain.Range("B2").Value))
+        oldB2 = Trim(CStr(wsMain.Range("B4").Value))
 
         ' Очищаем B2
-        wsMain.Range("B2").Value = ""
+        wsMain.Range("B4").Value = ""
 
         ' Вызываем процедуру — она должна показать MsgBox и выйти без ошибки
         Call Mod_Import.ImportFromB2_UI
@@ -485,7 +485,7 @@ Private Sub RunImportVHTests()
         End If
 
         ' Восстанавливаем B2
-        wsMain.Range("B2").Value = oldB2
+        wsMain.Range("B4").Value = oldB2
     End If
 
     Set wsMain = Nothing
