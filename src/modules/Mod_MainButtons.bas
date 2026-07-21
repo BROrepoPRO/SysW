@@ -88,3 +88,43 @@ Public Sub Btn_main_MANw()
     MsgBox "Ручной подбор работ — в разработке.", _
            vbInformation, "SysW"
 End Sub
+
+' ============================================================
+' ИМПОРТ ВХ (из ячейки B2)
+' ============================================================
+
+' --------------------------------------------------------------------------
+' Btn_main_ImportVH_Click
+' Импорт данных на лист "мэйн" из листа {B2}M.
+' Если листа нет — копирует из report.xlsx.
+' Делегирует выполнение Mod_Import.ImportFromB2_UI.
+' --------------------------------------------------------------------------
+Public Sub Btn_main_ImportVH_Click()
+    On Error GoTo ErrHandler
+
+    Call Mod_Import.ImportFromB2_UI
+
+    Exit Sub
+
+ErrHandler:
+    ' Восстановление состояния приложения
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    MsgBox "Ошибка при импорте ВХ: " & Err.Description, vbCritical, "Ошибка"
+    Call Mod_Utils.WriteLog("Btn_main_ImportVH_Click: " & Err.Description)
+End Sub
+
+' ============================================================
+' НАЗНАЧЕНИЕ КНОПОК (mapping для привязки макросов)
+' ============================================================
+
+' --------------------------------------------------------------------------
+' AssignMainButtons
+' Создаёт словарь mapping текста кнопок на макросы
+' --------------------------------------------------------------------------
+Public Sub AssignMainButtons()
+    Dim mapping As Object
+    Set mapping = CreateObject("Scripting.Dictionary")
+    mapping.Add "ИМПОРТ ВХ", "'work.xlsm'!Btn_main_ImportVH_Click"
+End Sub

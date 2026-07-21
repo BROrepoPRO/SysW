@@ -151,6 +151,7 @@ Mod_FullTestRunner.RunAllTests()
 | `ImportByInput_UI()` | Запрашивает ГРЗ через InputBox, вызывает ImportSheet |
 | `RenameSheets_UI()` | Переименовывает листы в report.xlsx по ГРЗ |
 | `ImportDataToMain_UI()` | Переносит данные с активного листа в лист main |
+| `ImportFromB2_UI()` | Импорт данных на лист "мэйн" из листа {B2}M; если листа нет — копирует из report.xlsx |
 
 ### 2.4 Mod_ButtonDispatcher.bas — Диспетчер кнопок
 
@@ -163,7 +164,8 @@ Mod_FullTestRunner.RunAllTests()
 | Процедура | Вызов |
 |-----------|-------|
 | `Btn_main_Clear_Click()` | `Mod_SheetOps.ClearMainSheet_UI` |
-| `Btn_main_Import_Click()` | `Mod_Import.ImportSheet_UI` |
+| `Btn_main_Import_Click()` | `Mod_Import.ImportSheet_UI` — импорт из report.xlsx по B4 |
+| `Btn_main_ImportVH_Click()` | `Mod_Import.ImportFromB2_UI` — импорт + перенос данных по B2 |
 | `Btn_main_FillHeader_Click()` | `Mod_OrderHeader.FillHeaderFromOrder_UI` |
 | `Btn_main_ClearHeader_Click()` | `Mod_SheetOps.ClearHeader_UI` |
 | `Btn_main_ImportByInput_Click()` | Импорт по ГРЗ, введённому пользователем через InputBox |
@@ -180,7 +182,7 @@ Mod_FullTestRunner.RunAllTests()
 
 **Файл:** [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas) (523 строки)
 
-**Назначение:** Автоматическое тестирование VBA-модулей. Содержит 13 тестовых сценариев (TC-01..TC-13).
+**Назначение:** Автоматическое тестирование VBA-модулей. Содержит 14 тестовых сценариев (TC-01..TC-14).
 
 **Группы тестов:**
 
@@ -190,6 +192,7 @@ Mod_FullTestRunner.RunAllTests()
 | `RunLoggerTests()` | TC-09..TC-11 | Mod_Logger |
 | `RunUtilsEdgeTests()` | TC-12 | Mod_Utils (граничные случаи) |
 | `RunLibNameTests()` | TC-13 | Mod_Constants |
+| `RunImportVHTests()` | TC-14 | Mod_Import (ImportFromB2_UI) |
 
 **Механизмы:**
 - **SKIP** — тесты, зависящие от отсутствующих данных, пропускаются
@@ -534,7 +537,7 @@ python scripts/impVBA.py      # Импорт всех модулей
 
 ## 6. Тестирование
 
-### 6.1 Полный список тестов (TC-01..TC-13)
+### 6.1 Полный список тестов (TC-01..TC-14)
 
 | ID | Название | Модуль | Тип | Статус |
 |----|----------|--------|-----|--------|
@@ -551,6 +554,7 @@ python scripts/impVBA.py      # Импорт всех модулей
 | TC-11 | ClearLog очистка лога | Mod_Logger | Модульный | ✅ |
 | TC-12 | FormatDateSQL граничные случаи | Mod_Utils | Модульный | ✅ |
 | TC-13 | InitLibName заполнение libname | Mod_Constants | Модульный | ✅ |
+| TC-14 | ImportFromB2_UI с пустым B2 | Mod_Import | Модульный | ✅ |
 
 **Легенда:**
 - ✅ — тест проходит (PASS)
@@ -695,7 +699,7 @@ Sheet_z4.cls   ─── Mod_SheetButtons
 
 Mod_ButtonDispatcher
   ├── Mod_SheetOps (ClearMainSheet_UI, ClearHeader_UI)
-  ├── Mod_Import (ImportSheet_UI, ImportByInput_UI, RenameSheets_UI, ImportDataToMain_UI)
+  ├── Mod_Import (ImportSheet_UI, ImportByInput_UI, RenameSheets_UI, ImportDataToMain_UI, ImportFromB2_UI)
   ├── Mod_OrderHeader (FillHeaderFromOrder_UI, FindOrder_UI)
   ├── Mod_FullTestRunner (RunAllTests_UI)
   └── Mod_Utils (WriteLog_UI, ShowWorkbookPath_UI, ShowCurrentUser_UI, CheckFileExists_UI)

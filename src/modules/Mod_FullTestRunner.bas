@@ -37,6 +37,7 @@ Public Sub RunAllTests()
     RunLoggerTests
     RunUtilsEdgeTests
     RunLibNameTests
+    RunImportVHTests
 
     ' Финальный отчёт
     PrintFinalReport
@@ -444,6 +445,50 @@ Private Sub RunLibNameTests()
     End If
 
     Set wsLib = Nothing
+    On Error GoTo 0
+
+    Debug.Print ""
+End Sub
+
+' ============================================================
+' Группа: тесты ImportVH (TC-14)
+' ============================================================
+Private Sub RunImportVHTests()
+    Dim wsMain As Worksheet
+    Dim oldB2 As String
+
+    Debug.Print "--- Mod_Import ImportFromB2_UI Tests ---"
+
+    ' -------------------------------------------------------
+    ' TC-14: ImportFromB2_UI — проверка вызова с пустым B2
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Set wsMain = ThisWorkbook.Sheets("мэйн")
+
+    If wsMain Is Nothing Then
+        AddResult "TC-14", "ImportFromB2_UI с пустым B2", False, "Лист 'мэйн' не найден"
+    Else
+        ' Сохраняем текущее значение B2
+        oldB2 = Trim(CStr(wsMain.Range("B2").Value))
+
+        ' Очищаем B2
+        wsMain.Range("B2").Value = ""
+
+        ' Вызываем процедуру — она должна показать MsgBox и выйти без ошибки
+        Call Mod_Import.ImportFromB2_UI
+
+        If Err.number <> 0 Then
+            AddResult "TC-14", "ImportFromB2_UI с пустым B2", False, "Ошибка: " & Err.Description
+            Err.Clear
+        Else
+            AddResult "TC-14", "ImportFromB2_UI с пустым B2", True, ""
+        End If
+
+        ' Восстанавливаем B2
+        wsMain.Range("B2").Value = oldB2
+    End If
+
+    Set wsMain = Nothing
     On Error GoTo 0
 
     Debug.Print ""

@@ -226,3 +226,117 @@ ErrHandler:
     MsgBox "Ошибка в ImportDataToMain_UI: " & Err.Description, vbCritical, "Ошибка"
     Call Mod_Utils.WriteLog("ImportDataToMain_UI: " & Err.Description)
 End Sub
+
+' ============================================================
+' ImportFromB2_UI
+' Импорт данных на лист "мэйн" из листа {B2}M
+' Если листа нет — копирует из report.xlsx
+' Номер для поиска берётся из ячейки B2 листа "мэйн"
+' ============================================================
+Public Sub ImportFromB2_UI()
+    On Error GoTo ErrHandler
+
+    Dim wsMain As Worksheet
+    Dim grz As String
+    Dim sheetName As String
+    Dim wsSource As Worksheet
+    Dim wbReport As Workbook
+    Dim reportPath As String
+
+    ' Отключаем обновление экрана и события для производительности
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
+    Application.DisplayAlerts = False
+
+    ' 1. Получаем лист "мэйн" и читаем B2
+    Set wsMain = ThisWorkbook.Sheets("мэйн")
+    grz = Trim(CStr(wsMain.Range("B2").Value))
+
+    ' 2. Проверяем, что B2 не пуст
+    If grz = "" Or grz = "0" Then
+        MsgBox "Ячейка B2 на листе 'мэйн' пуста. Укажите номер заказа.", _
+               vbExclamation, "Импорт ВХ"
+        GoTo CleanUp
+    End If
+
+    ' 3. Формируем имя листа-источника
+    sheetName = grz & "M"
+
+    ' 4. Проверяем, существует ли лист {B2}M в текущей книге
+    Set wsSource = Mod_Utils.GetSheetByName(ThisWorkbook, sheetName)
+
+    If wsSource Is Nothing Then
+        ' ---- Лист не существует — копируем из report.xlsx ----
+        reportPath = ThisWorkbook.path & "\report.xlsx"
+
+        ' Проверяем, существует ли файл report.xlsx
+        If Not Mod_Utils.FileExists(reportPath) Then
+            MsgBox "Файл report.xlsx не найден по пути:" & vbCrLf & reportPath, _
+                   vbExclamation, "Импорт ВХ"
+            GoTo CleanUp
+        End If
+
+        ' Открываем report.xlsx (ReadOnly)
+        Set wbReport = Workbooks.Open(reportPath, ReadOnly:=True)
+
+        ' Ищем лист по номеру из B2
+        Set wsSource = Mod_SheetOps.SearchSheetByGRZ(grz)
+
+        If wsSource Is Nothing Then
+            MsgBox "Лист с номером '" & grz & "' не найден в файле report.xlsx.", _
+                   vbExclamation, "Импорт ВХ"
+            If Not wbReport Is Nothing Then
+                wbReport.Close SaveChanges:=False
+            End If
+            GoTo CleanUp
+        End If
+
+        ' Копируем найденный лист в текущую книгу после листа "мэйн"
+        wsSource.Copy After:=ThisWorkbook.Sheets("мэйн")
+
+        ' Закрываем report.xlsx
+        wbReport.Close SaveChanges:=False
+        Set wbReport = Nothing
+
+        ' Переименовываем скопированный лист
+        On Error Resume Next
+        ActiveSheet.Name = sheetName
+        If Err.Number <> 0 Then
+            MsgBox "Не удалось переименовать лист в '" & sheetName & "': " & Err.Description, _
+                   vbExclamation, "Импорт ВХ"
+            On Error GoTo ErrHandler
+            GoTo CleanUp
+        End If
+        On Error GoTo ErrHandler
+
+        ' Получаем ссылку на новый лист
+        Set wsSource = ActiveSheet
+    End If
+
+    ' 5. Вызываем ImportDataToMain для переноса данных
+    Call ImportDataToMain(wsSource)
+
+    MsgBox "Импорт по номеру '" & grz & "' выполнен успешно.", _
+           vbInformation, "Импорт ВХ"
+
+CleanUp:
+    ' Восстановление состояния приложения
+    Application.ScreenUpdating = True
+    Application.EnableEvents = True
+    Application.DisplayAlerts = True
+    Exit Sub
+
+ErrHandler:
+    ' Восстановление состояния приложения при ошибке
+    Application.ScreenUpdating = True
+    Application.EnableEvents = True
+    Application.DisplayAlerts = True
+
+    ' Закрываем report.xlsx, если он ещё открыт
+    If Not wbReport Is Nothing Then
+        wbReport.Close SaveChanges:=False
+    End If
+
+    MsgBox "Ошибка при импорте ВХ: " & Err.Description, vbCritical, "Ошибка"
+    Call Mod_Logger.WriteLog("Mod_Import", "ImportFromB2_UI: " & Err.Description)
+End Sub

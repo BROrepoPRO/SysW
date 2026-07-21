@@ -5,6 +5,13 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [0.10.0] — 2026-07-21
+
+### Added
+- **Кнопка "ИМПОРТ ВХ":** новая процедура `ImportFromB2_UI` в `Mod_Import.bas` — импорт данных на лист "мэйн" из листа `{B2}M`; если листа нет — копирует из `report.xlsx`
+- Обработчик `Btn_main_ImportVH_Click` в `Mod_MainButtons.bas` и `Mod_ButtonDispatcher.bas`
+- Процедура `AssignMainButtons` в `Mod_MainButtons.bas` с mapping для новой кнопки
+
 ## [0.9.0] — 2026-07-21
 
 ### Changed
