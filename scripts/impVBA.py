@@ -283,6 +283,16 @@ def main():
             text = strip_export_header(text)
             print(f"    Stripped export header (VERSION, BEGIN...END)")
 
+            # Extract VB_Name BEFORE stripping Attribute lines
+            # (needed for component lookup, especially for sheet components
+            # where file name stem differs from VB_Name)
+            vb_name = extract_vb_name(text)
+            if not vb_name:
+                vb_name = Path(file_name).stem
+                print(f"    VB_Name not found, using stem: {vb_name}")
+            else:
+                print(f"    VB_Name = {vb_name}")
+
             # Strip/keep Attribute lines (different handling for .bas vs .cls)
             # For sheet components updated via CodeModule.AddFromString,
             # remove all Attribute lines (they cause "Syntax error").
@@ -293,12 +303,6 @@ def main():
 
             # Remove leading blank lines
             text = text.lstrip('\n\r')
-
-            # Get VB_Name for component lookup
-            vb_name = extract_vb_name(text)
-            if not vb_name:
-                vb_name = Path(file_name).stem
-                print(f"    VB_Name not found, using stem: {vb_name}")
 
             if is_sheet:
                 # For sheet components (existing worksheets):
