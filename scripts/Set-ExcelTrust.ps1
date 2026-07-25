@@ -213,7 +213,7 @@ if ($appliedCount -gt 0) {
     Write-Step "Перезапустите Excel, чтобы изменения вступили в силу" -Status "WARN"
     Write-Step "Проверьте: откройте work.xlsm -> File -> Options -> Trust Center -> Trust Center Settings" -Status "INFO"
     Write-Step "  - Macro Settings: 'Enable all macros' (для доверенных расположений)" -Status "INFO"
-    Write-Step "  - Trusted Locations: должна быть L:\PROject\SysW" -Status "INFO"
+    Write-Step "  - Trusted Locations: должна быть $ProjectPath" -Status "INFO"
     Write-Step "  - Macro Settings: 'Trust access to the VBA project object model' - включена" -Status "INFO"
 } else {
     Write-Step "Excel не найден в реестре. Возможно, он не установлен." -Status "WARN"
