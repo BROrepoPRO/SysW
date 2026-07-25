@@ -5,6 +5,22 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [0.15.0] — 2026-07-25
+
+### Added
+- **Mod_ModelDB:** тесты TC-31..TC-35 (GetModelDBBasePath, GetModelGroupFilePath, ModelGroupFileExists, OpenModelGroupFile)
+- **Mod_PickWork:** тесты TC-36..TC-38 (GetGroupNameFromMain, GetWorkSheetName, PickWork_UI)
+- **Mod_AutoMatch:** тесты TC-39..TC-44 (AutoMatchWorks, AutoMatchParts, HighlightNotFound, ClearHighlight, IsAllFound)
+- **Покрытие модулей тестами:** 46% → 69% (9 из 13 модулей)
+
+### Changed
+- **Mod_ModelDB:** константа `MODELDB_BASE_PATH` помечена как deprecated (заменена на `GetModelDBBasePath`)
+- **Mod_MainButtons:** `Btn_main_ImportVH_Click` делегирован `Mod_ButtonDispatcher`
+- **`scripts/export_vba.py`:** COMPONENTS расширен до 13 модулей + 3 листа
+- **`scripts/Set-ExcelTrust.ps1`:** хардкодный путь `L:\PROject\SysW` заменён на `$ProjectPath`
+- **`docs/DEVELOPER.md`:** синхронизирован с актуальной архитектурой (13 модулей, 38 тестов)
+- **`docs/sourcecraft-guide.md`:** обновлён до v0.14.0
+
 ## [0.14.0] — 2026-07-25
 
 ### Added

@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v0.14.0)
+# Техническая документация разработчика — SysW (v0.15.0)
 
 ## 1. Архитектура проекта
 
@@ -62,7 +62,10 @@ Mod_FullTestRunner.RunAllTests()
        ├── RunLoggerTests()        → Mod_Logger (TC-09..TC-11)
        ├── RunUtilsEdgeTests()     → Mod_Utils (TC-12)
        ├── RunLibNameTests()       → Mod_Constants (TC-13)
-       └── RunImportVHTests()      → Mod_Import (TC-14)
+       ├── RunImportVHTests()      → Mod_Import (TC-14)
+       ├── RunModelDBTests()       → Mod_ModelDB (TC-31..TC-35)     ★ NEW
+       ├── RunPickWorkTests()      → Mod_PickWork (TC-36..TC-38)    ★ NEW
+       └── RunAutoMatchTests()     → Mod_AutoMatch (TC-39..TC-44)   ★ NEW
 ```
 
 ### 1.3 Принципы модульной архитектуры
@@ -189,7 +192,7 @@ Mod_FullTestRunner.RunAllTests()
 
 **Файл:** [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas) (577 строк)
 
-**Назначение:** Автоматическое тестирование VBA-модулей. Содержит 14 тестовых сценариев (TC-01..TC-14) в коде модуля; полный реестр насчитывает 30 сценариев (TC-01..TC-30) с учётом тестов, запускаемых через Python-скрипт.
+**Назначение:** Автоматическое тестирование VBA-модулей. Содержит 30 тестовых сценариев (TC-01..TC-30) в коде модуля; полный реестр насчитывает 44 сценария (TC-01..TC-44) с учётом тестов, запускаемых через Python-скрипт.
 
 **Группы тестов:**
 
@@ -200,6 +203,9 @@ Mod_FullTestRunner.RunAllTests()
 | `RunUtilsEdgeTests()` | TC-12 | Mod_Utils (граничные случаи) |
 | `RunLibNameTests()` | TC-13 | Mod_Constants |
 | `RunImportVHTests()` | TC-14 | Mod_Import (ImportFromB2_UI) |
+| `RunModelDBTests()` | TC-31..TC-35 | Mod_ModelDB |
+| `RunPickWorkTests()` | TC-36..TC-38 | Mod_PickWork |
+| `RunAutoMatchTests()` | TC-39..TC-44 | Mod_AutoMatch |
 
 **Механизмы:**
 - **SKIP** — тесты, зависящие от отсутствующих данных, пропускаются
@@ -462,6 +468,36 @@ python scripts/run_tests.py
 **Обработчики:**
 - `Worksheet_Activate` — закрепление первых двух строк при активации листа
 
+### 2.18 Структура листов work и z4
+
+#### Лист work (работы)
+
+Строка 4 — заголовки. Данные — с 5-й строки.
+
+| Столбец | Назначение |
+|---------|-----------|
+| A | № |
+| B | Артикул |
+| C | Наименование |
+| D | Кол-во н/ч |
+| E | Кол-во оп |
+| F | Цена н/ч |
+| G | Сумма |
+
+#### Лист z4 (запчасти)
+
+Строка 4 — заголовки. Данные — с 5-й строки.
+
+| Столбец | Назначение |
+|---------|-----------|
+| A | № |
+| B | Артикул |
+| C | Наименование |
+| D | Ед.изм. |
+| E | Кол-во |
+| F | Цена |
+| G | Сумма |
+
 ---
 
 ## 3. Правила кодировки (двухфазная система)
@@ -604,7 +640,7 @@ python scripts/impVBA.py      # Импорт всех модулей
 
 ## 6. Тестирование
 
-### 6.1 Полный список тестов (TC-01..TC-30)
+### 6.1 Полный список тестов (TC-01..TC-44)
 
 | ID | Название | Модуль | Тип | Статус |
 |----|----------|--------|-----|--------|
@@ -638,6 +674,20 @@ python scripts/impVBA.py      # Импорт всех модулей
 | TC-28 | SearchSheetByGRZ — поиск существующего листа | Mod_SheetOps | Модульный | ✅ |
 | TC-29 | SearchSheetByGRZ — поиск несуществующего листа | Mod_SheetOps | Модульный | ✅ |
 | TC-30 | ImportFromB2_UI — полный цикл импорта | Mod_Import | Интеграционный | ✅ |
+| TC-31 | GetModelDBBasePath возвращает путь | Mod_ModelDB | Модульный | ✅ |
+| TC-32 | GetModelGroupFilePath формирует путь | Mod_ModelDB | Модульный | ✅ |
+| TC-33 | ModelGroupFileExists существующий файл | Mod_ModelDB | Модульный | ✅ |
+| TC-34 | ModelGroupFileExists несуществующий файл | Mod_ModelDB | Модульный | ✅ |
+| TC-35 | OpenModelGroupFile открытие файла | Mod_ModelDB | Модульный | ✅ |
+| TC-36 | GetGroupNameFromMain читает B14 | Mod_PickWork | Модульный | ✅ |
+| TC-37 | GetWorkSheetName возвращает имя листа | Mod_PickWork | Модульный | ✅ |
+| TC-38 | PickWork_UI открывает файл группы | Mod_PickWork | Модульный | ✅ |
+| TC-39 | AutoMatchWorks подбор работ | Mod_AutoMatch | Модульный | ✅ |
+| TC-40 | AutoMatchParts подбор запчастей | Mod_AutoMatch | Модульный | ✅ |
+| TC-41 | HighlightNotFound подсветка ненайденного | Mod_AutoMatch | Модульный | ⚠️ SKIP |
+| TC-42 | ClearHighlight очистка подсветки | Mod_AutoMatch | Модульный | ⚠️ SKIP |
+| TC-43 | IsAllFound проверка всех найденных | Mod_AutoMatch | Модульный | ⚠️ SKIP |
+| TC-44 | IsAllFound проверка с ненайденными | Mod_AutoMatch | Модульный | ⚠️ SKIP |
 
 **Легенда:**
 - ✅ — тест проходит (PASS)
@@ -654,7 +704,10 @@ python scripts/impVBA.py      # Импорт всех модулей
 | Mod_Import | 3 | 3 | 0 | 0 | 100% |
 | Mod_SheetOps | 6 | 6 | 0 | 0 | 100% |
 | Mod_ButtonDispatcher | 1 | 1 | 0 | 0 | 100% |
-| **Итого** | **22** | **22** | **0** | **0** | **100%** |
+| Mod_ModelDB | 5 | 5 | 0 | 0 | 100% |
+| Mod_PickWork | 3 | 3 | 0 | 0 | 100% |
+| Mod_AutoMatch | 6 | 2 | 4 | 0 | 33% |
+| **Итого** | **38** | **34** | **4** | **0** | **89%** |
 
 ### 6.3 Как добавить новый тест
 

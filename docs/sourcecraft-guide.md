@@ -168,6 +168,8 @@ L:\PROject\SysW\
 
 | Версия | Дата | Изменения |
 |--------|------|-----------|
+| 0.15.0 | 2026-07-25 | Тесты TC-31..TC-44 (Mod_ModelDB, Mod_PickWork, Mod_AutoMatch); покрытие 46% → 69%; deprecated MODELDB_BASE_PATH; делегирование Btn_main_ImportVH_Click; COMPONENTS расширен до 13+3; $ProjectPath в Set-ExcelTrust.ps1 |
+| 0.14.0 | 2026-07-25 | Централизация логов: LOGS_DIR, директория logs/, перенос логов из корня; удаление мусора из base/models/ |
 | 0.13.0 | 2026-07-25 | Добавлены `Mod_ModelDB`, `Mod_PickWork`, `Mod_AutoMatch`; новые скрипты `config.py`, `config.ps1`; удалён `Import-VbaFromExcel.ps1` |
 | 0.10.0 | 2026-07-21 | `Mod_Import.ImportFromB2_UI`, исправление ошибки импорта (пропуск заголовка) |
 | 0.9.0 | 2026-07-21 | Рефакторинг `Mod_LibName.bas` → объединение с `Mod_Constants.bas` |
