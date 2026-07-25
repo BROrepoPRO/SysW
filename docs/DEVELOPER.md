@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v0.12.0)
+# Техническая документация разработчика — SysW (v0.13.0)
 
 ## 1. Архитектура проекта
 
@@ -18,6 +18,7 @@
 - **Константы и реестр имён** ([`Mod_Constants.bas`](../src/modules/Mod_Constants.bas)) — константы столбцов и управление листом libname
 - **Доступ к файлам групп** ([`Mod_ModelDB.bas`](../src/modules/Mod_ModelDB.bas)) — открытие файлов групп, чтение работ/запчастей
 - **Ручной подбор работ** ([`Mod_PickWork.bas`](../src/modules/Mod_PickWork.bas)) — ручной подбор работ из справочника группы
+- **Автоматический подбор** ([`Mod_AutoMatch.bas`](../src/modules/Mod_AutoMatch.bas)) — автоматический подбор работ/запчастей
 - **Лист main** ([`Лист2_main.cls`](../src/sheets/Лист2_main.cls)) — обработчик событий листа
 - **Лист work** ([`Sheet_work.cls`](../src/sheets/Sheet_work.cls)) — обработчик событий листа work
 - **Лист z4** ([`Sheet_z4.cls`](../src/sheets/Sheet_z4.cls)) — обработчик событий листа z4
@@ -284,6 +285,7 @@ python scripts/run_tests.py
 | `Btn_main_Import()` | Импорт данных на лист main |
 | `Btn_main_AUTOz4()` | Заглушка: автоподбор запчастей — в разработке |
 | `Btn_main_AUTOw()` | Заглушка: автоподбор работ — в разработке |
+| `Btn_main_AUTO()` | Автоматический подбор работ/запчастей через `Mod_AutoMatch.AutoMatch_UI` |
 | `Btn_main_MANz4()` | Заглушка: ручной подбор запчастей — в разработке |
 | `Btn_main_MANWRK()` | Ручной подбор работ — открывает файл группы через `Mod_PickWork.PickWork_UI` |
 
@@ -360,7 +362,19 @@ python scripts/run_tests.py
 7. Фильтрует по G — всё кроме 0
 8. Копирует отфильтрованные строки вручную в **E4:H** на лист `main`
 
-### 2.13 Mod_Constants.bas — Константы и реестр имён
+### 2.13 Mod_AutoMatch.bas — Автоматический подбор
+
+**Файл:** [`Mod_AutoMatch.bas`](../src/modules/Mod_AutoMatch.bas)
+
+**Назначение:** Автоматический подбор работ/запчастей. Выполняет сопоставление данных автомобиля со справочниками модельных групп.
+
+**Ключевые функции:**
+
+| Функция | Описание |
+|---------|----------|
+| `AutoMatch_UI()` | Главная точка входа: запускает автоматический подбор с UI-обратной связью |
+
+### 2.14 Mod_Constants.bas — Константы и реестр имён
 
 **Файл:** [`Mod_Constants.bas`](../src/modules/Mod_Constants.bas)
 
@@ -418,7 +432,7 @@ python scripts/run_tests.py
 
 > **Примечание:** Ранее функциональность реестра имён находилась в отдельном модуле `Mod_LibName.bas` (удалён в v0.9.0), который был объединён с `Mod_Constants.bas` для централизованного управления константами.
 
-### 2.12 Лист2_main.cls — Основной лист
+### 2.15 Лист2_main.cls — Основной лист
 
 **Файл:** [`Лист2_main.cls`](../src/sheets/Лист2_main.cls) (48 строк)
 
@@ -430,7 +444,7 @@ python scripts/run_tests.py
 3. Очистка диапазона B5:B17
 4. Вызов `Mod_OrderHeader.FillHeaderFromOrder(CStr(b4Value))`
 
-### 2.13 Sheet_work.cls — Лист work
+### 2.16 Sheet_work.cls — Лист work
 
 **Файл:** [`Sheet_work.cls`](../src/sheets/Sheet_work.cls)
 
@@ -439,7 +453,7 @@ python scripts/run_tests.py
 **Обработчики:**
 - `Worksheet_Activate` — закрепление первых двух строк при активации листа
 
-### 2.14 Sheet_z4.cls — Лист z4
+### 2.17 Sheet_z4.cls — Лист z4
 
 **Файл:** [`Sheet_z4.cls`](../src/sheets/Sheet_z4.cls)
 
@@ -520,6 +534,9 @@ python scripts/impVBA.py
 | `Mod_SheetOps` | `src/modules/Mod_SheetOps.bas` | Стандартный модуль |
 | `Mod_MainButtons` | `src/modules/Mod_MainButtons.bas` | Стандартный модуль |
 | `Mod_SheetButtons` | `src/modules/Mod_SheetButtons.bas` | Стандартный модуль |
+| `Mod_ModelDB` | `src/modules/Mod_ModelDB.bas` | Стандартный модуль |
+| `Mod_PickWork` | `src/modules/Mod_PickWork.bas` | Стандартный модуль |
+| `Mod_AutoMatch` | `src/modules/Mod_AutoMatch.bas` | Стандартный модуль |
 | `Лист2` | `src/sheets/Лист2_main.cls` | Класс листа |
 | `Sheet_work` | `src/sheets/Sheet_work.cls` | Класс листа |
 | `Sheet_z4` | `src/sheets/Sheet_z4.cls` | Класс листа |
@@ -546,23 +563,6 @@ python scripts/export_vba.py --dry    # Просмотр без реальног
 python scripts/impVBA.py      # Импорт всех модулей
 ```
 
-### 4.3 scripts/Import-VbaFromExcel.ps1
-
-**Файл:** [`scripts/Import-VbaFromExcel.ps1`](../scripts/Import-VbaFromExcel.ps1)
-
-**Назначение:** Альтернативный PowerShell-скрипт для импорта VBA-модулей из Excel.
-
-**Использование:**
-```powershell
-.\scripts\Import-VbaFromExcel.ps1              # По умолчанию
-.\scripts\Import-VbaFromExcel.ps1 -DryRun      # Режим просмотра
-.\scripts\Import-VbaFromExcel.ps1 -ExcelPath "C:\path\to\work.xlsm" -OutputDir "C:\output"
-```
-
-**Параметры:**
-- `-ExcelPath` — путь к `.xlsm` файлу (по умолчанию: `L:\PROject\SysW\work.xlsm`)
-- `-OutputDir` — директория для сохранения `.bas`/`.cls` файлов (по умолчанию: `L:\PROject\SysW\src`)
-- `-DryRun` — показать список модулей без реального экспорта
 
 ---
 
@@ -725,7 +725,7 @@ python scripts/run_tests.py
 
 | Шаг | Что проверяет | Действие при неудаче |
 |-----|--------------|---------------------|
-| 1. Check VBA files exist | Наличие всех 15 VBA-файлов (12 `.bas` + 3 `.cls`) | Fail |
+| 1. Check VBA files exist | Наличие всех 16 VBA-файлов (13 `.bas` + 3 `.cls`) | Fail |
 | 2. Check UTF-8 encoding | Валидная UTF-8 кодировка каждого файла | Fail |
 | 3. Check VBA syntax (basic) | Отсутствие недопустимых символов (коды < 32, кроме \n\r\t) | Fail |
 | 4. Check CHANGELOG updated | Наличие записи за сегодняшнюю дату | Warning (non-blocking) |
@@ -793,7 +793,11 @@ Mod_ButtonDispatcher
 Mod_MainButtons
   ├── Mod_Import (вызовы импорта)
   ├── Mod_OrderHeader (заполнение шапки)
-  └── Mod_SheetOps (операции с листами)
+  ├── Mod_SheetOps (операции с листами)
+  ├── Mod_PickWork (ручной подбор работ)
+  │     └── Mod_ModelDB (доступ к файлам групп)
+  └── Mod_AutoMatch (автоматический подбор)
+        └── Mod_ModelDB (доступ к файлам групп)
 
 Mod_SheetButtons
   ├── Mod_Import (вызовы импорта)
@@ -833,6 +837,7 @@ Mod_Utils
 | `Mod_SheetButtons` | `src/modules/Mod_SheetButtons.bas` | Стандартный модуль |
 | `Mod_ModelDB` | `src/modules/Mod_ModelDB.bas` | Стандартный модуль |
 | `Mod_PickWork` | `src/modules/Mod_PickWork.bas` | Стандартный модуль |
+| `Mod_AutoMatch` | `src/modules/Mod_AutoMatch.bas` | Стандартный модуль |
 | `Лист2` | `src/sheets/Лист2_main.cls` | Класс листа |
 | `Sheet_work` | `src/sheets/Sheet_work.cls` | Класс листа |
 | `Sheet_z4` | `src/sheets/Sheet_z4.cls` | Класс листа |
@@ -844,4 +849,6 @@ Mod_Utils
 | [`export_vba.py`](../scripts/export_vba.py) | Выгрузка VBA из Excel на диск (CP1251 → UTF-8) | UTF-8 |
 | [`impVBA.py`](../scripts/impVBA.py) | Загрузка VBA с диска в Excel (UTF-8 → CP1251) | UTF-8 |
 | [`run_tests.py`](../scripts/run_tests.py) | Запуск тестов VBA | UTF-8 |
-| [`scripts/Import-VbaFromExcel.ps1`](../scripts/Import-VbaFromExcel.ps1) | Альтернативный импорт VBA из Excel (PowerShell) | UTF-8 with BOM |
+| [`config.py`](../scripts/config.py) | Конфигурация проекта (пути, настройки) | UTF-8 |
+| [`config.ps1`](../scripts/config.ps1) | Конфигурация окружения PowerShell | UTF-8 with BOM |
+| [`Set-ExcelTrust.ps1`](../scripts/Set-ExcelTrust.ps1) | Настройка доверия Excel для работы VBA-макросов | UTF-8 with BOM |

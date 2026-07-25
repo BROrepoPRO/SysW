@@ -9,8 +9,7 @@ Desktop.ini
 node_modules/
 .yca/
 
-# Excel — бинарный файл с макросами (не подлежит контролю версий)
-work.xlsm
+
 
 # Временные директории скриптов
 _temp_export/
@@ -25,6 +24,6 @@ venv/
 
 # OS
 .DS_Store
-  
-# ���䫨��� 䠩�� ᨭ�஭���樨  
-*.sync-conflict-* 
+
+# ���䫨��� 䠩�� ᨭ�஭���樨
+*.sync-conflict-*

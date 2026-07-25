@@ -11,15 +11,11 @@
         "**/.DS_Store": true,
         "**/Thumbs.db": true,
         "workOt/": true,
-        "*.xlsm": true,
-        "*.xlsx": true,
         "hexdump_result.txt": true,
         "check_hex.ps1": true
     },
     "search.exclude": {
-        "workOt/": true,
-        "*.xlsm": true,
-        "*.xlsx": true
+        "workOt/": true
     },
     "terminal.integrated.cwd": "L:\\PROject\\SysW",
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
@@ -32,7 +28,7 @@
             "args": [
                 "-NoExit",
                 "-Command",
-                "$env:Path = '.venv\\Scripts;' + $env:Path"
+                "& '.venv\\Scripts\\Activate.ps1'"
             ]
         },
         "PowerShell": {

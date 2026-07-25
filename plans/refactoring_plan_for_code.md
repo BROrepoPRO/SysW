@@ -71,13 +71,17 @@ $Script:SrcDir = Join-Path $Script:ProjectRoot "src"
 **Файл:** [`scripts/export_vba.py`](scripts/export_vba.py)
 
 **Изменения:**
+
 - Строки 23-25: заменить
+
   ```python
   EXCEL_PATH = Path(r"L:\PROject\SysW\work.xlsm")
   PROJECT_DIR = Path(r"L:\PROject\SysW\src")
   TEMP_DIR = Path(r"L:\PROject\SysW\_temp_export")
   ```
+
   на
+
   ```python
   from config import WORKBOOK_PATH, SRC_DIR, TEMP_EXPORT_DIR
   EXCEL_PATH = WORKBOOK_PATH
@@ -90,13 +94,17 @@ $Script:SrcDir = Join-Path $Script:ProjectRoot "src"
 **Файл:** [`scripts/impVBA.py`](scripts/impVBA.py)
 
 **Изменения:**
+
 - Строки 25-27: заменить
+
   ```python
   EXCEL_PATH = r"L:\PROject\SysW\work.xlsm"
   MODULES_PATH = Path(r"L:\PROject\SysW\src")
   TEMP_DIR = Path(r"L:\PROject\SysW\_temp_import")
   ```
+
   на
+
   ```python
   from config import WORKBOOK_PATH, SRC_DIR, TEMP_IMPORT_DIR
   EXCEL_PATH = str(WORKBOOK_PATH)
@@ -109,20 +117,27 @@ $Script:SrcDir = Join-Path $Script:ProjectRoot "src"
 **Файл:** [`scripts/run_tests.py`](scripts/run_tests.py)
 
 **Изменения:**
+
 - Строка 14: заменить
+
   ```python
   EXCEL_PATH = r"L:\PROject\SysW\work.xlsm"
   ```
+
   на
+
   ```python
   from config import WORKBOOK_PATH, TEST_LOG_FILE
   EXCEL_PATH = str(WORKBOOK_PATH)
   ```
 - Строка 15: заменить
+
   ```python
   LOG_FILE = os.path.join(os.path.dirname(EXCEL_PATH), "test_results.log")
   ```
+
   на
+
   ```python
   LOG_FILE = str(TEST_LOG_FILE)
   ```
@@ -138,16 +153,21 @@ $Script:SrcDir = Join-Path $Script:ProjectRoot "src"
 **Файл:** [`scripts/Set-ExcelTrust.ps1`](scripts/Set-ExcelTrust.ps1)
 
 **Изменения:**
+
 - После строки 22 (`$ErrorActionPreference = "Stop"`) добавить:
+
   ```powershell
   . "$PSScriptRoot\config.ps1"
   ```
 - Строки 25-26: заменить
+
   ```powershell
   $ProjectPath = "L:\PROject\SysW"
   $ExcelPath = "L:\PROject\SysW\work.xlsm"
   ```
+
   на
+
   ```powershell
   $ProjectPath = $Script:ProjectRoot
   $ExcelPath = $Script:WorkbookPath
@@ -166,11 +186,15 @@ $Script:SrcDir = Join-Path $Script:ProjectRoot "src"
 **Файл:** [`src/modules/Mod_MainButtons.bas`](src/modules/Mod_MainButtons.bas)
 
 **Изменения:**
+
 - Строка 158: заменить
+
   ```vba
   mapping.Add "ИМПОРТ ВХ", "'work.xlsm'!Btn_main_ImportVH_Click"
   ```
+
   на
+
   ```vba
   mapping.Add "ИМПОРТ ВХ", "'" & ThisWorkbook.Name & "'!Btn_main_ImportVH_Click"
   ```
@@ -188,6 +212,7 @@ $Script:SrcDir = Join-Path $Script:ProjectRoot "src"
 **Файл:** [`src/modules/Mod_SheetButtons.bas`](src/modules/Mod_SheetButtons.bas)
 
 **Удалить:**
+
 - Строки 13-41: процедуры `Btn_z4_Action1`, `Btn_z4_Action2`, `Btn_z4_Action3` (заглушки)
 - Строки 47-75: процедуры `Btn_work_Action1`, `Btn_work_Action2`, `Btn_work_Action3` (заглушки)
 
@@ -198,6 +223,7 @@ $Script:SrcDir = Join-Path $Script:ProjectRoot "src"
 **Файл:** [`src/modules/Mod_MainButtons.bas`](src/modules/Mod_MainButtons.bas)
 
 **Удалить:**
+
 - Строки 86-94: процедура `Btn_main_MANz4` (заглушка)
 - Строки 121-145: процедура `Btn_main_ImportVH_Click` (дубликат `Mod_ButtonDispatcher.Btn_main_ImportVH_Click`)
 - Строки 147-159: процедура `AssignMainButtons` (не вызывается)
@@ -209,6 +235,7 @@ $Script:SrcDir = Join-Path $Script:ProjectRoot "src"
 **Файл:** [`src/modules/Mod_Constants.bas`](src/modules/Mod_Constants.bas)
 
 **Удалить строки 86-89:**
+
 ```vba
 Public Const MAIN_HEADER_END_ROW As Long = 17
 Public Const MAIN_CLEAR_START_ROW As Long = 4
@@ -225,15 +252,15 @@ Public Const MAIN_HEADER_RANGE As String = "B4:B17"
 
 **Порядок удаления (строго в указанном порядке):**
 
-| № | Файл | Причина |
-|---|------|---------|
-| 6.1 | `scripts/export_uaz_vba.ps1` | Одноразовый экспорт VBA из UAZ.xlsm |
-| 6.2 | `scripts/export_uaz_vba.py` | То же на Python |
-| 6.3 | `scripts/parse_excel.ps1` | Одноразовый парсинг UAZ.xlsm |
-| 6.4 | `scripts/parse_full.ps1` | Одноразовый полный парсинг |
-| 6.5 | `scripts/parse_full.py` | Одноразовый парсинг (openpyxl) |
-| 6.6 | `scripts/rewire_uaz_buttons.ps1` | После удаления work26 не нужен |
-| 6.7 | `scripts/Import-VbaFromExcel.ps1` | Дубликат `export_vba.py` |
+| №  | Файл                            | Причина                                          |
+| --- | ----------------------------------- | ------------------------------------------------------- |
+| 6.1 | `scripts/export_uaz_vba.ps1`      | Одноразовый экспорт VBA из UAZ.xlsm |
+| 6.2 | `scripts/export_uaz_vba.py`       | То же на Python                                   |
+| 6.3 | `scripts/parse_excel.ps1`         | Одноразовый парсинг UAZ.xlsm          |
+| 6.4 | `scripts/parse_full.ps1`          | Одноразовый полный парсинг      |
+| 6.5 | `scripts/parse_full.py`           | Одноразовый парсинг (openpyxl)        |
+| 6.6 | `scripts/rewire_uaz_buttons.ps1`  | После удаления work26 не нужен      |
+| 6.7 | `scripts/Import-VbaFromExcel.ps1` | Дубликат`export_vba.py`                       |
 
 **Важно:** Соблюдать правило Z2 (.ycarules) — не удалять без подтверждения пользователя. Сначала показать список, получить подтверждение.
 
@@ -344,6 +371,7 @@ python -m venv .venv
 Файл: [`.vscode/settings.json`](.vscode/settings.json)
 
 Текущие настройки (уже корректны):
+
 ```json
 {
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
@@ -426,25 +454,25 @@ git commit -m "refactor: major cleanup and path centralization
 
 ## Сводная таблица изменений
 
-| № | Действие | Файлы | Риск |
-|---|----------|-------|------|
-| 1 | Создать `config.py` | 1 новый файл | Низкий |
-| 2 | Создать `config.ps1` | 1 новый файл | Низкий |
-| 3 | Исправить пути в `export_vba.py` | 1 файл | Средний |
-| 4 | Исправить пути в `impVBA.py` | 1 файл | Средний |
-| 5 | Исправить пути в `run_tests.py` | 1 файл | Средний |
-| 6 | Исправить пути в `Set-ExcelTrust.ps1` | 1 файл | Низкий |
-| 7 | Исправить `Mod_MainButtons.bas` (через `ThisWorkbook.Name`) | 1 файл | Низкий |
-| 8 | Удалить мёртвый код из `Mod_SheetButtons.bas` | 1 файл | Низкий |
-| 9 | Удалить мёртвый код из `Mod_MainButtons.bas` | 1 файл | Низкий |
-| 10 | Удалить константы из `Mod_Constants.bas` | 1 файл | Низкий |
-| 11 | Удалить 7 скриптов | 7 файлов | Низкий |
-| 12 | Создать `remove_work26.py` и запустить | 1 новый файл | Высокий |
-| 13 | Удалить `_uaz_vba_export/` | 1 директория | Низкий |
-| 14 | Настроить `.venv` | — | Низкий |
-| 15 | Запустить тесты | — | Критический |
-| 16 | Обновить CHANGELOG и документацию | 2-3 файла | Низкий |
-| 17 | Коммит | — | Низкий |
+| № | Действие                                                             | Файлы             | Риск               |
+| -- | ---------------------------------------------------------------------------- | ---------------------- | ---------------------- |
+| 1  | Создать`config.py`                                                  | 1 новый файл  | Низкий           |
+| 2  | Создать`config.ps1`                                                 | 1 новый файл  | Низкий           |
+| 3  | Исправить пути в`export_vba.py`                              | 1 файл             | Средний         |
+| 4  | Исправить пути в`impVBA.py`                                  | 1 файл             | Средний         |
+| 5  | Исправить пути в`run_tests.py`                               | 1 файл             | Средний         |
+| 6  | Исправить пути в`Set-ExcelTrust.ps1`                         | 1 файл             | Низкий           |
+| 7  | Исправить`Mod_MainButtons.bas` (через `ThisWorkbook.Name`) | 1 файл             | Низкий           |
+| 8  | Удалить мёртвый код из`Mod_SheetButtons.bas`            | 1 файл             | Низкий           |
+| 9  | Удалить мёртвый код из`Mod_MainButtons.bas`             | 1 файл             | Низкий           |
+| 10 | Удалить константы из`Mod_Constants.bas`                  | 1 файл             | Низкий           |
+| 11 | Удалить 7 скриптов                                            | 7 файлов         | Низкий           |
+| 12 | Создать`remove_work26.py` и запустить                     | 1 новый файл  | Высокий         |
+| 13 | Удалить`_uaz_vba_export/`                                           | 1 директория | Низкий           |
+| 14 | Настроить`.venv`                                                  | —                     | Низкий           |
+| 15 | Запустить тесты                                                | —                     | Критический |
+| 16 | Обновить CHANGELOG и документацию                       | 2-3 файла         | Низкий           |
+| 17 | Коммит                                                                 | —                     | Низкий           |
 
 ---
 

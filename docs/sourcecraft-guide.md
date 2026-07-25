@@ -96,23 +96,27 @@ L:\PROject\SysW\
 ├── plans/                # Планы изменений, архитектурные решения, отчёты
 │   └── _archive/             # Архив выполненных планов
 ├── scripts/              # Скрипты автоматизации
+│   ├── config.py             # Конфигурация проекта (пути, настройки)
+│   ├── config.ps1            # Конфигурация окружения PowerShell
 │   ├── export_vba.py         # Выгрузка VBA-модулей из Excel (CP1251 → UTF-8)
 │   ├── impVBA.py             # Загрузка VBA-модулей в Excel (UTF-8 → CP1251)
 │   ├── run_tests.py          # Запуск тестов VBA
-│   ├── Set-ExcelTrust.ps1    # Настройка доверия Excel
-│   └── Import-VbaFromExcel.ps1  # Импорт VBA из Excel (альтернатива Python)
+│   └── Set-ExcelTrust.ps1    # Настройка доверия Excel
 ├── src/                  # Исходный код VBA
-│   ├── modules/              # 10 .bas модулей
-│   │   ├── Mod_Utils.bas
-│   │   ├── Mod_OrderHeader.bas
-│   │   ├── Mod_Import.bas
+│   ├── modules/              # 13 .bas модулей
+│   │   ├── Mod_AutoMatch.bas
 │   │   ├── Mod_ButtonDispatcher.bas
-│   │   ├── Mod_FullTestRunner.bas
-│   │   ├── Mod_Logger.bas
 │   │   ├── Mod_Constants.bas
-│   │   ├── Mod_SheetOps.bas
+│   │   ├── Mod_FullTestRunner.bas
+│   │   ├── Mod_Import.bas
+│   │   ├── Mod_Logger.bas
 │   │   ├── Mod_MainButtons.bas
-│   │   └── Mod_SheetButtons.bas
+│   │   ├── Mod_ModelDB.bas
+│   │   ├── Mod_OrderHeader.bas
+│   │   ├── Mod_PickWork.bas
+│   │   ├── Mod_SheetButtons.bas
+│   │   ├── Mod_SheetOps.bas
+│   │   └── Mod_Utils.bas
 │   └── sheets/               # 3 .cls листа
 │       ├── Лист2_main.cls
 │       ├── Sheet_work.cls
@@ -132,7 +136,7 @@ L:\PROject\SysW\
 | `base/models/` | Модели данных |
 | `plans/` | Планы изменений, архитектурные решения, отчёты. Создаются перед изменением VBA-модулей |
 | `plans/_archive/` | Архив выполненных планов |
-| `scripts/` | Вспомогательные PowerShell-скрипты автоматизации. Все скрипты в UTF-8 with BOM |
+| `scripts/` | Скрипты автоматизации (Python + PowerShell). Python-скрипты в UTF-8, PowerShell в UTF-8 with BOM |
 | `docs/` | Документация проекта: `sourcecraft-guide.md` (руководство по SourceCraft), `git-workflow.md` (Git-инструкции), `DEVELOPER.md` (техническая документация), `ARCHITECTURE_SQLITE.md` (архитектура SQLite) |
 | `.vscode/` | Настройки VS Code (кодировка UTF-8, кастомный терминал, VBA Language Server) |
 
@@ -144,34 +148,17 @@ L:\PROject\SysW\
 
 | Скрипт | Назначение | Кодировка |
 |--------|-----------|-----------|
+| [`config.py`](../scripts/config.py) | Конфигурация проекта (пути, настройки) | UTF-8 |
 | [`export_vba.py`](../scripts/export_vba.py) | Выгрузка VBA-модулей из Excel на диск (CP1251 → UTF-8) | UTF-8 |
 | [`impVBA.py`](../scripts/impVBA.py) | Загрузка VBA-модулей с диска в Excel (UTF-8 → CP1251) | UTF-8 |
 | [`run_tests.py`](../scripts/run_tests.py) | Запуск тестов VBA | UTF-8 |
 
-### PowerShell-скрипты (альтернативные)
+### PowerShell-скрипты
 
 | Скрипт | Назначение |
 |--------|-----------|
-| [`scripts/Import-VbaFromExcel.ps1`](../scripts/Import-VbaFromExcel.ps1) | Импорт VBA-модулей из Excel-файла с конвертацией CP1251 → UTF-8 |
-| [`scripts/Set-ExcelTrust.ps1`](../scripts/Set-ExcelTrust.ps1) | Настройка доверия Excel для работы VBA-макросов |
-
-#### Использование `Import-VbaFromExcel.ps1`
-
-```powershell
-# Импорт с параметрами по умолчанию (work.xlsm → корень проекта)
-.\scripts\Import-VbaFromExcel.ps1
-
-# Режим просмотра (без реального экспорта)
-.\scripts\Import-VbaFromExcel.ps1 -DryRun
-
-# С указанием путей
-.\scripts\Import-VbaFromExcel.ps1 -ExcelPath "C:\Other\work.xlsm" -OutputDir "C:\Output"
-```
-
-Параметры:
-- `-ExcelPath` — путь к `.xlsm` файлу (по умолчанию: `L:\PROject\SysW\work.xlsm`)
-- `-OutputDir` — директория для сохранения `.bas`/`.cls` файлов (по умолчанию: `L:\PROject\SysW\src`)
-- `-DryRun` — показать список модулей без реального экспорта
+| [`config.ps1`](../scripts/config.ps1) | Конфигурация окружения PowerShell |
+| [`Set-ExcelTrust.ps1`](../scripts/Set-ExcelTrust.ps1) | Настройка доверия Excel для работы VBA-макросов |
 
 **Важно:** PowerShell-скрипты должны быть в кодировке UTF-8 with BOM (требование PowerShell для корректной обработки кириллицы).
 
@@ -181,6 +168,7 @@ L:\PROject\SysW\
 
 | Версия | Дата | Изменения |
 |--------|------|-----------|
+| 0.13.0 | 2026-07-25 | Добавлены `Mod_ModelDB`, `Mod_PickWork`, `Mod_AutoMatch`; новые скрипты `config.py`, `config.ps1`; удалён `Import-VbaFromExcel.ps1` |
 | 0.10.0 | 2026-07-21 | `Mod_Import.ImportFromB2_UI`, исправление ошибки импорта (пропуск заголовка) |
 | 0.9.0 | 2026-07-21 | Рефакторинг `Mod_LibName.bas` → объединение с `Mod_Constants.bas` |
 | 0.8.0 | 2026-07-19 | Модуль `Mod_FullTestRunner.bas`, 16 тестовых сценариев, новая архитектура импорта |
