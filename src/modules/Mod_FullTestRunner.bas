@@ -4,7 +4,7 @@ Option Explicit
 ' ============================================================
 ' Модуль: Mod_FullTestRunner
 ' Назначение: Набор технических тестов для проекта SysW
-' Покрытие: TC-01 .. TC-13 (автоматические тесты)
+' Покрытие: TC-01 .. TC-44 (автоматические тесты)
 ' ============================================================
 
 ' ---- Счётчики результатов ----
@@ -28,7 +28,7 @@ Public Sub RunAllTests()
     m_ResultsLog = ""
 
     Debug.Print "=============================================="
-    Debug.Print "  Запуск набора тестов (TC-01..TC-13)"
+    Debug.Print "  Запуск набора тестов (TC-01..TC-44)"
     Debug.Print "=============================================="
     Debug.Print ""
 
@@ -38,6 +38,9 @@ Public Sub RunAllTests()
     RunUtilsEdgeTests
     RunLibNameTests
     RunImportVHTests
+    RunModelDBTests
+    RunPickWorkTests
+    RunAutoMatchTests
 
     ' Финальный отчёт
     PrintFinalReport
@@ -495,6 +498,231 @@ Private Sub RunImportVHTests()
 End Sub
 
 ' ============================================================
+' Группа: тесты ModelDB (TC-31..TC-35)
+' ============================================================
+Private Sub RunModelDBTests()
+    Dim basePath As String
+    Dim filePath As String
+    Dim groupExists As Boolean
+    Dim wb As Workbook
+
+    Debug.Print "--- Mod_ModelDB Tests ---"
+
+    ' @test TC-31
+    ' -------------------------------------------------------
+    ' TC-31: GetModelDBBasePath возвращает непустую строку
+    ' -------------------------------------------------------
+    On Error Resume Next
+    basePath = Mod_ModelDB.GetModelDBBasePath()
+    If Err.number <> 0 Then
+        AddResult "TC-31", "GetModelDBBasePath непустая строка", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        Dim pathLenOk As Boolean
+        Dim endsWithSlash As Boolean
+        pathLenOk = (Len(basePath) > 0)
+        endsWithSlash = (Right$(basePath, 1) = "\")
+        AddResult "TC-31", "GetModelDBBasePath непустая строка", (pathLenOk And endsWithSlash), _
+                  "длина=" & CStr(Len(basePath)) & ", endsWithSlash=" & CStr(endsWithSlash)
+    End If
+    On Error GoTo 0
+
+    ' @test TC-32
+    ' -------------------------------------------------------
+    ' TC-32: GetModelGroupFilePath возвращает корректный путь
+    ' -------------------------------------------------------
+    On Error Resume Next
+    filePath = Mod_ModelDB.GetModelGroupFilePath("UAZ")
+    If Err.number <> 0 Then
+        AddResult "TC-32", "GetModelGroupFilePath путь для UAZ", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        Dim endsWithXlsm As Boolean
+        Dim endsWithXlsx As Boolean
+        endsWithXlsm = (Right$(filePath, 9) = "UAZ.xlsm")
+        endsWithXlsx = (Right$(filePath, 9) = "UAZ.xlsx")
+        AddResult "TC-32", "GetModelGroupFilePath путь для UAZ", (endsWithXlsm Or endsWithXlsx), _
+                  "путь=" & filePath
+    End If
+    On Error GoTo 0
+
+    ' @test TC-33
+    ' -------------------------------------------------------
+    ' TC-33: ModelGroupFileExists для существующей группы
+    ' -------------------------------------------------------
+    On Error Resume Next
+    groupExists = Mod_ModelDB.ModelGroupFileExists("UAZ")
+    If Err.number <> 0 Then
+        AddResult "TC-33", "ModelGroupFileExists UAZ", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-33", "ModelGroupFileExists UAZ", groupExists, _
+                  "Ожидалось True, получено " & CStr(groupExists)
+    End If
+    On Error GoTo 0
+
+    ' @test TC-34
+    ' -------------------------------------------------------
+    ' TC-34: ModelGroupFileExists для несуществующей группы
+    ' -------------------------------------------------------
+    On Error Resume Next
+    groupExists = Mod_ModelDB.ModelGroupFileExists("NonExistentGroup_Test")
+    If Err.number <> 0 Then
+        AddResult "TC-34", "ModelGroupFileExists несуществующая", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-34", "ModelGroupFileExists несуществующая", (Not groupExists), _
+                  "Ожидалось False, получено " & CStr(groupExists)
+    End If
+    On Error GoTo 0
+
+    ' @test TC-35
+    ' -------------------------------------------------------
+    ' TC-35: OpenModelGroupFile открывает книгу
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Set wb = Mod_ModelDB.OpenModelGroupFile("UAZ")
+    If Err.number <> 0 Then
+        AddResult "TC-35", "OpenModelGroupFile UAZ", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        Dim wbOpened As Boolean
+        wbOpened = (Not wb Is Nothing)
+        ' Закрываем книгу, если открыта
+        If wbOpened Then
+            wb.Close SaveChanges:=False
+        End If
+        AddResult "TC-35", "OpenModelGroupFile UAZ", wbOpened, _
+                  "Ожидалось Not Nothing, получено Nothing"
+    End If
+    Set wb = Nothing
+    On Error GoTo 0
+
+    Debug.Print ""
+End Sub
+
+' ============================================================
+' Группа: тесты PickWork (TC-36..TC-38)
+' ============================================================
+Private Sub RunPickWorkTests()
+    Dim groupName As String
+    Dim sheetName As String
+
+    Debug.Print "--- Mod_PickWork Tests ---"
+
+    ' @test TC-36
+    ' -------------------------------------------------------
+    ' TC-36: GetGroupNameFromMain возвращает значение из B14
+    ' -------------------------------------------------------
+    On Error Resume Next
+    groupName = Mod_PickWork.GetGroupNameFromMain()
+    If Err.number <> 0 Then
+        AddResult "TC-36", "GetGroupNameFromMain чтение B14", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-36", "GetGroupNameFromMain чтение B14", (Len(groupName) > 0), _
+                  "Ожидалась непустая строка, получено '" & groupName & "'"
+    End If
+    On Error GoTo 0
+
+    ' @test TC-37
+    ' -------------------------------------------------------
+    ' TC-37: GetWorkSheetName возвращает имя листа
+    ' -------------------------------------------------------
+    On Error Resume Next
+    sheetName = Mod_PickWork.GetWorkSheetName("UAZ")
+    If Err.number <> 0 Then
+        AddResult "TC-37", "GetWorkSheetName имя листа", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-37", "GetWorkSheetName имя листа", (Len(sheetName) > 0), _
+                  "Ожидалась непустая строка, получено '" & sheetName & "'"
+    End If
+    On Error GoTo 0
+
+    ' @test TC-38
+    ' -------------------------------------------------------
+    ' TC-38: Вызов кнопки РУЧ РАБ не вызывает ошибку
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Call Mod_PickWork.PickWork_UI
+    If Err.number <> 0 Then
+        AddResult "TC-38", "PickWork_UI вызов без ошибки", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-38", "PickWork_UI вызов без ошибки", True, ""
+    End If
+    On Error GoTo 0
+
+    Debug.Print ""
+End Sub
+
+' ============================================================
+' Группа: тесты AutoMatch (TC-39..TC-44)
+' ============================================================
+Private Sub RunAutoMatchTests()
+    Debug.Print "--- Mod_AutoMatch Tests ---"
+
+    ' @test TC-39
+    ' -------------------------------------------------------
+    ' TC-39: AutoMatchWorks выполняется без ошибки
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Call Mod_AutoMatch.AutoMatchWorks
+    If Err.number <> 0 Then
+        AddResult "TC-39", "AutoMatchWorks без ошибки", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-39", "AutoMatchWorks без ошибки", True, ""
+    End If
+    On Error GoTo 0
+
+    ' @test TC-40
+    ' -------------------------------------------------------
+    ' TC-40: AutoMatchParts выполняется без ошибки
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Call Mod_AutoMatch.AutoMatchParts
+    If Err.number <> 0 Then
+        AddResult "TC-40", "AutoMatchParts без ошибки", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-40", "AutoMatchParts без ошибки", True, ""
+    End If
+    On Error GoTo 0
+
+    ' @test TC-41
+    ' -------------------------------------------------------
+    ' TC-41: HighlightNotFound (Private — пропущен)
+    ' -------------------------------------------------------
+    AddResult "TC-41", "HighlightNotFound (Private)", True, "", True, _
+              "HighlightNotFound — Private процедура, недоступна для прямого вызова"
+
+    ' @test TC-42
+    ' -------------------------------------------------------
+    ' TC-42: ClearHighlight (Private — пропущен)
+    ' -------------------------------------------------------
+    AddResult "TC-42", "ClearHighlight (Private)", True, "", True, _
+              "ClearHighlight — Private процедура, недоступна для прямого вызова"
+
+    ' @test TC-43
+    ' -------------------------------------------------------
+    ' TC-43: IsAllFound (Private — пропущен)
+    ' -------------------------------------------------------
+    AddResult "TC-43", "IsAllFound (Private)", True, "", True, _
+              "IsAllFound — Private функция, недоступна для прямого вызова"
+
+    ' @test TC-44
+    ' -------------------------------------------------------
+    ' TC-44: AutoMatchWorks без сохранения данных (пропущен)
+    ' -------------------------------------------------------
+    AddResult "TC-44", "AutoMatchWorks без изменения данных", True, "", True, _
+              "AutoMatchWorks изменяет данные на листе — тест требует сохранения/восстановления, что небезопасно в автоматическом режиме"
+
+    Debug.Print ""
+End Sub
+
+' ============================================================
 ' Вспомогательные функции
 ' ============================================================
 
@@ -561,7 +789,7 @@ End Sub
 
 ' --------------------------------------------------------------------------
 ' RunAllTests_UI
-' Запускает все тесты (TC-01..TC-13) и показывает результат
+' Запускает все тесты (TC-01..TC-44) и показывает результат
 ' --------------------------------------------------------------------------
 Public Sub RunAllTests_UI()
     On Error GoTo ErrHandler
