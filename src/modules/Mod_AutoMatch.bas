@@ -49,7 +49,7 @@ Private Function GetGroupName() As String
     On Error GoTo ErrHandler
 
     Dim wsMain As Worksheet
-    Set wsMain = ThisWorkbook.Sheets("main")
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
     GetGroupName = Trim(CStr(wsMain.Range("B14").Value))
     Exit Function
@@ -116,7 +116,7 @@ Public Sub AutoMatchWorks()
     Dim notFoundCount As Long
     Dim priceNH As Double
 
-    Set wsMain = ThisWorkbook.Sheets("main")
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
     ' 1. Получаем группу из B14
     groupName = GetGroupName()
@@ -236,7 +236,7 @@ Public Sub AutoMatchParts()
     Dim matchCount As Long
     Dim notFoundCount As Long
 
-    Set wsMain = ThisWorkbook.Sheets("main")
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
     ' 1. Получаем группу из B14
     groupName = GetGroupName()

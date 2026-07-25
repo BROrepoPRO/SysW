@@ -22,7 +22,7 @@ Public Function GetGroupNameFromMain() As String
     Dim wsMain As Worksheet
     Dim groupName As String
 
-    Set wsMain = ThisWorkbook.Sheets("main")
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
     groupName = Trim(CStr(wsMain.Range("B14").Value))
 
     GetGroupNameFromMain = groupName

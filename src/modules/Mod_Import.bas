@@ -21,7 +21,7 @@ Public Sub ImportSheet(grz As String)
     Dim wsMain As Worksheet
     Dim newName As String
 
-    Set wsMain = ThisWorkbook.Sheets("main")
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
     Set wsSource = Mod_SheetOps.SearchSheetByGRZ(grz)
     If wsSource Is Nothing Then
@@ -68,7 +68,7 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
     Dim endRow As Range        ' граница таблицы (строка "Итого")
     Dim wsRow As Range         ' для поиска границы между таблицами
 
-    Set wsMain = ThisWorkbook.Sheets("main")
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
     ' Очистка диапазонов L:N и X:AA
     Dim lastRowL As Long, lastRowX As Long
@@ -233,7 +233,7 @@ End Sub
 Public Sub ImportSheet_UI()
     On Error GoTo ErrHandler
 
-    Call ImportSheet(ThisWorkbook.Sheets("main").Range("B6").Value)
+    Call ImportSheet(ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN).Range("B6").Value)
 
     Exit Sub
 
@@ -298,7 +298,7 @@ Public Sub ImportDataToMain_UI()
         Exit Sub
     End If
 
-    If wsSource.Name = "main" Then
+    If wsSource.Name = Mod_Constants.SHEET_MAIN Then
         MsgBox "Активный лист не может быть main. Выберите другой лист.", vbExclamation, "Предупреждение"
         Exit Sub
     End If
@@ -337,7 +337,7 @@ Public Sub ImportFromB2_UI()
     Application.DisplayAlerts = False
 
     ' 1. Получаем лист "мэйн" и читаем B2
-    Set wsMain = ThisWorkbook.Sheets("main")
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
     grz = Trim(CStr(wsMain.Range("B4").Value))
 
     ' 2. Проверяем, что B2 не пуст
@@ -391,7 +391,7 @@ Public Sub ImportFromB2_UI()
         End If
 
         ' Копируем найденный лист в текущую книгу после листа "мэйн"
-        wsSource.Copy After:=ThisWorkbook.Sheets("main")
+        wsSource.Copy After:=ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
         ' Закрываем report.xlsx
         wbReport.Close SaveChanges:=False

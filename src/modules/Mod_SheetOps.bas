@@ -116,7 +116,7 @@ Public Sub RenameSheetsByGRZ()
     End If
 
     For Each ws In wbReport.Sheets
-        If ws.Visible = xlSheetVisible And ws.Name <> "report" And ws.Name <> "spisok" Then
+        If ws.Visible = xlSheetVisible And ws.Name <> Mod_Constants.SHEET_REPORT And ws.Name <> Mod_Constants.SHEET_SPISOK Then
             ' Ищем первую сверху ячейку со словом "автомобиль"
             Set cell = ws.Cells.Find(What:="автомобиль", LookAt:=xlPart, SearchOrder:=xlByRows, SearchDirection:=xlNext)
             If Not cell Is Nothing Then
@@ -174,7 +174,7 @@ Public Sub ClearMainSheet_UI(Optional ByVal silent As Boolean = False)
     Dim lastRow As Long
     Dim response As VbMsgBoxResult
 
-    Set wsMain = ThisWorkbook.Sheets("main")
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
     If silent Then
         ' Без подтверждения — сразу очищаем
@@ -211,7 +211,7 @@ Public Sub ClearHeader_UI()
     On Error GoTo ErrHandler
 
     Dim wsMain As Worksheet
-    Set wsMain = ThisWorkbook.Sheets("main")
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
     wsMain.Range("B5:B17").ClearContents
 

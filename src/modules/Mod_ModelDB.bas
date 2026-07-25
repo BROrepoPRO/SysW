@@ -10,7 +10,23 @@ Option Explicit
 ' ============================================================
 ' Константы
 ' ============================================================
-Public Const MODELDB_BASE_PATH As String = "L:\PROject\SysW\base\models\"
+' @deprecated Используйте GetModelDBBasePath() вместо этой константы.
+' Оставлена для обратной совместимости.
+Public Const MODELDB_BASE_PATH As String = ""
+
+' ============================================================
+' Функция получения базового пути к моделям
+' ============================================================
+
+' --------------------------------------------------------------------------
+' GetModelDBBasePath
+' Возвращает путь к каталогу base\models\ относительно расположения work.xlsm.
+' Это заменяет жёстко заданный абсолютный путь MODELDB_BASE_PATH.
+' Пример: если work.xlsm в L:\PROject\SysW\, то вернёт L:\PROject\SysW\base\models\
+' --------------------------------------------------------------------------
+Public Function GetModelDBBasePath() As String
+    GetModelDBBasePath = ThisWorkbook.Path & "\base\models\"
+End Function
 
 ' ============================================================
 ' Типы данных
@@ -75,8 +91,11 @@ Public Function GetModelGroupFilePath(ByVal groupName As String) As String
     Dim xlsmPath As String
     Dim xlsxPath As String
 
-    xlsmPath = MODELDB_BASE_PATH & groupName & ".xlsm"
-    xlsxPath = MODELDB_BASE_PATH & groupName & ".xlsx"
+    Dim basePath As String
+    basePath = GetModelDBBasePath()
+
+    xlsmPath = basePath & groupName & ".xlsm"
+    xlsxPath = basePath & groupName & ".xlsx"
 
     If Len(Dir(xlsmPath)) > 0 Then
         GetModelGroupFilePath = xlsmPath

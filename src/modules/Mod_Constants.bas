@@ -89,6 +89,15 @@ Public Const MAIN_CLEAR_START_ROW As Long = 4     ' Строка, с котор�
 Public Const MAIN_HEADER_RANGE As String = "B4:B17" ' Диапазон шапки заказа
 
 ' ============================================================
+' Константы имён листов
+' ============================================================
+Public Const SHEET_MAIN As String = "main"
+Public Const SHEET_SPISOK As String = "spisok"
+Public Const SHEET_MODELS As String = "models"
+Public Const SHEET_LIBNAME As String = "libname"
+Public Const SHEET_REPORT As String = "report"
+
+' ============================================================
 ' Константы колонок ручного подбора работ (E4:H)
 ' ============================================================
 Public Const MANWRK_COL_ARTICLE As Long = 5    ' E — Артикул
@@ -119,7 +128,7 @@ Public Sub InitLibName()
     Dim i As Long
 
     ' 1. Проверка существования листа libname
-    Set wsLib = Mod_Utils.GetSheetByName(ThisWorkbook, "libname")
+    Set wsLib = Mod_Utils.GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_LIBNAME)
     If wsLib Is Nothing Then
         Call Mod_Logger.WriteLog("Mod_Constants", "InitLibName: Лист libname не найден")
         MsgBox "Лист libname не найден в книге. Заполнение прервано.", vbCritical, "Ошибка"
@@ -343,7 +352,7 @@ Public Sub AddWorkEntry()
     Dim wsLib As Worksheet
     Dim lastRow As Long
 
-    Set wsLib = Mod_Utils.GetSheetByName(ThisWorkbook, "libname")
+    Set wsLib = Mod_Utils.GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_LIBNAME)
     If wsLib Is Nothing Then
         Exit Sub
     End If

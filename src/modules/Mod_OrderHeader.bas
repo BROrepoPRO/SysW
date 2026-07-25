@@ -36,9 +36,9 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     Dim ModelRow As Range
     Dim ModelCode As Variant
 
-    Set wsMain = GetSheetByName(ThisWorkbook, "main")
-    Set wsSpisok = GetSheetByName(ThisWorkbook, "spisok")
-    Set wsModel = GetSheetByName(ThisWorkbook, "models")
+    Set wsMain = GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_MAIN)
+    Set wsSpisok = GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_SPISOK)
+    Set wsModel = GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_MODELS)
 
     ' Проверка существования листов
     If wsMain Is Nothing Then
@@ -161,7 +161,7 @@ Public Function FindOrder(ByVal orderNum As String, ByRef Header As OrderHeader)
     Dim ws As Worksheet
     Dim FoundCell As Range
 
-    Set ws = GetSheetByName(ThisWorkbook, "spisok")
+    Set ws = GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_SPISOK)
     If ws Is Nothing Then
         FindOrder = False
         Exit Function
@@ -200,7 +200,7 @@ Public Sub FillHeaderFromOrder_UI()
     On Error GoTo ErrHandler
 
     Dim orderNum As Variant
-    orderNum = ThisWorkbook.Sheets("main").Range("B4").Value
+    orderNum = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN).Range("B4").Value
 
     If IsEmpty(orderNum) Or orderNum = "" Then
         MsgBox "Введите номер заказа в ячейку B4!", vbExclamation, "Предупреждение"

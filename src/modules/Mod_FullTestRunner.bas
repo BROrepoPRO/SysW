@@ -127,7 +127,7 @@ Private Sub RunUtilsTests()
     ' -------------------------------------------------------
     On Error Resume Next
     Dim ws As Worksheet
-    Set ws = GetSheetByName(ThisWorkbook, "main")
+    Set ws = GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_MAIN)
     If Err.number <> 0 Then
         AddResult "TC-05", "GetSheetByName существующий лист", False, "Ошибка: " & Err.Description
         Err.Clear
@@ -384,7 +384,7 @@ Private Sub RunLibNameTests()
     ' TC-13: InitLibName — заполнение листа libname
     ' -------------------------------------------------------
     On Error Resume Next
-    Set wsLib = Mod_Utils.GetSheetByName(ThisWorkbook, "libname")
+    Set wsLib = Mod_Utils.GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_LIBNAME)
 
     If wsLib Is Nothing Then
         AddResult "TC-13", "InitLibName заполнение libname", False, "Лист 'libname' не найден"
@@ -463,7 +463,7 @@ Private Sub RunImportVHTests()
     ' TC-14: ImportFromB2_UI — проверка вызова с пустым B2
     ' -------------------------------------------------------
     On Error Resume Next
-    Set wsMain = ThisWorkbook.Sheets("main")
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
     If wsMain Is Nothing Then
         AddResult "TC-14", "ImportFromB2_UI с пустым B2", False, "Лист 'main' не найден"
