@@ -39,12 +39,21 @@ End Sub
 
 ' --------------------------------------------------------------------------
 ' Btn_main_AUTOz4
-' Заглушка: автоподбор запчастей — в разработке
-' TODO: implement in Mod_Selection
+' Автоподбор запчастей из тождеств UAZz4
 ' --------------------------------------------------------------------------
 Public Sub Btn_main_AUTOz4()
-    MsgBox "Автоподбор запчастей — в разработке.", _
-           vbInformation, "SysW"
+    On Error GoTo ErrHandler
+
+    Call Mod_AutoMatch.AutoMatchParts
+
+    Exit Sub
+
+ErrHandler:
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    MsgBox "Ошибка при автоподборе запчастей: " & Err.Description, vbCritical, "Ошибка"
+    Call Mod_Logger.WriteLog("Mod_MainButtons", "Btn_main_AUTOz4: " & Err.Description)
 End Sub
 
 ' ============================================================
@@ -53,12 +62,21 @@ End Sub
 
 ' --------------------------------------------------------------------------
 ' Btn_main_AUTOw
-' Заглушка: автоподбор работ — в разработке
-' TODO: implement in Mod_Selection
+' Автоподбор работ из тождеств UAZw
 ' --------------------------------------------------------------------------
 Public Sub Btn_main_AUTOw()
-    MsgBox "Автоподбор работ — в разработке.", _
-           vbInformation, "SysW"
+    On Error GoTo ErrHandler
+
+    Call Mod_AutoMatch.AutoMatchWorks
+
+    Exit Sub
+
+ErrHandler:
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    MsgBox "Ошибка при автоподборе работ: " & Err.Description, vbCritical, "Ошибка"
+    Call Mod_Logger.WriteLog("Mod_MainButtons", "Btn_main_AUTOw: " & Err.Description)
 End Sub
 
 ' ============================================================

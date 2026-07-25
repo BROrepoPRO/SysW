@@ -59,6 +59,27 @@ Public Const WORK_NAME As String = "work"
 Public Const Z4_NAME As String = "z4"
 
 ' ============================================================
+' Константы агрегатов (категорий работ/запчастей)
+' Соглашение: AGG_{КОД} — трёхбуквенный код агрегата
+' ============================================================
+Public Const AGG_DIAG As String = "DIAG"     ' Диагностика
+Public Const AGG_TO As String = "TO"         ' ТО (Maintenance/Service)
+Public Const AGG_ENG As String = "ENG"       ' Двигатель (Engine)
+Public Const AGG_TRANS As String = "TRANS"   ' Трансмиссия (Transmission)
+Public Const AGG_CLUTCH As String = "CLUTCH" ' Сцепление (Clutch)
+Public Const AGG_SUSP As String = "SUSP"     ' Подвеска (Suspension)
+Public Const AGG_CHASS As String = "CHASS"   ' Ходовая (Chassis)
+Public Const AGG_BRAKE As String = "BRAKE"   ' Тормозная система (Brake system)
+Public Const AGG_FUEL As String = "FUEL"     ' Топливная система (Fuel system)
+Public Const AGG_COOL As String = "COOL"     ' Система охлаждения (Cooling system)
+Public Const AGG_HVAC As String = "HVAC"     ' Система обогрева и кондиционирования (HVAC)
+Public Const AGG_STEER As String = "STEER"   ' Система рулевого управления (Steering system)
+Public Const AGG_ELEC As String = "ELEC"     ' Электрооборудование (Electrical system)
+Public Const AGG_EXH As String = "EXH"       ' Система выхлопных газов (Exhaust system)
+Public Const AGG_BODY As String = "BODY"     ' Кузов (Body)
+Public Const AGG_OTHERS As String = "OTHERS" ' Прочие работы (Others)
+
+' ============================================================
 ' Константы строк листа main
 ' ============================================================
 Public Const MAIN_HEADER_START_ROW As Long = 4   ' B4 — номер заказа (ввод пользователя)
@@ -140,7 +161,8 @@ End Sub
 ' Использует строковые константы модуля.
 ' ============================================================
 Private Function BuildEntryArray() As Variant
-    Dim arr(0 To 14, 0 To 2) As Variant
+    ' 15 существующих + 16 агрегатов = 31 запись
+    Dim arr(0 To 30, 0 To 2) As Variant
 
     ' --- Записи для листа spisok ---
 
@@ -225,6 +247,89 @@ Private Function BuildEntryArray() As Variant
     arr(14, 1) = Z4_NAME
     arr(14, 2) = "лист z4 для работы с запчастями"
 
+    ' --- Записи для агрегатов (категорий работ/запчастей) ---
+    ' Соглашение: agg_{код} — трёхбуквенный код агрегата
+
+    ' agg_diag — Диагностика
+    arr(15, 0) = "agg_diag"
+    arr(15, 1) = AGG_DIAG
+    arr(15, 2) = "Диагностика (Diagnostics)"
+
+    ' agg_to — ТО
+    arr(16, 0) = "agg_to"
+    arr(16, 1) = AGG_TO
+    arr(16, 2) = "ТО (Maintenance/Service)"
+
+    ' agg_eng — Двигатель
+    arr(17, 0) = "agg_eng"
+    arr(17, 1) = AGG_ENG
+    arr(17, 2) = "Двигатель (Engine)"
+
+    ' agg_trans — Трансмиссия
+    arr(18, 0) = "agg_trans"
+    arr(18, 1) = AGG_TRANS
+    arr(18, 2) = "Трансмиссия (Transmission)"
+
+    ' agg_clutch — Сцепление
+    arr(19, 0) = "agg_clutch"
+    arr(19, 1) = AGG_CLUTCH
+    arr(19, 2) = "Сцепление (Clutch)"
+
+    ' agg_susp — Подвеска
+    arr(20, 0) = "agg_susp"
+    arr(20, 1) = AGG_SUSP
+    arr(20, 2) = "Подвеска (Suspension)"
+
+    ' agg_chass — Ходовая
+    arr(21, 0) = "agg_chass"
+    arr(21, 1) = AGG_CHASS
+    arr(21, 2) = "Ходовая (Chassis)"
+
+    ' agg_brake — Тормозная система
+    arr(22, 0) = "agg_brake"
+    arr(22, 1) = AGG_BRAKE
+    arr(22, 2) = "Тормозная система (Brake system)"
+
+    ' agg_fuel — Топливная система
+    arr(23, 0) = "agg_fuel"
+    arr(23, 1) = AGG_FUEL
+    arr(23, 2) = "Топливная система (Fuel system)"
+
+    ' agg_cool — Система охлаждения
+    arr(24, 0) = "agg_cool"
+    arr(24, 1) = AGG_COOL
+    arr(24, 2) = "Система охлаждения (Cooling system)"
+
+    ' agg_hvac — Система обогрева и кондиционирования
+    arr(25, 0) = "agg_hvac"
+    arr(25, 1) = AGG_HVAC
+    arr(25, 2) = "Система обогрева и кондиционирования (HVAC)"
+
+    ' agg_steer — Система рулевого управления
+    arr(26, 0) = "agg_steer"
+    arr(26, 1) = AGG_STEER
+    arr(26, 2) = "Система рулевого управления (Steering system)"
+
+    ' agg_elec — Электрооборудование
+    arr(27, 0) = "agg_elec"
+    arr(27, 1) = AGG_ELEC
+    arr(27, 2) = "Электрооборудование (Electrical system)"
+
+    ' agg_exh — Система выхлопных газов
+    arr(28, 0) = "agg_exh"
+    arr(28, 1) = AGG_EXH
+    arr(28, 2) = "Система выхлопных газов (Exhaust system)"
+
+    ' agg_body — Кузов
+    arr(29, 0) = "agg_body"
+    arr(29, 1) = AGG_BODY
+    arr(29, 2) = "Кузов (Body)"
+
+    ' agg_others — Прочие работы
+    arr(30, 0) = "agg_others"
+    arr(30, 1) = AGG_OTHERS
+    arr(30, 2) = "Прочие работы (Others)"
+
     BuildEntryArray = arr
 End Function
 
@@ -268,3 +373,30 @@ Public Sub AddWorkEntry()
 ErrHandler:
     Call Mod_Logger.WriteLog("Mod_Constants", "AddWorkEntry: Ошибка — " & Err.Description)
 End Sub
+
+' ============================================================
+' GetAggregateName
+' Возвращает русское название агрегата по его коду.
+' Если код не найден — возвращает пустую строку.
+' ============================================================
+Public Function GetAggregateName(ByVal code As String) As String
+    Select Case UCase$(Trim$(code))
+        Case AGG_DIAG:   GetAggregateName = "Диагностика"
+        Case AGG_TO:     GetAggregateName = "ТО"
+        Case AGG_ENG:    GetAggregateName = "Двигатель"
+        Case AGG_TRANS:  GetAggregateName = "Трансмиссия"
+        Case AGG_CLUTCH: GetAggregateName = "Сцепление"
+        Case AGG_SUSP:   GetAggregateName = "Подвеска"
+        Case AGG_CHASS:  GetAggregateName = "Ходовая"
+        Case AGG_BRAKE:  GetAggregateName = "Тормозная система"
+        Case AGG_FUEL:   GetAggregateName = "Топливная система"
+        Case AGG_COOL:   GetAggregateName = "Система охлаждения"
+        Case AGG_HVAC:   GetAggregateName = "Система обогрева и кондиционирования"
+        Case AGG_STEER:  GetAggregateName = "Система рулевого управления"
+        Case AGG_ELEC:   GetAggregateName = "Электрооборудование"
+        Case AGG_EXH:    GetAggregateName = "Система выхлопных газов"
+        Case AGG_BODY:   GetAggregateName = "Кузов"
+        Case AGG_OTHERS: GetAggregateName = "Прочие работы"
+        Case Else:       GetAggregateName = ""
+    End Select
+End Function
