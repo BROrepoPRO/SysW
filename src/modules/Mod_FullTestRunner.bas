@@ -158,7 +158,7 @@ Private Sub RunUtilsTests()
     ' -------------------------------------------------------
     On Error Resume Next
     Call Mod_Utils.WriteLog("Mod_FullTestRunner: выполнение проверки TC-07")
-    LogPath = ThisWorkbook.path & "\log.txt"
+    LogPath = Mod_Logger.GetLogPath()
     If Err.number <> 0 Then
         AddResult "TC-07", "WriteLog запись в лог", False, "Ошибка: " & Err.Description
         Err.Clear
@@ -256,7 +256,7 @@ Private Sub RunLoggerTests()
     ' -------------------------------------------------------
     On Error Resume Next
     LogPath = Mod_Logger.GetLogPath()
-    OldLogPath = ThisWorkbook.path & "\log_old.txt"
+    OldLogPath = ThisWorkbook.path & "\" & Mod_Constants.LOGS_DIR & "\log_old.txt"
 
     ' Очищаем лог и старый лог
     Call Mod_Logger.ClearLog

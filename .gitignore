@@ -27,3 +27,8 @@ venv/
 
 # Конфликтные файлы синхронизации
 *.sync-conflict-*
+
+# Logs
+logs/*.log
+logs/*.txt
+!logs/.gitkeep

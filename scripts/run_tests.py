@@ -3,7 +3,7 @@
 Запуск макроса RunAllTests в work.xlsm через COM-автоматизацию Excel.
 Собирает результаты через VBA-функцию GetTestResults().
 Возвращает exit code: 0 — все тесты PASS, 1 — есть FAIL.
-Сохраняет результаты в test_results.log.
+Сохраняет результаты в logs/test_results.log.
 """
 import sys
 import time
@@ -11,9 +11,14 @@ import os
 import win32com.client
 from win32com.client import gencache
 
-from config import WORKBOOK_PATH, TEST_LOG_FILE
+from config import WORKBOOK_PATH, TEST_LOG_FILE, LOGS_DIR
 EXCEL_PATH = str(WORKBOOK_PATH)
 LOG_FILE = str(TEST_LOG_FILE)
+
+
+def ensure_logs_dir():
+    """Создаёт директорию logs/ если её нет."""
+    os.makedirs(str(LOGS_DIR), exist_ok=True)
 
 
 def write_log(message: str):
@@ -26,6 +31,9 @@ def write_log(message: str):
 
 
 def main() -> int:
+    # Создаём директорию logs/ при каждом запуске
+    ensure_logs_dir()
+
     print("=" * 60)
     print("ЗАПУСК ТЕСТОВ (TC-01..TC-30)")
     print("=" * 60)

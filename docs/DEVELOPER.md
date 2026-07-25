@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v0.13.0)
+# Техническая документация разработчика — SysW (v0.14.0)
 
 ## 1. Архитектура проекта
 
@@ -696,7 +696,7 @@ python scripts/run_tests.py
 4. Собирает результаты через VBA-функцию `GetTestResults()`
 5. Парсит статистику (Total, Passed, Failed, Skipped)
 6. Возвращает exit code: `0` — все PASS, `1` — есть FAIL
-7. Сохраняет результаты в `test_results.log`
+7. Сохраняет результаты в `logs/test_results.log`
 8. Гарантированно закрывает Excel (в `finally` блоке)
 
 **Интеграция с GitHub Actions:**

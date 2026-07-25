@@ -20,5 +20,8 @@ SRC_DIR = PROJECT_DIR / "src"
 TEMP_EXPORT_DIR = PROJECT_DIR / "_temp_export"
 TEMP_IMPORT_DIR = PROJECT_DIR / "_temp_import"
 
-# Файл лога тестов
-TEST_LOG_FILE = PROJECT_DIR / "test_results.log"
+# Директория логов
+LOGS_DIR = PROJECT_DIR / "logs"
+
+# Файл лога тестов (в директории logs/)
+TEST_LOG_FILE = LOGS_DIR / "test_results.log"

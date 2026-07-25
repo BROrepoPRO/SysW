@@ -5,6 +5,23 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [0.14.0] — 2026-07-25
+
+### Added
+- **Константа `LOGS_DIR`:** добавлена в `Mod_Constants.bas` — централизованное значение директории логов (`"logs"`)
+- **Директория `logs/`:** создана для хранения логов и результатов тестов вместо корня проекта
+- **`scripts/config.py`:** добавлена константа `LOGS_DIR` и `TEST_LOG_FILE` (путь к `logs/test_results.log`)
+- **`scripts/run_tests.py`:** автоматическое создание `logs/` при запуске (`ensure_logs_dir`)
+
+### Changed
+- **`Mod_Logger.bas`:** путь к лог-файлу изменён с `log.txt` на `logs/log.txt` через `Mod_Constants.LOGS_DIR`
+- **`Mod_FullTestRunner.bas`:** хардкодные пути к логам заменены на константы из `Mod_Constants`
+- **`scripts/run_tests.py`:** результаты тестов сохраняются в `logs/test_results.log` вместо `test_results.log` в корне
+
+### Removed
+- **Мусорные копии из `base/models/`:** удалены неиспользуемые файлы, оставлен только `UAZ.xlsm` и `.gitkeep`
+- **Старые лог-файлы из корня:** `log.txt` и `log_old.txt` удалены из корня проекта (перенесены в `logs/`)
+
 ## [0.13.0] — 2026-07-25
 
 ### Added

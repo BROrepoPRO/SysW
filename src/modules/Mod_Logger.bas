@@ -15,10 +15,10 @@ Private Const DEFAULT_MAX_LOG_SIZE_KB As Long = 100
 
 ' --------------------------------------------------------------------------
 ' GetLogPath
-' Возвращает путь к файлу лога (log.txt рядом с книгой)
+' Возвращает путь к файлу лога (logs/log.txt рядом с книгой)
 ' --------------------------------------------------------------------------
 Public Function GetLogPath() As String
-    GetLogPath = ThisWorkbook.path & "\log.txt"
+    GetLogPath = ThisWorkbook.path & "\" & Mod_Constants.LOGS_DIR & "\log.txt"
 End Function
 
 ' --------------------------------------------------------------------------
@@ -78,7 +78,7 @@ Public Sub RotateLogIfNeeded(ByVal maxSizeKB As Long)
     Dim fso As Object
 
     LogPath = GetLogPath()
-    OldLogPath = ThisWorkbook.path & "\log_old.txt"
+    OldLogPath = ThisWorkbook.path & "\" & Mod_Constants.LOGS_DIR & "\log_old.txt"
 
     ' Проверяем существование файла
     If Len(Dir(LogPath)) = 0 Then
