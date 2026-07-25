@@ -1,6 +1,6 @@
 ﻿# SysW — Система автоматизации обработки заказ-нарядов авторемонта
 
-**Версия:** v0.10.0
+**Версия:** v0.13.0
 
 **Назначение:** импорт, анализ и учёт данных заказ-нарядов из Excel.
 
@@ -40,10 +40,13 @@ L:\PROject\SysW\
 │   ├── exam-temp/             # Временные файлы для сравнения импорта
 │   └── models/                # Модели данных (Excel-файлы)
 ├── scripts/                   # Python + PowerShell скрипты
+│   ├── config.py              # Общая конфигурация путей (Python)
+│   ├── config.ps1             # Общая конфигурация путей (PowerShell)
 │   ├── export_vba.py          # Выгрузка VBA из Excel
 │   ├── impVBA.py              # Загрузка VBA в Excel
 │   ├── run_tests.py           # Запуск тестов
-│   └── Import-VbaFromExcel.ps1
+│   ├── Set-ExcelTrust.ps1     # Настройка доверия Excel к VBA
+│   └── remove_work26.py       # Удаление work26 из UAZ.xlsm
 ├── docs/                      # Документация проекта
 │   ├── sourcecraft-guide.md   # Руководство по SourceCraft
 │   ├── git-workflow.md        # Git-инструкции

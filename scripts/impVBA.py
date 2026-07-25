@@ -22,9 +22,10 @@ import win32com.client
 from win32com.client import gencache
 from pathlib import Path
 
-EXCEL_PATH = r"L:\PROject\SysW\work.xlsm"
-MODULES_PATH = Path(r"L:\PROject\SysW\src")
-TEMP_DIR = Path(r"L:\PROject\SysW\_temp_import")
+from config import WORKBOOK_PATH, SRC_DIR, TEMP_IMPORT_DIR
+EXCEL_PATH = str(WORKBOOK_PATH)
+MODULES_PATH = SRC_DIR
+TEMP_DIR = TEMP_IMPORT_DIR
 
 # VBA component type constants
 VBEXT_CT_STDMODULE = 1    # Standard module (.bas)

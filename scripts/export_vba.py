@@ -20,9 +20,10 @@ import win32com.client
 from win32com.client import gencache
 from pathlib import Path
 
-EXCEL_PATH = Path(r"L:\PROject\SysW\work.xlsm")
-PROJECT_DIR = Path(r"L:\PROject\SysW\src")
-TEMP_DIR = Path(r"L:\PROject\SysW\_temp_export")
+from config import WORKBOOK_PATH, SRC_DIR, TEMP_EXPORT_DIR
+EXCEL_PATH = WORKBOOK_PATH
+PROJECT_DIR = SRC_DIR
+TEMP_DIR = TEMP_EXPORT_DIR
 
 # Mapping: VBA component name -> output filename
 # .bas = standard module, .cls = class module

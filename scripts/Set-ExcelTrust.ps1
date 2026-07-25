@@ -21,9 +21,11 @@
 
 $ErrorActionPreference = "Stop"
 
+. "$PSScriptRoot\config.ps1"
+
 # Конфигурация
-$ProjectPath = "L:\PROject\SysW"
-$ExcelPath = "L:\PROject\SysW\work.xlsm"
+$ProjectPath = $Script:ProjectRoot
+$ExcelPath = $Script:WorkbookPath
 
 # Версии Excel, которые могут быть установлены
 $ExcelVersions = @(

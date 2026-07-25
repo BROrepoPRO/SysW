@@ -11,8 +11,9 @@ import os
 import win32com.client
 from win32com.client import gencache
 
-EXCEL_PATH = r"L:\PROject\SysW\work.xlsm"
-LOG_FILE = os.path.join(os.path.dirname(EXCEL_PATH), "test_results.log")
+from config import WORKBOOK_PATH, TEST_LOG_FILE
+EXCEL_PATH = str(WORKBOOK_PATH)
+LOG_FILE = str(TEST_LOG_FILE)
 
 
 def write_log(message: str):

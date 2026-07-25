@@ -80,20 +80,6 @@ ErrHandler:
 End Sub
 
 ' ============================================================
-' РУЧНОЙ ПОДБОР ЗАПЧАСТЕЙ
-' ============================================================
-
-' --------------------------------------------------------------------------
-' Btn_main_MANz4
-' Заглушка: ручной подбор запчастей — в разработке
-' TODO: implement in Mod_Selection
-' --------------------------------------------------------------------------
-Public Sub Btn_main_MANz4()
-    MsgBox "Ручной подбор запчастей — в разработке.", _
-           vbInformation, "SysW"
-End Sub
-
-' ============================================================
 ' РУЧНОЙ ПОДБОР РАБОТ
 ' ============================================================
 
@@ -116,44 +102,4 @@ ErrHandler:
     Application.DisplayAlerts = True
     MsgBox "Ошибка при ручном подборе работ: " & Err.Description, vbCritical, "Ошибка"
     Call Mod_Logger.WriteLog("Mod_MainButtons", "Btn_main_MANWRK: " & Err.Description)
-End Sub
-
-' ============================================================
-' ИМПОРТ ВХ (из ячейки B2)
-' ============================================================
-
-' --------------------------------------------------------------------------
-' Btn_main_ImportVH_Click
-' Импорт данных на лист "мэйн" из листа {B2}M.
-' Если листа нет — копирует из report.xlsx.
-' Делегирует выполнение Mod_Import.ImportFromB2_UI.
-' --------------------------------------------------------------------------
-Public Sub Btn_main_ImportVH_Click()
-    On Error GoTo ErrHandler
-
-    Call Mod_Import.ImportFromB2_UI
-
-    Exit Sub
-
-ErrHandler:
-    ' Восстановление состояния приложения
-    Application.EnableEvents = True
-    Application.ScreenUpdating = True
-    Application.DisplayAlerts = True
-    MsgBox "Ошибка при импорте ВХ: " & Err.Description, vbCritical, "Ошибка"
-    Call Mod_Utils.WriteLog("Btn_main_ImportVH_Click: " & Err.Description)
-End Sub
-
-' ============================================================
-' НАЗНАЧЕНИЕ КНОПОК (mapping для привязки макросов)
-' ============================================================
-
-' --------------------------------------------------------------------------
-' AssignMainButtons
-' Создаёт словарь mapping текста кнопок на макросы
-' --------------------------------------------------------------------------
-Public Sub AssignMainButtons()
-    Dim mapping As Object
-    Set mapping = CreateObject("Scripting.Dictionary")
-    mapping.Add "ИМПОРТ ВХ", "'work.xlsm'!Btn_main_ImportVH_Click"
 End Sub

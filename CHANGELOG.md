@@ -5,6 +5,28 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [0.13.0] — 2026-07-25
+
+### Added
+- **Централизация путей:** созданы `scripts/config.py` и `scripts/config.ps1` — единая точка конфигурации путей для Python и PowerShell скриптов
+- **Скрипт удаления work26:** `scripts/remove_work26.py` — удаление встроенной книги work26.xlsm из UAZ.xlsm через COM
+
+### Changed
+- **Пути в Python-скриптах:** `export_vba.py`, `impVBA.py`, `run_tests.py` — жёсткие абсолютные пути `L:\PROject\SysW\...` заменены на относительные через `config.py`
+- **Пути в PowerShell:** `Set-ExcelTrust.ps1` — жёсткие пути заменены на переменные из `config.ps1`
+- **VBA-привязка:** `Mod_MainButtons.bas:158` — `'work.xlsm'` заменён на `ThisWorkbook.Name`
+
+### Removed
+- **Мёртвый код VBA (6 процедур-заглушек):** `Btn_z4_Action1`, `Btn_z4_Action2`, `Btn_z4_Action3`, `Btn_work_Action1`, `Btn_work_Action2`, `Btn_work_Action3` из `Mod_SheetButtons.bas`
+- **Мёртвый код VBA (дубликат + заглушка):** `Btn_main_ImportVH_Click` (дубликат `Mod_ButtonDispatcher`) и `Btn_main_MANz4` (заглушка) из `Mod_MainButtons.bas`
+- **Мёртвый код VBA (невызываемая функция):** `AssignMainButtons` из `Mod_MainButtons.bas`
+- **Неиспользуемые константы:** `MAIN_HEADER_END_ROW`, `MAIN_CLEAR_START_ROW`, `MAIN_HEADER_RANGE` из `Mod_Constants.bas`
+- **7 неиспользуемых скриптов:** `export_uaz_vba.ps1`, `export_uaz_vba.py`, `parse_excel.ps1`, `parse_full.ps1`, `parse_full.py`, `rewire_uaz_buttons.ps1`, `Import-VbaFromExcel.ps1`
+- **Директория `scripts/_uaz_vba_export/`** (включая `work26/`)
+
+### Security
+- Установлен `AccessVBOM=1` и `VBAWarnings=1` в реестре Excel для доступа к VBA Project Object Model
+
 ## [0.12.0] — 2026-07-21
 
 ### Added
