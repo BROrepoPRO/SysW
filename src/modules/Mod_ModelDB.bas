@@ -1,5 +1,6 @@
 Attribute VB_Name = "Mod_ModelDB"
 Option Explicit
+Option Private Module
 
 ' ============================================================
 ' Модуль: Mod_ModelDB

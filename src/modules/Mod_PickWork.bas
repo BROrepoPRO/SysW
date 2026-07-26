@@ -1,5 +1,6 @@
 Attribute VB_Name = "Mod_PickWork"
 Option Explicit
+Option Private Module
 
 ' ============================================================
 ' Модуль: Mod_PickWork

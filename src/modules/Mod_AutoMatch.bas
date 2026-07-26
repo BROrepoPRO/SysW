@@ -1,5 +1,6 @@
 Attribute VB_Name = "Mod_AutoMatch"
 Option Explicit
+Option Private Module
 
 ' ============================================================
 ' Модуль: Mod_AutoMatch

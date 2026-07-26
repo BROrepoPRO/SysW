@@ -1,5 +1,6 @@
 Attribute VB_Name = "Mod_Import"
 Option Explicit
+Option Private Module
 
 ' ============================================================
 ' Модуль: Mod_Import

@@ -1,5 +1,6 @@
 Attribute VB_Name = "Mod_OrderHeader"
 Option Explicit
+Option Private Module
 
 ' ============================================================
 ' Модуль: Mod_OrderHeader

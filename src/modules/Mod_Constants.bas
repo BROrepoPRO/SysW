@@ -4,6 +4,9 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
+Option Private Module
+Option Private Module
+Option Private Module
 
 ' ============================================================
 ' Модуль: Mod_Constants

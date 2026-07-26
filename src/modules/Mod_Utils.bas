@@ -1,5 +1,6 @@
 Attribute VB_Name = "Mod_Utils"
 Option Explicit
+Option Private Module
 
 ' ============================================================
 ' Модуль: Mod_Utils

@@ -1,4 +1,4 @@
-Attribute VB_Name = "Mod_ButtonDispatcher"
+﻿Attribute VB_Name = "Mod_ButtonDispatcher"
 Option Explicit
 
 ' ============================================================
@@ -153,4 +153,32 @@ End Sub
 ' --------------------------------------------------------------------------
 Public Sub Btn_main_CheckFileExists_Click()
     Call Mod_Utils.CheckFileExists_UI
+End Sub
+
+' ============================================================
+' ОБРАБОТЧИКИ АВТОПОДБОРА И РУЧНОГО ПОДБОРА
+' ============================================================
+
+' --------------------------------------------------------------------------
+' Btn_main_AutoMatchWorks_Click
+' Автоподбор работ из тождеств UAZw
+' --------------------------------------------------------------------------
+Public Sub Btn_main_AutoMatchWorks_Click()
+    Call Mod_AutoMatch.AutoMatchWorks
+End Sub
+
+' --------------------------------------------------------------------------
+' Btn_main_AutoMatchParts_Click
+' Автоподбор запчастей из тождеств UAZz4
+' --------------------------------------------------------------------------
+Public Sub Btn_main_AutoMatchParts_Click()
+    Call Mod_AutoMatch.AutoMatchParts
+End Sub
+
+' --------------------------------------------------------------------------
+' Btn_main_PickWork_Click
+' Ручной подбор работ — открывает файл группы
+' --------------------------------------------------------------------------
+Public Sub Btn_main_PickWork_Click()
+    Call Mod_PickWork.PickWork_UI
 End Sub

@@ -1,5 +1,6 @@
 Attribute VB_Name = "Mod_MainButtons"
 Option Explicit
+Option Private Module
 
 ' ============================================================
 ' Модуль: Mod_MainButtons
