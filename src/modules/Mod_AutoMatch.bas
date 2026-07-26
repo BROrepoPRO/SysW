@@ -107,7 +107,7 @@ Public Sub AutoMatchWorks()
     Dim wsMain As Worksheet
     Dim groupName As String
     Dim identities As Collection
-    Dim identity As WorkIdentity
+    Dim identity As Variant
     Dim lastRow As Long
     Dim i As Long
     Dim inName As String
@@ -228,7 +228,7 @@ Public Sub AutoMatchParts()
     Dim wsMain As Worksheet
     Dim groupName As String
     Dim identities As Collection
-    Dim identity As PartIdentity
+    Dim identity As Variant
     Dim lastRow As Long
     Dim i As Long
     Dim inCatNum As String
