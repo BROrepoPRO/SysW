@@ -2,6 +2,9 @@ Attribute VB_Name = "Mod_Import"
 Option Explicit
 Option Private Module
 
+' Флаг подавления MsgBox (используется при тестировании)
+Public SilenceMsgBox As Boolean
+
 ' ============================================================
 ' Модуль: Mod_Import
 ' Назначение: Импорт данных из Excel в SQLite и обратно
@@ -343,8 +346,10 @@ Public Sub ImportFromB2_UI()
 
     ' 2. Проверяем, что B2 не пуст
     If grz = "" Or grz = "0" Then
-        MsgBox "Ячейка B4 на листе 'main' пуста. Укажите номер заказа.", _
-               vbExclamation, "Импорт ВХ"
+        If Not SilenceMsgBox Then
+            MsgBox "Ячейка B4 на листе 'main' пуста. Укажите номер заказа.", _
+                   vbExclamation, "Импорт ВХ"
+        End If
         GoTo CleanUp
     End If
 

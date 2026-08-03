@@ -37,9 +37,9 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     Dim ModelRow As Range
     Dim ModelCode As Variant
 
-    Set wsMain = GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_MAIN)
-    Set wsSpisok = GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_SPISOK)
-    Set wsModel = GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_MODELS)
+    Set wsMain = Mod_Utils.GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_MAIN)
+    Set wsSpisok = Mod_Utils.GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_SPISOK)
+    Set wsModel = Mod_Utils.GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_MODELS)
 
     ' Проверка существования листов
     If wsMain Is Nothing Then
@@ -61,6 +61,9 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
         Exit Function
     End If
 
+    ' Отключаем события перед записью в шапку
+    Application.EnableEvents = False
+
     ' Очистка B5:B17
     wsMain.Range("B5:B17").ClearContents
 
@@ -72,7 +75,7 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     End If
 
     ' Поиск заказа в столбце A листа spisok (точное совпадение)
-    Set FoundRow = wsSpisok.Columns(1).Find(What:=orderNum, LookAt:=xlWhole)
+    Set FoundRow = wsSpisok.Columns(1).Find(What:=orderNum, LookAt:=xlWhole, LookIn:=xlValues)
     If FoundRow Is Nothing Then
         Call Mod_Logger.WriteLog("Mod_OrderHeader", "FillHeaderFromOrder: Заказ с номером " & orderNum & " не найден!")
         wsMain.Range("B5:B17").ClearContents
@@ -93,7 +96,7 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     wsMain.Cells(12, 2).Value = "00" & CStr(orderNum) & "-20"
 
     ' Ключ поиска по models — название модели из main.B3 (с Trim для удаления лишних пробелов)
-    ModelCode = Trim(wsMain.Cells(5, 2).Value)   ' B5 = модель
+    ModelCode = Trim(Replace(wsMain.Cells(5, 2).Value, Chr(160), " "))   ' B5 = модель
 
     ' Поиск модели в столбце A листа models (начиная со строки 3)
     If Not IsNull(ModelCode) And ModelCode <> "" Then
@@ -105,7 +108,7 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
         Dim found As Boolean
         found = False
         For Each cell In wsModel.Range("A3:A" & lastModelRow)
-            If Trim(cell.Value) = ModelCode Then
+            If Trim(Replace(cell.Value, Chr(160), " ")) = ModelCode Then
                 Set ModelRow = cell
                 found = True
                 Exit For
@@ -140,8 +143,20 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
             ' B11 и B12 оставляем пустыми (цена и группа не заданы)
             Call Mod_Logger.WriteLog("Mod_OrderHeader", _
                 "FillHeaderFromOrder: Модель '" & ModelCode & "' добавлена в models (строка " & newRow & ")")
+
+            ' Пытаемся прочитать группу из листа spisok (колонка I)
+            Dim groupFromSpisok As Variant
+            groupFromSpisok = FoundRow.Cells(1, Mod_Constants.SPISOK_COL_GROUP).Value
+            If Not IsNull(groupFromSpisok) And groupFromSpisok <> "" Then
+                wsMain.Cells(14, 2).Value = groupFromSpisok  ' B14 = группа из spisok
+            Else
+                wsMain.Cells(14, 2).ClearContents  ' B14 оставляем пустой
+            End If
         End If
     End If
+
+    ' Восстанавливаем события после записи в шапку
+    Application.EnableEvents = True
 
     FillHeaderFromOrder = True
     Exit Function
@@ -162,7 +177,7 @@ Public Function FindOrder(ByVal orderNum As String, ByRef Header As OrderHeader)
     Dim ws As Worksheet
     Dim FoundCell As Range
 
-    Set ws = GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_SPISOK)
+    Set ws = Mod_Utils.GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_SPISOK)
     If ws Is Nothing Then
         FindOrder = False
         Exit Function

@@ -283,7 +283,15 @@ def main():
                     vb_project.VBComponents.Remove(existing)
                     print(f"  Removed: {vb_name} (from {file_name})")
             except Exception:
-                print(f"  Not found: {vb_name} (from {file_name})")
+                # Fallback: попробовать удалить по stem (имя файла без расширения)
+                stem = Path(file_name).stem
+                try:
+                    existing = vb_project.VBComponents.Item(stem)
+                    if existing:
+                        vb_project.VBComponents.Remove(existing)
+                        print(f"  Removed (fallback by stem): {stem} (from {file_name})")
+                except Exception:
+                    print(f"  Not found: {vb_name} (from {file_name})")
 
         # Second pass: import/update all components
         print("")
@@ -309,9 +317,18 @@ def main():
                 print(f"    [!] {e}")
                 continue
 
-            # Strip export-format header (VERSION, BEGIN...END)
-            text = strip_export_header(text)
-            print(f"    Stripped export header (VERSION, BEGIN...END)")
+            # Strip export-format header (VERSION, BEGIN...END).
+            # IMPORTANT: For .cls class files imported via VBComponents.Import(),
+            # the "VERSION 1.0 CLASS" header and BEGIN...END section are REQUIRED
+            # for Excel to recognize the file as a class module. Stripping them
+            # causes the file to be imported as a standard module (.bas), which
+            # breaks "New ClassName" usage. So we only strip the header for
+            # .bas files and sheet components (updated via CodeModule).
+            if is_cls and not is_sheet:
+                print(f"    Keeping export header (VERSION, BEGIN...END) for class module")
+            else:
+                text = strip_export_header(text)
+                print(f"    Stripped export header (VERSION, BEGIN...END)")
 
             # Extract VB_Name BEFORE stripping Attribute lines
             # (needed for component lookup, especially for sheet components

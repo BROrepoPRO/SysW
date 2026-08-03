@@ -1,6 +1,5 @@
 Attribute VB_Name = "Mod_FullTestRunner"
 Option Explicit
-Option Private Module
 
 ' ============================================================
 ' Модуль: Mod_FullTestRunner
@@ -28,35 +27,104 @@ Public Sub RunAllTests()
     m_Skipped = 0
     m_ResultsLog = ""
 
+    ' Подавляем MsgBox при тестовом запуске (COM-автоматизация)
+    Mod_Constants.SilenceMsgBox = True
+
     Debug.Print "=============================================="
     Debug.Print "  Запуск набора тестов (TC-01..TC-44)"
     Debug.Print "=============================================="
     Debug.Print ""
 
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: START")
+
     ' Запуск групп тестов
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunUtilsTests START")
     RunUtilsTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunUtilsTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunLoggerTests START")
     RunLoggerTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunLoggerTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunUtilsEdgeTests START")
     RunUtilsEdgeTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunUtilsEdgeTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunLibNameTests START")
     RunLibNameTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunLibNameTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunImportVHTests START")
     RunImportVHTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunImportVHTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunModelDBTests START")
     RunModelDBTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunModelDBTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunPickWorkTests START")
     RunPickWorkTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunPickWorkTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunAutoMatchTests START")
     RunAutoMatchTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunAutoMatchTests END")
 
     ' Финальный отчёт
     PrintFinalReport
+
+    ' Запись результатов в ячейку Z1 листа main для Python
+    On Error Resume Next
+    WriteResultsToSheet
+    If Err.Number <> 0 Then
+        Call Mod_Logger.WriteLog("Mod_FullTestRunner", "WriteResultsToSheet error: " & Err.Description)
+        Err.Clear
+    End If
+    On Error GoTo 0
+
+    ' Восстанавливаем показ MsgBox
+    Mod_Constants.SilenceMsgBox = False
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: END")
 End Sub
 
 ' ============================================================
-' GetTestResults — возвращает строку с результатами для Python
+' WriteResultsToSheet — записывает результаты тестов в ячейку Z1
+' листа main для чтения из Python (COM-клиента)
 ' ============================================================
-Public Function GetTestResults() As String
+Private Sub WriteResultsToSheet()
     Dim ReportMsg As String
+    Dim ws As Worksheet
+
     ReportMsg = "Total=" & m_Total & ";Passed=" & m_Passed & _
                 ";Failed=" & m_Failed & ";Skipped=" & m_Skipped & vbCrLf
     ReportMsg = ReportMsg & m_ResultsLog
-    GetTestResults = ReportMsg
-End Function
+
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets("main")
+    If Not ws Is Nothing Then
+        ws.Range("Z1").Value = ReportMsg
+    End If
+End Sub
+
+' ============================================================
+' GetTestResults — записывает результаты тестов в ячейку Z1 листа main
+' для последующего чтения из Python (COM-клиента)
+' ============================================================
+Public Sub GetTestResults()
+    Dim ReportMsg As String
+    Dim ws As Worksheet
+
+    ReportMsg = "Total=" & m_Total & ";Passed=" & m_Passed & _
+                ";Failed=" & m_Failed & ";Skipped=" & m_Skipped & vbCrLf
+    ReportMsg = ReportMsg & m_ResultsLog
+
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets("main")
+    If Not ws Is Nothing Then
+        ws.Range("Z1").Value = ReportMsg
+    End If
+End Sub
 
 ' ============================================================
 ' Группа: тесты Utils (TC-01..TC-08)
@@ -131,7 +199,7 @@ Private Sub RunUtilsTests()
     ' -------------------------------------------------------
     On Error Resume Next
     Dim ws As Worksheet
-    Set ws = GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_MAIN)
+    Set ws = Mod_Utils.GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_MAIN)
     If Err.number <> 0 Then
         AddResult "TC-05", "GetSheetByName существующий лист", False, "Ошибка: " & Err.Description
         Err.Clear
@@ -146,7 +214,7 @@ Private Sub RunUtilsTests()
     ' TC-06: GetSheetByName несуществующий
     ' -------------------------------------------------------
     On Error Resume Next
-    Set ws = GetSheetByName(ThisWorkbook, "NONEXISTENT")
+    Set ws = Mod_Utils.GetSheetByName(ThisWorkbook, "NONEXISTENT")
     If Err.number <> 0 Then
         AddResult "TC-06", "GetSheetByName несуществующий лист", False, "Ошибка: " & Err.Description
         Err.Clear
@@ -464,32 +532,39 @@ Private Sub RunImportVHTests()
     Debug.Print "--- Mod_Import ImportFromB2_UI Tests ---"
 
     ' -------------------------------------------------------
-    ' TC-14: ImportFromB2_UI — проверка вызова с пустым B2
+    ' TC-14: ImportFromB2_UI — проверка вызова с пустым B4
     ' -------------------------------------------------------
     On Error Resume Next
     Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
     If wsMain Is Nothing Then
-        AddResult "TC-14", "ImportFromB2_UI с пустым B2", False, "Лист 'main' не найден"
+        AddResult "TC-14", "ImportFromB2_UI с пустым B4", False, "Лист 'main' не найден"
     Else
-        ' Сохраняем текущее значение B2
+        ' Сохраняем текущее значение B4
         oldB2 = Trim(CStr(wsMain.Range("B4").Value))
 
-        ' Очищаем B2
+        ' Очищаем B4
         wsMain.Range("B4").Value = ""
 
-        ' Вызываем процедуру — она должна показать MsgBox и выйти без ошибки
+        ' Подавляем MsgBox при тестировании
+        Mod_Import.SilenceMsgBox = True
+
+        ' Вызываем процедуру — она должна выйти без ошибки
         Call Mod_Import.ImportFromB2_UI
 
+        Mod_Import.SilenceMsgBox = False
+
         If Err.number <> 0 Then
-            AddResult "TC-14", "ImportFromB2_UI с пустым B2", False, "Ошибка: " & Err.Description
+            AddResult "TC-14", "ImportFromB2_UI с пустым B4", False, "Ошибка: " & Err.Description
             Err.Clear
         Else
-            AddResult "TC-14", "ImportFromB2_UI с пустым B2", True, ""
+            AddResult "TC-14", "ImportFromB2_UI с пустым B4", True, ""
         End If
 
-        ' Восстанавливаем B2
+        ' Восстанавливаем B4 (с отключением событий, чтобы не сработал Worksheet_Change)
+        Application.EnableEvents = False
         wsMain.Range("B4").Value = oldB2
+        Application.EnableEvents = True
     End If
 
     Set wsMain = Nothing
@@ -540,8 +615,8 @@ Private Sub RunModelDBTests()
     Else
         Dim endsWithXlsm As Boolean
         Dim endsWithXlsx As Boolean
-        endsWithXlsm = (Right$(filePath, 9) = "UAZ.xlsm")
-        endsWithXlsx = (Right$(filePath, 9) = "UAZ.xlsx")
+        endsWithXlsm = (Right$(filePath, 8) = "UAZ.xlsm")
+        endsWithXlsx = (Right$(filePath, 8) = "UAZ.xlsx")
         AddResult "TC-32", "GetModelGroupFilePath путь для UAZ", (endsWithXlsm Or endsWithXlsx), _
                   "путь=" & filePath
     End If
@@ -608,6 +683,8 @@ End Sub
 Private Sub RunPickWorkTests()
     Dim groupName As String
     Dim sheetName As String
+    Dim wsMain As Worksheet
+    Dim oldB14 As String
 
     Debug.Print "--- Mod_PickWork Tests ---"
 
@@ -615,6 +692,14 @@ Private Sub RunPickWorkTests()
     ' -------------------------------------------------------
     ' TC-36: GetGroupNameFromMain возвращает значение из B14
     ' -------------------------------------------------------
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
+
+    ' Сохраняем исходное значение B14 перед тестом
+    oldB14 = Trim(CStr(wsMain.Range("B14").Value))
+
+    ' Устанавливаем тестовое значение B14 перед вызовом
+    wsMain.Range("B14").Value = "UAZ"
+
     On Error Resume Next
     groupName = Mod_PickWork.GetGroupNameFromMain()
     If Err.number <> 0 Then
@@ -654,6 +739,14 @@ Private Sub RunPickWorkTests()
         AddResult "TC-38", "PickWork_UI вызов без ошибки", True, ""
     End If
     On Error GoTo 0
+
+    ' Восстанавливаем исходное значение B14 (вместо ClearContents)
+    If Len(oldB14) > 0 Then
+        wsMain.Range("B14").Value = oldB14
+    Else
+        wsMain.Range("B14").ClearContents
+    End If
+    Set wsMain = Nothing
 
     Debug.Print ""
 End Sub
@@ -755,8 +848,6 @@ End Sub
 
 ' Вывод финального отчёта
 Private Sub PrintFinalReport()
-    Dim ReportMsg As String
-
     Debug.Print ""
     Debug.Print "=============================================="
     Debug.Print "  ИТОГОВЫЙ ОТЧЁТ"
@@ -766,21 +857,6 @@ Private Sub PrintFinalReport()
     Debug.Print "  Провалено: " & m_Failed
     Debug.Print "  Пропущено: " & m_Skipped
     Debug.Print "=============================================="
-
-    ' Форматирование сообщения для MsgBox
-    ReportMsg = "РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ:" & vbCrLf & vbCrLf
-    ReportMsg = ReportMsg & "  Всего: " & m_Total & vbCrLf
-    ReportMsg = ReportMsg & "  Пройдено: " & m_Passed & vbCrLf
-    ReportMsg = ReportMsg & "  Провалено: " & m_Failed & vbCrLf
-    ReportMsg = ReportMsg & "  Пропущено: " & m_Skipped & vbCrLf & vbCrLf
-
-    If m_Failed = 0 Then
-        ReportMsg = ReportMsg & "Все тесты успешно пройдены!"
-    Else
-        ReportMsg = ReportMsg & "Обнаружены ошибки! Проверьте Immediate Window для деталей."
-    End If
-
-    MsgBox ReportMsg, vbInformation + vbOKOnly, "Mod_FullTestRunner"
 End Sub
 
 

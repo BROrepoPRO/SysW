@@ -22,18 +22,17 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     If Target.CountLarge > 1 Then Exit Sub
     If Intersect(Target, Me.Range("B4")) Is Nothing Then Exit Sub
     If Target.Address = "$B$4" Then
-        ' очистка B5:B17
-        If Target.Row >= 5 And Target.Row <= 17 Then Exit Sub
-
         isProcessing = True
+        Application.EnableEvents = False  ' отключаем события
 
         Dim b2Value As Variant
         b2Value = Me.Range("B4").Value
         If Not IsEmpty(b2Value) And b2Value <> "" Then
             Dim result As Boolean
-            result = Mod_OrderHeader.FillHeaderFromOrder(CStr(b2Value))
+            result = Mod_OrderHeader.FillHeaderFromOrder(b2Value)
         End If
 
+        Application.EnableEvents = True
         isProcessing = False
     End If
 

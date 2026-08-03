@@ -70,8 +70,10 @@ Public Sub PickWork_UI()
     ' 2. Получаем группу из B14
     groupName = GetGroupNameFromMain()
     If groupName = "" Then
-        MsgBox "Группа не указана. Заполните ячейку B14 на листе main.", _
-               vbExclamation, "Ручной подбор работ"
+        If Not Mod_Constants.SilenceMsgBox Then
+            MsgBox "Группа не указана. Заполните ячейку B14 на листе main.", _
+                   vbExclamation, "Ручной подбор работ"
+        End If
         GoTo CleanUp
     End If
 
@@ -81,7 +83,9 @@ Public Sub PickWork_UI()
         msg = "Файл группы '" & groupName & "' не найден." & vbCrLf & vbCrLf & _
               "Ожидаемый путь: " & Mod_ModelDB.GetModelGroupFilePath(groupName) & vbCrLf & vbCrLf & _
               "Убедитесь, что файл существует в каталоге base\models\"
-        MsgBox msg, vbExclamation, "Ручной подбор работ"
+        If Not Mod_Constants.SilenceMsgBox Then
+            MsgBox msg, vbExclamation, "Ручной подбор работ"
+        End If
         GoTo CleanUp
     End If
 
@@ -96,13 +100,17 @@ Public Sub PickWork_UI()
     If wsWork Is Nothing Then
         msg = "Лист '" & sheetName & "' не найден в файле группы '" & groupName & ".xlsx'." & vbCrLf & _
               "Убедитесь, что лист с именем группы существует."
-        MsgBox msg, vbExclamation, "Ручной подбор работ"
+        If Not Mod_Constants.SilenceMsgBox Then
+            MsgBox msg, vbExclamation, "Ручной подбор работ"
+        End If
         GoTo CleanUp
     End If
 
-    ' 6. Активируем лист работ
-    wsWork.Activate
-    wsWork.Select
+    ' 6. Активируем лист работ (только в видимом режиме)
+    If Not Mod_Constants.SilenceMsgBox Then
+        wsWork.Activate
+        wsWork.Select
+    End If
 
     ' 7. Показываем инструкцию
     msg = "Файл группы '" & groupName & "' открыт." & vbCrLf & vbCrLf & _
@@ -115,17 +123,28 @@ Public Sub PickWork_UI()
           "6. Вставьте на лист main в диапазон E4:H" & vbCrLf & vbCrLf & _
           "Внимание: строки 1-2 на main не заполнять!"
 
-    MsgBox msg, vbInformation, "Ручной подбор работ"
+    If Not Mod_Constants.SilenceMsgBox Then
+        MsgBox msg, vbInformation, "Ручной подбор работ"
+    End If
 
     GoTo CleanUp
 
 ErrHandler:
     ' Восстановление состояния приложения
     Application.ScreenUpdating = True
-    MsgBox "Ошибка при ручном подборе работ: " & Err.Description, vbCritical, "Ошибка"
+    If Not Mod_Constants.SilenceMsgBox Then
+        MsgBox "Ошибка при ручном подборе работ: " & Err.Description, vbCritical, "Ошибка"
+    End If
     Call Mod_Logger.WriteLog("Mod_PickWork", "PickWork_UI: " & Err.Description)
-    Exit Sub
+    GoTo CleanUp
 
 CleanUp:
+    ' Закрываем файл группы, если он был открыт
+    If Not wbGroup Is Nothing Then
+        On Error Resume Next
+        wbGroup.Close SaveChanges:=False
+        Set wbGroup = Nothing
+        On Error GoTo 0
+    End If
     Application.ScreenUpdating = True
 End Sub

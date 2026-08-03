@@ -5,6 +5,27 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v0.17.0] — 2026-08-03
+
+### Added
+- **`src/modules/Mod_ModelTypes.bas`** — стандартный BAS-модуль с UDT (`WorkIdentity`, `PartIdentity`, `WorkEntry`) для устранения ошибки компиляции "Only public user defined types..."
+- **`src/classes/WorkIdentity.cls`** и **`src/classes/PartIdentity.cls`** — классы с корректным заголовком `VERSION 1.0 CLASS`
+- **Флаг `SilenceMsgBox`** в `Mod_Constants.bas` — устранение deadlock при COM-автоматизации
+- **`plans/analysis_and_plan.md`** — сводный анализ тестового покрытия и план исправлений
+
+### Changed
+- **`src/modules/Mod_ModelDB.bas`** — ссылки `ModelTypes.*` заменены на `Mod_ModelTypes.*`
+- **`scripts/impVBA.py`** — логика `strip_export_header()` теперь сохраняет заголовок для `.cls` классов
+- **`Mod_AutoMatch.bas`** — `.Formula` заменён на `.FormulaLocal` для корректной работы с русским разделителем
+
+### Fixed
+- Ошибка компиляции "Only public user defined types..." устранена
+- Ранее падавшие тесты TC-38, TC-39, TC-40 теперь проходят
+
+### Test
+- Результаты тестов: 25 PASS, 0 FAIL, 5 SKIP
+- Выявлены пробелы в тестовом покрытии (6 модулей без тестов, пропуск TC-15..TC-30)
+
 ## [v0.16.0] — 2026-08-03
 
 ### Added

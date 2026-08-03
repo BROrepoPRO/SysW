@@ -130,7 +130,7 @@ Public Function GetWorks(ByVal groupName As String, ByRef filters As Variant) As
     Dim lastRow As Long
     Dim i As Long
     Dim entry As Variant
-    Dim tmpEntry As ModelTypes.WorkEntry
+    Dim tmpEntry As Mod_ModelTypes.WorkEntry
 
     Set result = New Collection
 
@@ -200,15 +200,17 @@ Public Function GetWorkIdentities(ByVal groupName As String) As Collection
     Dim result As Collection
     Dim lastRow As Long
     Dim i As Long
-    Dim identity As Variant
-    Dim tmpIdentity As ModelTypes.WorkIdentity
+    Dim identity As WorkIdentity
     Dim sheetName As String
+
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: START groupName=" & groupName)
 
     sheetName = groupName & "w"
     Set result = New Collection
 
     ' Открываем файл группы
     Set wb = OpenModelGroupFile(groupName)
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: wb Is Nothing=" & CStr(wb Is Nothing))
     If wb Is Nothing Then
         Set GetWorkIdentities = result
         Exit Function
@@ -219,6 +221,7 @@ Public Function GetWorkIdentities(ByVal groupName As String) As Collection
     Set ws = wb.Sheets(sheetName)
     On Error GoTo ErrHandler
 
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: ws Is Nothing=" & CStr(ws Is Nothing))
     If ws Is Nothing Then
         Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: Лист " & sheetName & " не найден")
         Set GetWorkIdentities = result
@@ -226,32 +229,42 @@ Public Function GetWorkIdentities(ByVal groupName As String) As Collection
     End If
 
     ' Определяем последнюю строку (данные с 4-й строки)
+    On Error Resume Next
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    If Err.Number <> 0 Then
+        Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: Error getting lastRow: " & Err.Description)
+        Err.Clear
+    End If
+    On Error GoTo ErrHandler
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: lastRow=" & CStr(lastRow))
     If lastRow < 4 Then
         Set GetWorkIdentities = result
         Exit Function
     End If
 
     ' Читаем данные
-    ' Колонки UAZw: A=№п/п, B=Артикул, C=Наименование, D=н/ч,
-    '   E=кол-во оп, F=цена н/ч, G=Кол-во ЗН, H=Сумма ЗН,
-    '   I=Агрегат, J=Наим-ние, K=Кол. оп., L=Цена, M=Всего
     For i = 4 To lastRow
-        ' Пропускаем пустые строки и строки без агрегата (I)
+        On Error Resume Next
         If Not IsEmpty(ws.Cells(i, 1).Value) Then
             If Not IsEmpty(ws.Cells(i, 9).Value) Then ' I — Агрегат
-                tmpIdentity.OutArticle = CStr(ws.Cells(i, 2).Value)  ' B
-                tmpIdentity.OutName = CStr(ws.Cells(i, 3).Value)     ' C
-                tmpIdentity.NormHours = Val(ws.Cells(i, 4).Value)    ' D
-                tmpIdentity.QtyZN = Val(ws.Cells(i, 7).Value)        ' G
-                tmpIdentity.Aggregate = CStr(ws.Cells(i, 9).Value)   ' I
-                tmpIdentity.InName = CStr(ws.Cells(i, 10).Value)     ' J
-                identity = tmpIdentity
+                Set identity = New WorkIdentity
+                identity.OutArticle = CStr(ws.Cells(i, 2).Value)  ' B
+                identity.OutName = CStr(ws.Cells(i, 3).Value)     ' C
+                identity.NormHours = Val(ws.Cells(i, 4).Value)    ' D
+                identity.QtyZN = Val(ws.Cells(i, 7).Value)        ' G
+                identity.Aggregate = CStr(ws.Cells(i, 9).Value)   ' I
+                identity.InName = CStr(ws.Cells(i, 10).Value)     ' J
                 result.Add identity
             End If
         End If
+        If Err.Number <> 0 Then
+            Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: Error at row " & CStr(i) & ": " & Err.Description)
+            Err.Clear
+        End If
+        On Error GoTo ErrHandler
     Next i
 
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: END count=" & CStr(result.Count))
     Set GetWorkIdentities = result
     Exit Function
 
@@ -275,8 +288,7 @@ Public Function GetPartIdentities(ByVal groupName As String) As Collection
     Dim result As Collection
     Dim lastRow As Long
     Dim i As Long
-    Dim identity As Variant
-    Dim tmpIdentity As ModelTypes.PartIdentity
+    Dim identity As PartIdentity
     Dim sheetName As String
 
     sheetName = groupName & "z4"
@@ -308,21 +320,17 @@ Public Function GetPartIdentities(ByVal groupName As String) As Collection
     End If
 
     ' Читаем данные
-    ' Колонки UAZz4: A=№ п/п, B=Артикул, C=Наименование, D=Ед. изм.,
-    '   E=кол-во, F=Цена за ед. изм., G=Кол-во ЗН, H=Сумма ЗН,
-    '   I=АГРЕГАТ, J=№ кат., K=Наим-ние, L=Колво, M=Цена, N=Всего
     For i = 4 To lastRow
-        ' Пропускаем пустые строки и строки без агрегата (I)
         If Not IsEmpty(ws.Cells(i, 1).Value) Then
             If Not IsEmpty(ws.Cells(i, 9).Value) Then ' I — АГРЕГАТ
-                tmpIdentity.OutArticle = CStr(ws.Cells(i, 2).Value)  ' B
-                tmpIdentity.OutName = CStr(ws.Cells(i, 3).Value)     ' C
-                tmpIdentity.QtyZN = Val(ws.Cells(i, 7).Value)        ' G
-                tmpIdentity.Price = Val(ws.Cells(i, 6).Value)        ' F
-                tmpIdentity.Aggregate = CStr(ws.Cells(i, 9).Value)   ' I
-                tmpIdentity.InCatNum = CStr(ws.Cells(i, 10).Value)   ' J
-                tmpIdentity.InName = CStr(ws.Cells(i, 11).Value)     ' K
-                identity = tmpIdentity
+                Set identity = New PartIdentity
+                identity.OutArticle = CStr(ws.Cells(i, 2).Value)  ' B
+                identity.OutName = CStr(ws.Cells(i, 3).Value)     ' C
+                identity.QtyZN = Val(ws.Cells(i, 7).Value)        ' G
+                identity.Price = Val(ws.Cells(i, 6).Value)        ' F
+                identity.Aggregate = CStr(ws.Cells(i, 9).Value)   ' I
+                identity.InCatNum = CStr(ws.Cells(i, 10).Value)   ' J
+                identity.InName = CStr(ws.Cells(i, 11).Value)     ' K
                 result.Add identity
             End If
         End If

@@ -50,5 +50,9 @@
     },
     "[python]": {
         "files.encoding": "utf8"
+    },
+    "sourcecraft-code-assist.debug": true,
+    "sourcecraft-code-assist.vsCodeLmModelSelector": {
+
     }
 }

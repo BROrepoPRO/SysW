@@ -108,7 +108,7 @@ Public Sub AutoMatchWorks()
     Dim wsMain As Worksheet
     Dim groupName As String
     Dim identities As Collection
-    Dim identity As Variant
+    Dim identity As WorkIdentity
     Dim lastRow As Long
     Dim i As Long
     Dim inName As String
@@ -117,30 +117,49 @@ Public Sub AutoMatchWorks()
     Dim notFoundCount As Long
     Dim priceNH As Double
 
+    Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: START")
+
     Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
     ' 1. Получаем группу из B14
     groupName = GetGroupName()
+    Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: groupName=" & groupName)
     If groupName = "" Then
-        MsgBox "Не указана группа в ячейке B14.", vbExclamation, "АВТО РАБ"
+        If Not Mod_Constants.SilenceMsgBox Then
+            MsgBox "Не указана группа в ячейке B14.", vbExclamation, "АВТО РАБ"
+        End If
         Exit Sub
     End If
 
     ' 2. Читаем тождества работ
+    Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: BEFORE GetWorkIdentities")
+    On Error Resume Next
     Set identities = Mod_ModelDB.GetWorkIdentities(groupName)
+    If Err.Number <> 0 Then
+        Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: GetWorkIdentities error: " & Err.Description)
+        Err.Clear
+    End If
+    On Error GoTo ErrHandler
+    Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: identities.Count=" & CStr(identities.Count))
     If identities Is Nothing Or identities.Count = 0 Then
-        MsgBox "Не найдены тождества работ для группы " & groupName & ".", _
-               vbExclamation, "АВТО РАБ"
+        If Not Mod_Constants.SilenceMsgBox Then
+            MsgBox "Не найдены тождества работ для группы " & groupName & ".", _
+                   vbExclamation, "АВТО РАБ"
+        End If
         Exit Sub
     End If
 
     ' 3. Получаем цену н/ч из B13
     priceNH = Val(wsMain.Range("B13").Value)
+    Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: priceNH=" & CStr(priceNH))
 
     ' 4. Определяем последнюю строку входящих работ (столбец L)
     lastRow = wsMain.Cells(wsMain.Rows.Count, MAIN_W_IN_NAME).End(xlUp).Row
+    Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: lastRow=" & CStr(lastRow))
     If lastRow < 4 Then
-        MsgBox "Нет входящих работ для автоподбора.", vbInformation, "АВТО РАБ"
+        If Not Mod_Constants.SilenceMsgBox Then
+            MsgBox "Нет входящих работ для автоподбора.", vbInformation, "АВТО РАБ"
+        End If
         Exit Sub
     End If
 
@@ -172,8 +191,9 @@ Public Sub AutoMatchWorks()
                 wsMain.Cells(i, MAIN_W_NORMHOURS).Value = identity.NormHours  ' G ← D
                 wsMain.Cells(i, MAIN_W_QTY).Value = identity.QtyZN            ' H ← G
                 wsMain.Cells(i, MAIN_W_PRICE).Value = priceNH                 ' I ← B13
+                Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: writing formula at row " & CStr(i))
                 ' J — Сумма = ОКРУГЛ(G*H*I;2)
-                wsMain.Cells(i, MAIN_W_SUM).Formula = _
+                wsMain.Cells(i, MAIN_W_SUM).FormulaLocal = _
                     "=ROUND(G" & i & "*H" & i & "*I" & i & ";2)"
 
                 matchCount = matchCount + 1
@@ -199,24 +219,32 @@ ContinueWork:
     If notFoundCount = 0 Then
         ' Проверяем, все ли запчасти тоже найдены (если есть)
         If IsAllFound(wsMain, MAIN_P_IN_CATNUM, 4, lastRow) Then
-            MsgBox "ЗН заполнен!", vbInformation, "АВТО РАБ"
+            If Not Mod_Constants.SilenceMsgBox Then
+                MsgBox "ЗН заполнен!", vbInformation, "АВТО РАБ"
+            End If
         Else
-            MsgBox "Автоподбор работ завершён. Найдено: " & matchCount & _
-                   ". Осталось подобрать запчасти.", vbInformation, "АВТО РАБ"
+            If Not Mod_Constants.SilenceMsgBox Then
+                MsgBox "Автоподбор работ завершён. Найдено: " & matchCount & _
+                       ". Осталось подобрать запчасти.", vbInformation, "АВТО РАБ"
+            End If
         End If
     Else
-        MsgBox "Автоподбор работ завершён." & vbCrLf & _
-               "Найдено: " & matchCount & vbCrLf & _
-               "Не найдено: " & notFoundCount & vbCrLf & _
-               "Ненайденные строки подсвечены жёлтым.", _
-               vbExclamation, "АВТО РАБ"
+        If Not Mod_Constants.SilenceMsgBox Then
+            MsgBox "Автоподбор работ завершён." & vbCrLf & _
+                   "Найдено: " & matchCount & vbCrLf & _
+                   "Не найдено: " & notFoundCount & vbCrLf & _
+                   "Ненайденные строки подсвечены жёлтым.", _
+                   vbExclamation, "АВТО РАБ"
+        End If
     End If
 
     Exit Sub
 
 ErrHandler:
     Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: Ошибка — " & Err.Description)
-    MsgBox "Ошибка при автоподборе работ: " & Err.Description, vbCritical, "АВТО РАБ"
+    If Not Mod_Constants.SilenceMsgBox Then
+        MsgBox "Ошибка при автоподборе работ: " & Err.Description, vbCritical, "АВТО РАБ"
+    End If
 End Sub
 
 ' ============================================================
@@ -229,7 +257,7 @@ Public Sub AutoMatchParts()
     Dim wsMain As Worksheet
     Dim groupName As String
     Dim identities As Collection
-    Dim identity As Variant
+    Dim identity As PartIdentity
     Dim lastRow As Long
     Dim i As Long
     Dim inCatNum As String
@@ -237,27 +265,38 @@ Public Sub AutoMatchParts()
     Dim matchCount As Long
     Dim notFoundCount As Long
 
+    Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchParts: START")
+
     Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
     ' 1. Получаем группу из B14
     groupName = GetGroupName()
+    Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchParts: groupName=" & groupName)
     If groupName = "" Then
-        MsgBox "Не указана группа в ячейке B14.", vbExclamation, "АВТО ЗЧ"
+        If Not Mod_Constants.SilenceMsgBox Then
+            MsgBox "Не указана группа в ячейке B14.", vbExclamation, "АВТО ЗЧ"
+        End If
         Exit Sub
     End If
 
     ' 2. Читаем тождества запчастей
     Set identities = Mod_ModelDB.GetPartIdentities(groupName)
+    Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchParts: identities.Count=" & CStr(identities.Count))
     If identities Is Nothing Or identities.Count = 0 Then
-        MsgBox "Не найдены тождества запчастей для группы " & groupName & ".", _
-               vbExclamation, "АВТО ЗЧ"
+        If Not Mod_Constants.SilenceMsgBox Then
+            MsgBox "Не найдены тождества запчастей для группы " & groupName & ".", _
+                   vbExclamation, "АВТО ЗЧ"
+        End If
         Exit Sub
     End If
 
     ' 3. Определяем последнюю строку входящих запчастей (столбец X)
     lastRow = wsMain.Cells(wsMain.Rows.Count, MAIN_P_IN_CATNUM).End(xlUp).Row
+    Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchParts: lastRow=" & CStr(lastRow))
     If lastRow < 4 Then
-        MsgBox "Нет входящих запчастей для автоподбора.", vbInformation, "АВТО ЗЧ"
+        If Not Mod_Constants.SilenceMsgBox Then
+            MsgBox "Нет входящих запчастей для автоподбора.", vbInformation, "АВТО ЗЧ"
+        End If
         Exit Sub
     End If
 
@@ -288,8 +327,9 @@ Public Sub AutoMatchParts()
                 wsMain.Cells(i, MAIN_P_NAME).Value = identity.OutName         ' R ← C
                 wsMain.Cells(i, MAIN_P_QTY).Value = identity.QtyZN            ' T ← G
                 wsMain.Cells(i, MAIN_P_PRICE).Value = identity.Price          ' U ← F
+                Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchParts: writing formula at row " & CStr(i))
                 ' V — Сумма = ОКРУГЛ(T*U;2)
-                wsMain.Cells(i, MAIN_P_SUM).Formula = _
+                wsMain.Cells(i, MAIN_P_SUM).FormulaLocal = _
                     "=ROUND(T" & i & "*U" & i & ";2)"
 
                 matchCount = matchCount + 1
@@ -315,22 +355,30 @@ ContinuePart:
     If notFoundCount = 0 Then
         ' Проверяем, все ли работы тоже найдены (если есть)
         If IsAllFound(wsMain, MAIN_W_IN_NAME, 4, lastRow) Then
-            MsgBox "ЗН заполнен!", vbInformation, "АВТО ЗЧ"
+            If Not Mod_Constants.SilenceMsgBox Then
+                MsgBox "ЗН заполнен!", vbInformation, "АВТО ЗЧ"
+            End If
         Else
-            MsgBox "Автоподбор запчастей завершён. Найдено: " & matchCount & _
-                   ". Осталось подобрать работы.", vbInformation, "АВТО ЗЧ"
+            If Not Mod_Constants.SilenceMsgBox Then
+                MsgBox "Автоподбор запчастей завершён. Найдено: " & matchCount & _
+                       ". Осталось подобрать работы.", vbInformation, "АВТО ЗЧ"
+            End If
         End If
     Else
-        MsgBox "Автоподбор запчастей завершён." & vbCrLf & _
-               "Найдено: " & matchCount & vbCrLf & _
-               "Не найдено: " & notFoundCount & vbCrLf & _
-               "Ненайденные строки подсвечены жёлтым.", _
-               vbExclamation, "АВТО ЗЧ"
+        If Not Mod_Constants.SilenceMsgBox Then
+            MsgBox "Автоподбор запчастей завершён." & vbCrLf & _
+                   "Найдено: " & matchCount & vbCrLf & _
+                   "Не найдено: " & notFoundCount & vbCrLf & _
+                   "Ненайденные строки подсвечены жёлтым.", _
+                   vbExclamation, "АВТО ЗЧ"
+        End If
     End If
 
     Exit Sub
 
 ErrHandler:
     Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchParts: Ошибка — " & Err.Description)
-    MsgBox "Ошибка при автоподборе запчастей: " & Err.Description, vbCritical, "АВТО ЗЧ"
+    If Not Mod_Constants.SilenceMsgBox Then
+        MsgBox "Ошибка при автоподборе запчастей: " & Err.Description, vbCritical, "АВТО ЗЧ"
+    End If
 End Sub

@@ -52,7 +52,17 @@ def main() -> int:
         write_log("[2/5] Открытие work.xlsm...")
         workbook = excel.Workbooks.Open(EXCEL_PATH)
 
-        write_log("[3/5] Запуск макроса RunAllTests...")
+        write_log("[3/5] Установка тестового значения B4=3 и запуск макроса RunAllTests...")
+
+        # Устанавливаем тестовое значение 3 в ячейку B4 листа main,
+        # чтобы избежать срабатывания Worksheet_Change с некорректными данными
+        try:
+            ws_main = workbook.Sheets("main")
+            ws_main.Range("B4").Value = 3
+            write_log("    Установлено B4=3 на листе main")
+        except Exception as e:
+            write_log(f"    [ПРЕДУПРЕЖДЕНИЕ] Не удалось установить B4: {e}")
+
         print()
         print("    Ожидание завершения тестов...")
         print()
@@ -62,12 +72,16 @@ def main() -> int:
         # Небольшая пауза для завершения всех операций
         time.sleep(1)
 
-        write_log("[4/5] Сбор результатов через GetTestResults()...")
+        write_log("[4/5] Чтение результатов из ячейки Z1 листа main...")
         try:
-            results = excel.Run("GetTestResults")
-        except Exception:
-            # Fallback: если функция недоступна, парсим лог
-            write_log("    [ПРЕДУПРЕЖДЕНИЕ] GetTestResults не найдена, используется fallback")
+            results = ws_main.Range("Z1").Value
+            if results:
+                write_log("    Результаты получены из ячейки Z1")
+            else:
+                results = ""
+                write_log("    [ПРЕДУПРЕЖДЕНИЕ] Ячейка Z1 пуста")
+        except Exception as e:
+            write_log(f"    [ПРЕДУПРЕЖДЕНИЕ] Не удалось прочитать Z1: {e}")
             results = ""
 
         print()
