@@ -5,6 +5,19 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v0.16.0] — 2026-08-03
+
+### Added
+- **`.sourcecraft`** — корневой файл конфигурации SourceCraft с MCP-серверами (filesystem, git) на относительных путях `${workspaceFolder}`
+- **Интеграция `.ycarules`** — подключение через `customInstructions.file` в `.sourcecraft`
+- **Правила exclude/include/critical** — дублирование ключевых секций из `.ycarules` в `.sourcecraft` для работы на уровне платформы
+
+### Changed
+- **`docs/sourcecraft-guide.md`** — добавлен раздел "Конфигурация SourceCraft (`.sourcecraft`)" с описанием структуры и назначения файла; обновлена схема структуры проекта
+
+### Removed
+- **`.vscode/mcp.json`** — удалён, функциональность перенесена в `.sourcecraft` с заменой абсолютных путей на `${workspaceFolder}`
+
 ## [0.15.0] — 2026-07-25
 
 ### Added

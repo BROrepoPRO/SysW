@@ -24,6 +24,41 @@
 
 ---
 
+## Конфигурация SourceCraft (`.sourcecraft`)
+
+Начиная с версии v0.16.0, проект использует корневой файл [`.sourcecraft`](../.sourcecraft) для централизованной конфигурации SourceCraft Code Assistant.
+
+### Структура `.sourcecraft`
+
+Файл `.sourcecraft` — это JSON-конфиг, который содержит три секции:
+
+#### 1. MCP-серверы (`mcpServers`)
+
+Определяет серверы Model Context Protocol, доступные ассистенту:
+
+- **filesystem** — доступ к файловой системе проекта через `${workspaceFolder}` (относительный путь, не привязанный к конкретному диску)
+- **git** — доступ к Git-репозиторию проекта через `${workspaceFolder}`
+
+Использование `${workspaceFolder}` гарантирует, что конфигурация работает на любой машине, независимо от фактического расположения проекта на диске.
+
+#### 2. Кастомные инструкции (`customInstructions.file`)
+
+Ссылка на файл [`.ycarules`](../.ycarules), который содержит развёрнутые правила для ассистента (легенда, запреты, требования к кодировке, структура проекта и т.д.). SourceCraft автоматически подгружает содержимое этого файла как инструкции.
+
+#### 3. Правила (`rules`)
+
+Дублирует ключевые секции из `.ycarules` для работы на уровне платформы:
+
+- **`exclude`** — паттерны файлов и папок, которые ассистент не должен читать/анализировать (логи, кэш Python, временные директории)
+- **`include`** — файлы, которые ассистент обязан учитывать при анализе контекста
+- **`critical`** — критически важные файлы проекта, защищённые от изменений без явного разрешения пользователя
+
+### Перенос с `.vscode/mcp.json`
+
+Ранее конфигурация MCP-серверов хранилась в [`.vscode/mcp.json`](../.vscode/mcp.json). Начиная с v0.16.0, этот файл удалён, а его функциональность полностью перенесена в `.sourcecraft` с заменой абсолютных путей на `${workspaceFolder}`.
+
+---
+
 ## Ключевые правила из `.ycarules`
 
 ### Двухфазная модель кодировки VBA
@@ -122,6 +157,7 @@ L:\PROject\SysW\
 │       ├── Sheet_work.cls
 │       └── Sheet_z4.cls
 ├── .gitattributes        # Настройки Git для нормализации кодировок
+├── .sourcecraft          # Конфигурация SourceCraft (MCP-серверы, правила, инструкции)
 ├── .ycarules             # Правила для SourceCraft Code Assistant
 ├── CHANGELOG.md          # История изменений проекта
 ├── README.md             # Основное описание проекта
@@ -139,6 +175,15 @@ L:\PROject\SysW\
 | `scripts/` | Скрипты автоматизации (Python + PowerShell). Python-скрипты в UTF-8, PowerShell в UTF-8 with BOM |
 | `docs/` | Документация проекта: `sourcecraft-guide.md` (руководство по SourceCraft), `git-workflow.md` (Git-инструкции), `DEVELOPER.md` (техническая документация), `ARCHITECTURE_SQLITE.md` (архитектура SQLite) |
 | `.vscode/` | Настройки VS Code (кодировка UTF-8, кастомный терминал, VBA Language Server) |
+
+### Ключевые файлы конфигурации
+
+| Файл | Назначение |
+|------|-----------|
+| [`.sourcecraft`](../.sourcecraft) | **Центральная конфигурация SourceCraft:** MCP-серверы, ссылка на `.ycarules`, правила exclude/include/critical |
+| [`.ycarules`](../.ycarules) | **Правила для ассистента:** легенда, запреты, кодировка, структура проекта, автодополнение |
+| [`.gitattributes`](../.gitattributes) | Настройки Git для нормализации кодировок и окончаний строк |
+| [`.vscode/settings.json`](../.vscode/settings.json) | Настройки VS Code: кодировка UTF-8, терминал SourceCraft, VBA Language Server |
 
 ---
 
@@ -168,6 +213,7 @@ L:\PROject\SysW\
 
 | Версия | Дата | Изменения |
 |--------|------|-----------|
+| 0.16.0 | 2026-08-03 | Добавлен `.sourcecraft` с MCP-серверами (относительные пути `${workspaceFolder}`), интеграция `.ycarules` через `customInstructions.file`, правила exclude/include/critical. Удалён `.vscode/mcp.json` |
 | 0.15.0 | 2026-07-25 | Тесты TC-31..TC-44 (Mod_ModelDB, Mod_PickWork, Mod_AutoMatch); покрытие 46% → 69%; deprecated MODELDB_BASE_PATH; делегирование Btn_main_ImportVH_Click; COMPONENTS расширен до 13+3; $ProjectPath в Set-ExcelTrust.ps1 |
 | 0.14.0 | 2026-07-25 | Централизация логов: LOGS_DIR, директория logs/, перенос логов из корня; удаление мусора из base/models/ |
 | 0.13.0 | 2026-07-25 | Добавлены `Mod_ModelDB`, `Mod_PickWork`, `Mod_AutoMatch`; новые скрипты `config.py`, `config.ps1`; удалён `Import-VbaFromExcel.ps1` |

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://raw.githubusercontent.com/RooVetGit/Roo-Code/main/schemas/sourcecraft.json",
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${workspaceFolder}"
+      ]
+    },
+    "git": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-git",
+        "--repository",
+        "${workspaceFolder}"
+      ]
+    }
+  },
+  "customInstructions": {
+    "file": ".ycarules"
+  },
+  "rules": {
+    "exclude": [
+      "*.log",
+      "_temp_export/*",
+      "_temp_import/*",
+      "__pycache__/*",
+      "*.pyc",
+      "*.pyo",
+      ".venv/*",
+      "venv/*",
+      ".DS_Store",
+      "Thumbs.db",
+      "Desktop.ini",
+      "node_modules/*",
+      "workOt/*",
+      "*.sync-conflict-*",
+      "logs/*.log",
+      "logs/*.txt"
+    ],
+    "include": [
+      "docs/DEVELOPER.md",
+      "docs/ARCHITECTURE_SQLITE.md",
+      "src/modules/Mod_Constants.bas"
+    ],
+    "critical": [
+      "work.xlsm",
+      "table.md",
+      "report.xlsx",
+      "README.md",
+      "CHANGELOG.md",
+      ".ycarules",
+      ".sourcecraft",
+      "plans/ROADMAP.md",
+      "base/",
+      "base/models/"
+    ]
+  }
+}
