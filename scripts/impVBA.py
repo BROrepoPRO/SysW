@@ -36,11 +36,15 @@ VBEXT_CT_DOCUMENT = 100   # Document (Worksheet, Workbook, etc.)
 # Dynamically discover all .bas and .cls files in the project root.
 # This ensures all VBA modules are imported without needing to update
 # the list manually when new modules are added.
+# Sources: modules/ (.bas), sheets/ (.cls worksheets), classes/ (.cls class modules)
 FILES = sorted([
     f.name for f in (MODULES_PATH / "modules").iterdir()
     if f.suffix.lower() == ".bas" and f.is_file()
 ] + [
     f.name for f in (MODULES_PATH / "sheets").iterdir()
+    if f.suffix.lower() == ".cls" and f.is_file()
+] + [
+    f.name for f in (MODULES_PATH / "classes").iterdir()
     if f.suffix.lower() == ".cls" and f.is_file()
 ])
 
@@ -59,6 +63,21 @@ SHEET_COMPONENTS = {
     )
     and f.is_file()
 }
+
+
+def get_file_subdir(file_name):
+    """Determine the source subdirectory for a given file name.
+
+    Returns 'modules' for .bas files, 'sheets' for worksheet .cls files,
+    'classes' for class .cls files.
+    """
+    if file_name.lower().endswith('.bas'):
+        return 'modules'
+    # .cls files: check if it's a sheet component
+    stem = Path(file_name).stem
+    if stem.lower().startswith('sheet') or stem.lower().startswith('лист'):
+        return 'sheets'
+    return 'classes'
 
 
 def read_vba_file(file_path):
@@ -202,7 +221,18 @@ def main():
     TEMP_DIR.mkdir(parents=True)
 
     print("Creating Excel COM object...")
-    excel = win32com.client.gencache.EnsureDispatch("Excel.Application")
+    try:
+        excel = win32com.client.gencache.EnsureDispatch("Excel.Application")
+    except AttributeError:
+        # Fallback if gencache fails (e.g. Python 3.14+ with stale cache)
+        print("    gencache failed, using direct Dispatch...")
+        # Clear and regenerate cache
+        cache_dir = os.path.join(os.environ.get('LOCALAPPDATA', ''),
+                                  'Temp', 'gen_py')
+        if os.path.exists(cache_dir):
+            shutil.rmtree(cache_dir, ignore_errors=True)
+            print("    Cleared gen_py cache")
+        excel = win32com.client.Dispatch("Excel.Application")
     excel.Visible = False
     excel.DisplayAlerts = False
 
@@ -219,16 +249,17 @@ def main():
         comp_count = vb_project.VBComponents.Count
         print(f"VBA project accessible. Components count: {comp_count}")
 
-        # First pass: remove standard modules (.bas) only.
-        # Sheet components (.cls) are NOT removed — they are bound to
+        # First pass: remove standard modules (.bas) and class modules (.cls from classes/).
+        # Sheet components (.cls from sheets/) are NOT removed — they are bound to
         # worksheet objects and must be updated via CodeModule instead.
         print("")
-        print("--- Removing existing standard modules (.bas) ---")
+        print("--- Removing existing standard/class modules ---")
         for file_name in FILES:
-            if not file_name.lower().endswith('.bas'):
-                continue  # skip .cls files (sheet components)
+            subdir = get_file_subdir(file_name)
+            if subdir == 'sheets':
+                continue  # skip sheet components (updated via CodeModule)
 
-            file_path = MODULES_PATH / "modules" / file_name
+            file_path = MODULES_PATH / subdir / file_name
 
             if not file_path.exists():
                 print(f"  Not found on disk: {file_name}")
@@ -258,12 +289,10 @@ def main():
         print("")
         print("--- Importing/updating components ---")
         for file_name in FILES:
-            if file_name.lower().endswith('.cls'):
-                file_path = MODULES_PATH / "sheets" / file_name
-            else:
-                file_path = MODULES_PATH / "modules" / file_name
+            subdir = get_file_subdir(file_name)
+            file_path = MODULES_PATH / subdir / file_name
             print("")
-            print(f"  Processing: {file_name}")
+            print(f"  Processing: {file_name} (from {subdir}/)")
 
             if not file_path.exists():
                 print(f"    [!] File not found: {file_path}")
@@ -351,8 +380,11 @@ def main():
 
         print("")
         print("Saving workbook...")
-        workbook.Save()
-        print("Workbook saved.")
+        try:
+            workbook.Save()
+            print("Workbook saved.")
+        except Exception as e:
+            print(f"    Save warning (modules already imported): {e}")
         success = True
 
     except Exception as e:
@@ -369,8 +401,11 @@ def main():
             shutil.rmtree(TEMP_DIR, ignore_errors=True)
 
         if workbook is not None:
-            print("Closing workbook...")
-            workbook.Close()
+            try:
+                print("Closing workbook...")
+                workbook.Close()
+            except Exception:
+                print("    (workbook already closed or COM error)")
 
         print("Closing Excel...")
         excel.Quit()

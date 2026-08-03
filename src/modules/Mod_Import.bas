@@ -445,3 +445,68 @@ ErrHandler:
     MsgBox "Ошибка при импорте ВХ: " & Err.Description, vbCritical, "Ошибка"
     Call Mod_Logger.WriteLog("Mod_Import", "ImportFromB2_UI: " & Err.Description)
 End Sub
+
+' ============================================================
+' ИМПОРТ С ЛИСТА {B4}M (БЕЗ REPORT.XLSX)
+' ============================================================
+
+' --------------------------------------------------------------------------
+' ImportFromSheetM_UI
+' Переносит данные с листа "{B4}M" в лист main.
+' Не требует report.xlsx — лист уже должен быть внутри work.xlsm.
+' --------------------------------------------------------------------------
+Public Sub ImportFromSheetM_UI()
+    On Error GoTo ErrHandler
+
+    Dim wsMain As Worksheet
+    Dim grz As String
+    Dim sheetName As String
+    Dim wsSource As Worksheet
+
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
+    Application.DisplayAlerts = False
+
+    ' 1. Получаем лист main и читаем B4
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
+    grz = Trim(CStr(wsMain.Range("B4").Value))
+
+    ' 2. Проверяем, что B4 не пуст
+    If grz = "" Or grz = "0" Then
+        MsgBox "Ячейка B4 на листе 'main' пуста. Укажите номер заказа.", _
+               vbExclamation, "Импорт с листа M"
+        GoTo CleanUp
+    End If
+
+    ' 3. Формируем имя листа-источника
+    sheetName = grz & "M"
+
+    ' 4. Ищем лист {B4}M в текущей книге
+    Set wsSource = Mod_Utils.GetSheetByName(ThisWorkbook, sheetName)
+
+    If wsSource Is Nothing Then
+        MsgBox "Лист '" & sheetName & "' не найден в текущей книге." & vbCrLf & _
+               "Сначала скопируйте лист из report.xlsx или переименуйте существующий.", _
+               vbExclamation, "Импорт с листа M"
+        GoTo CleanUp
+    End If
+
+    ' 5. Переносим данные в main
+    Call ImportDataToMain(wsSource)
+
+    MsgBox "Данные с листа '" & sheetName & "' перенесены в main.", _
+           vbInformation, "SysW"
+
+CleanUp:
+    Application.ScreenUpdating = True
+    Application.EnableEvents = True
+    Application.DisplayAlerts = True
+    Exit Sub
+
+ErrHandler:
+    Application.ScreenUpdating = True
+    Application.EnableEvents = True
+    Application.DisplayAlerts = True
+    MsgBox "Ошибка при импорте с листа M: " & Err.Description, vbCritical, "Ошибка"
+    Call Mod_Logger.WriteLog("Mod_Import", "ImportFromSheetM_UI: " & Err.Description)
+End Sub

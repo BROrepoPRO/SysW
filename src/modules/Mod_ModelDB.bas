@@ -1,68 +1,11 @@
 Attribute VB_Name = "Mod_ModelDB"
 Option Explicit
-Option Private Module
 
 ' ============================================================
 ' Модуль: Mod_ModelDB
 ' Назначение: Доступ к файлам модельных групп
 '             (базовый слой абстракции для работы с base/models/)
 ' ============================================================
-
-' ============================================================
-' Константы
-' ============================================================
-' @deprecated v0.14.0 — используйте GetModelDBBasePath()
-' Public Const MODELDB_BASE_PATH As String = ""
-
-' ============================================================
-' Типы данных
-' ============================================================
-
-' --------------------------------------------------------------------------
-' WorkEntry
-' Структура записи работы из листа {GroupName} файла группы
-' --------------------------------------------------------------------------
-Public Type WorkEntry
-    Code As String
-    Name As String
-    Unit As String
-    NormHours As Double
-    Price As Currency
-    Note As String
-End Type
-
-' --------------------------------------------------------------------------
-' WorkIdentity
-' Структура записи тождества работ из листа {GroupName}w
-' Соответствует колонкам UAZw (A-O):
-'   OutArticle(B), OutName(C), NormHours(D), QtyZN(G),
-'   Aggregate(I), InName(J)
-' --------------------------------------------------------------------------
-Public Type WorkIdentity
-    OutArticle As String   ' B — Артикул (модельный)
-    OutName As String      ' C — Наименование (модельное)
-    NormHours As Double    ' D — н/ч
-    QtyZN As Double        ' G — Кол-во ЗН
-    Aggregate As String    ' I — Агрегат (код)
-    InName As String       ' J — Наим-ние (входящее)
-End Type
-
-' --------------------------------------------------------------------------
-' PartIdentity
-' Структура записи тождества запчастей из листа {GroupName}z4
-' Соответствует колонкам UAZz4 (A-P):
-'   OutArticle(B), OutName(C), QtyZN(G), Price(F),
-'   Aggregate(I), InCatNum(J), InName(K)
-' --------------------------------------------------------------------------
-Public Type PartIdentity
-    OutArticle As String   ' B — Артикул (модельный)
-    OutName As String      ' C — Наименование (модельное)
-    QtyZN As Double        ' G — Кол-во ЗН
-    Price As Currency      ' F — Цена за ед. изм.
-    Aggregate As String    ' I — АГРЕГАТ (код)
-    InCatNum As String     ' J — № кат. (входящий)
-    InName As String       ' K — Наим-ние (входящее)
-End Type
 
 ' ============================================================
 ' Функция получения базового пути к моделям
@@ -186,7 +129,8 @@ Public Function GetWorks(ByVal groupName As String, ByRef filters As Variant) As
     Dim result As Collection
     Dim lastRow As Long
     Dim i As Long
-    Dim entry As WorkEntry
+    Dim entry As Variant
+    Dim tmpEntry As ModelTypes.WorkEntry
 
     Set result = New Collection
 
@@ -218,12 +162,13 @@ Public Function GetWorks(ByVal groupName As String, ByRef filters As Variant) As
     ' Читаем данные (столбцы: A=Code, B=Name, C=Unit, D=NormHours, E=Price, F=Note)
     For i = 4 To lastRow
         If Not IsEmpty(ws.Cells(i, 1).Value) Then
-            entry.Code = CStr(ws.Cells(i, 1).Value)
-            entry.Name = CStr(ws.Cells(i, 2).Value)
-            entry.Unit = CStr(ws.Cells(i, 3).Value)
-            entry.NormHours = Val(ws.Cells(i, 4).Value)
-            entry.Price = Val(ws.Cells(i, 5).Value)
-            entry.Note = CStr(ws.Cells(i, 6).Value)
+            tmpEntry.Code = CStr(ws.Cells(i, 1).Value)
+            tmpEntry.Name = CStr(ws.Cells(i, 2).Value)
+            tmpEntry.Unit = CStr(ws.Cells(i, 3).Value)
+            tmpEntry.NormHours = Val(ws.Cells(i, 4).Value)
+            tmpEntry.Price = Val(ws.Cells(i, 5).Value)
+            tmpEntry.Note = CStr(ws.Cells(i, 6).Value)
+            entry = tmpEntry
             result.Add entry
         End If
     Next i
@@ -255,7 +200,8 @@ Public Function GetWorkIdentities(ByVal groupName As String) As Collection
     Dim result As Collection
     Dim lastRow As Long
     Dim i As Long
-    Dim identity As WorkIdentity
+    Dim identity As Variant
+    Dim tmpIdentity As ModelTypes.WorkIdentity
     Dim sheetName As String
 
     sheetName = groupName & "w"
@@ -294,12 +240,13 @@ Public Function GetWorkIdentities(ByVal groupName As String) As Collection
         ' Пропускаем пустые строки и строки без агрегата (I)
         If Not IsEmpty(ws.Cells(i, 1).Value) Then
             If Not IsEmpty(ws.Cells(i, 9).Value) Then ' I — Агрегат
-                identity.OutArticle = CStr(ws.Cells(i, 2).Value)  ' B
-                identity.OutName = CStr(ws.Cells(i, 3).Value)     ' C
-                identity.NormHours = Val(ws.Cells(i, 4).Value)    ' D
-                identity.QtyZN = Val(ws.Cells(i, 7).Value)        ' G
-                identity.Aggregate = CStr(ws.Cells(i, 9).Value)   ' I
-                identity.InName = CStr(ws.Cells(i, 10).Value)     ' J
+                tmpIdentity.OutArticle = CStr(ws.Cells(i, 2).Value)  ' B
+                tmpIdentity.OutName = CStr(ws.Cells(i, 3).Value)     ' C
+                tmpIdentity.NormHours = Val(ws.Cells(i, 4).Value)    ' D
+                tmpIdentity.QtyZN = Val(ws.Cells(i, 7).Value)        ' G
+                tmpIdentity.Aggregate = CStr(ws.Cells(i, 9).Value)   ' I
+                tmpIdentity.InName = CStr(ws.Cells(i, 10).Value)     ' J
+                identity = tmpIdentity
                 result.Add identity
             End If
         End If
@@ -328,7 +275,8 @@ Public Function GetPartIdentities(ByVal groupName As String) As Collection
     Dim result As Collection
     Dim lastRow As Long
     Dim i As Long
-    Dim identity As PartIdentity
+    Dim identity As Variant
+    Dim tmpIdentity As ModelTypes.PartIdentity
     Dim sheetName As String
 
     sheetName = groupName & "z4"
@@ -367,13 +315,14 @@ Public Function GetPartIdentities(ByVal groupName As String) As Collection
         ' Пропускаем пустые строки и строки без агрегата (I)
         If Not IsEmpty(ws.Cells(i, 1).Value) Then
             If Not IsEmpty(ws.Cells(i, 9).Value) Then ' I — АГРЕГАТ
-                identity.OutArticle = CStr(ws.Cells(i, 2).Value)  ' B
-                identity.OutName = CStr(ws.Cells(i, 3).Value)     ' C
-                identity.QtyZN = Val(ws.Cells(i, 7).Value)        ' G
-                identity.Price = Val(ws.Cells(i, 6).Value)        ' F
-                identity.Aggregate = CStr(ws.Cells(i, 9).Value)   ' I
-                identity.InCatNum = CStr(ws.Cells(i, 10).Value)   ' J
-                identity.InName = CStr(ws.Cells(i, 11).Value)     ' K
+                tmpIdentity.OutArticle = CStr(ws.Cells(i, 2).Value)  ' B
+                tmpIdentity.OutName = CStr(ws.Cells(i, 3).Value)     ' C
+                tmpIdentity.QtyZN = Val(ws.Cells(i, 7).Value)        ' G
+                tmpIdentity.Price = Val(ws.Cells(i, 6).Value)        ' F
+                tmpIdentity.Aggregate = CStr(ws.Cells(i, 9).Value)   ' I
+                tmpIdentity.InCatNum = CStr(ws.Cells(i, 10).Value)   ' J
+                tmpIdentity.InName = CStr(ws.Cells(i, 11).Value)     ' K
+                identity = tmpIdentity
                 result.Add identity
             End If
         End If

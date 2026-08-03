@@ -14,9 +14,6 @@
         "hexdump_result.txt": true,
         "check_hex.ps1": true
     },
-    "search.exclude": {
-        "workOt/": true
-    },
     "terminal.integrated.cwd": "L:\\PROject\\SysW",
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
     "python.terminal.activateEnvironment": true,

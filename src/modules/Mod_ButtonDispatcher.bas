@@ -111,6 +111,14 @@ Public Sub Btn_main_ImportVH_Click()
     Call Mod_Import.ImportFromB2_UI
 End Sub
 
+' --------------------------------------------------------------------------
+' Btn_main_ImportFromSheetM_Click
+' Перенос данных с листа "{B4}M" в main (без report.xlsx)
+' --------------------------------------------------------------------------
+Public Sub Btn_main_ImportFromSheetM_Click()
+    Call Mod_Import.ImportFromSheetM_UI
+End Sub
+
 ' ============================================================
 ' ОБРАБОТЧИКИ КНОПОК ПОИСКА UAZ
 ' ============================================================
