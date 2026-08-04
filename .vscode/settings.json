@@ -16,16 +16,16 @@
     },
     "terminal.integrated.cwd": "L:\\PROject\\SysW",
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+    "python.analysis.autoSearchPaths": false,
     "python.terminal.activateEnvironment": true,
     "python.terminal.activateEnvInCurrentTerminal": true,
     "terminal.integrated.defaultProfile": "SourceCraft",
     "terminal.integrated.profiles.windows": {
         "SourceCraft": {
-            "path": "pwsh.exe",
+            "path": "cmd.exe",
             "args": [
-                "-NoExit",
-                "-Command",
-                "& '.venv\\Scripts\\Activate.ps1'"
+                "/K",
+                ".venv\\Scripts\\activate.bat"
             ]
         },
         "PowerShell": {
