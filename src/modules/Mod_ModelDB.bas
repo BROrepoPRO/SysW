@@ -230,7 +230,7 @@ Public Function GetWorkIdentities(ByVal groupName As String) As Collection
 
     ' Определяем последнюю строку (данные с 4-й строки)
     On Error Resume Next
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    lastRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row
     If Err.Number <> 0 Then
         Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: Error getting lastRow: " & Err.Description)
         Err.Clear
@@ -245,7 +245,7 @@ Public Function GetWorkIdentities(ByVal groupName As String) As Collection
     ' Читаем данные
     For i = 4 To lastRow
         On Error Resume Next
-        If Not IsEmpty(ws.Cells(i, 1).Value) Then
+        If Not IsEmpty(ws.Cells(i, 2).Value) Then
             If Not IsEmpty(ws.Cells(i, 9).Value) Then ' I — Агрегат
                 Set identity = New WorkIdentity
                 identity.OutArticle = CStr(ws.Cells(i, 2).Value)  ' B
@@ -313,7 +313,7 @@ Public Function GetPartIdentities(ByVal groupName As String) As Collection
     End If
 
     ' Определяем последнюю строку (данные с 4-й строки)
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    lastRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row
     If lastRow < 4 Then
         Set GetPartIdentities = result
         Exit Function
@@ -321,7 +321,7 @@ Public Function GetPartIdentities(ByVal groupName As String) As Collection
 
     ' Читаем данные
     For i = 4 To lastRow
-        If Not IsEmpty(ws.Cells(i, 1).Value) Then
+        If Not IsEmpty(ws.Cells(i, 2).Value) Then
             If Not IsEmpty(ws.Cells(i, 9).Value) Then ' I — АГРЕГАТ
                 Set identity = New PartIdentity
                 identity.OutArticle = CStr(ws.Cells(i, 2).Value)  ' B

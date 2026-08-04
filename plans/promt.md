@@ -6,22 +6,23 @@
 соблюдаем: .ycarules
 
 используем:
-🏗️Architect
-    Планирование, архитектура, проектирование, декомплизация задач
-    Plan and design before implementation
-
-💻Code
-    Написание, модификация и рефакторинг кода
-    Write, modify, and refactor code
-
-❓Ask
-    Задавать вопросы и получать ответы, анализ
-    Get answers and explanations
-
-🪲Debug
-    Диагностика и исправление ошибок
-    Diagnose and fix software issues
-
-🪃Orchestrator
-    Координация задач по нескольким режимам
-    Coordinate tasks across multiple mode
+🏗️
+Architect
+Plan and design before implementation
+Планирование, архитектура, проектирование
+💻
+Code
+Write, modify, and refactor code
+Написание, модификация, рефакторинг
+❓
+Ask
+Get answers and explanations
+Вопросы, ответы, анализ
+🪲
+Debug
+Diagnose and fix software issues
+Диагностика, правка, тестирование
+🪃
+Orchestrator
+Coordinate tasks across multiple modes
+Межролевая координация, контроль исполнителей🏗️Architect
