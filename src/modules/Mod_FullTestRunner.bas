@@ -4,7 +4,7 @@ Option Explicit
 ' ============================================================
 ' Модуль: Mod_FullTestRunner
 ' Назначение: Набор технических тестов для проекта SysW
-' Покрытие: TC-01 .. TC-44 (автоматические тесты)
+' Покрытие: TC-01 .. TC-46 (автоматические тесты)
 ' ============================================================
 
 ' ---- Счётчики результатов ----
@@ -31,7 +31,7 @@ Public Sub RunAllTests()
     Mod_Constants.SilenceMsgBox = True
 
     Debug.Print "=============================================="
-    Debug.Print "  Запуск набора тестов (TC-01..TC-44)"
+    Debug.Print "  Запуск набора тестов (TC-01..TC-46)"
     Debug.Print "=============================================="
     Debug.Print ""
 
@@ -69,6 +69,30 @@ Public Sub RunAllTests()
     Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunAutoMatchTests START")
     RunAutoMatchTests
     Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunAutoMatchTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunSheetOpsTests START")
+    RunSheetOpsTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunSheetOpsTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunAggregateNameTests START")
+    RunAggregateNameTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunAggregateNameTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunModelDBReadTests START")
+    RunModelDBReadTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunModelDBReadTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunOrderHeaderTests START")
+    RunOrderHeaderTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunOrderHeaderTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunImportDataTests START")
+    RunImportDataTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunImportDataTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunConstantsTests START")
+    RunConstantsTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunConstantsTests END")
 
     ' Финальный отчёт
     PrintFinalReport
@@ -817,6 +841,683 @@ Private Sub RunAutoMatchTests()
 End Sub
 
 ' ============================================================
+' Группа: тесты SheetOps (TC-15..TC-18, TC-45)
+' ============================================================
+Private Sub RunSheetOpsTests()
+    Dim Result As String
+    Dim ws As Worksheet
+
+    Debug.Print "--- Mod_SheetOps Tests ---"
+
+    ' -------------------------------------------------------
+    ' TC-15: ExtractNumberFromGRZ 'А123АН77' -> '123'
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Result = Mod_SheetOps.ExtractNumberFromGRZ("А123АН77")
+    If Err.Number <> 0 Then
+        AddResult "TC-15", "ExtractNumberFromGRZ 'А123АН77'", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-15", "ExtractNumberFromGRZ 'А123АН77'", (Result = "123"), _
+                  "Ожидалось '123', получено '" & Result & "'"
+    End If
+    On Error GoTo 0
+
+    ' -------------------------------------------------------
+    ' TC-16: ExtractNumberFromGRZ 'А12АН34' (2 цифры) -> ''
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Result = Mod_SheetOps.ExtractNumberFromGRZ("А12АН34")
+    If Err.Number <> 0 Then
+        AddResult "TC-16", "ExtractNumberFromGRZ 'А12АН34'", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-16", "ExtractNumberFromGRZ 'А12АН34'", (Result = ""), _
+                  "Ожидалась пустая строка, получено '" & Result & "'"
+    End If
+    On Error GoTo 0
+
+    ' -------------------------------------------------------
+    ' TC-17: ExtractNumberFromGRZ 'А1234АН77' (4 цифры) -> '1234'
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Result = Mod_SheetOps.ExtractNumberFromGRZ("А1234АН77")
+    If Err.Number <> 0 Then
+        AddResult "TC-17", "ExtractNumberFromGRZ 'А1234АН77'", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-17", "ExtractNumberFromGRZ 'А1234АН77'", (Result = "1234"), _
+                  "Ожидалось '1234', получено '" & Result & "'"
+    End If
+    On Error GoTo 0
+
+    ' -------------------------------------------------------
+    ' TC-18: ExtractNumberFromGRZ '' (пустая строка) -> ''
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Result = Mod_SheetOps.ExtractNumberFromGRZ("")
+    If Err.Number <> 0 Then
+        AddResult "TC-18", "ExtractNumberFromGRZ пустая строка", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-18", "ExtractNumberFromGRZ пустая строка", (Result = ""), _
+                  "Ожидалась пустая строка, получено '" & Result & "'"
+    End If
+    On Error GoTo 0
+
+    ' -------------------------------------------------------
+    ' TC-45: SearchSheetByGRZ несуществующий ГРЗ -> Nothing
+    ' (Mod_Constants.SilenceMsgBox уже = True в RunAllTests)
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Set ws = Mod_SheetOps.SearchSheetByGRZ("НЕСУЩЕСТВУЮЩИЙ")
+    If Err.Number <> 0 Then
+        AddResult "TC-45", "SearchSheetByGRZ несуществующий ГРЗ", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-45", "SearchSheetByGRZ несуществующий ГРЗ", (ws Is Nothing), _
+                  "Ожидалось Nothing, лист найден"
+    End If
+    Set ws = Nothing
+    On Error GoTo 0
+
+    Debug.Print ""
+End Sub
+
+' ============================================================
+' Группа: тесты AggregateName (TC-19..TC-21)
+' ============================================================
+Private Sub RunAggregateNameTests()
+    Dim Result As String
+
+    Debug.Print "--- Mod_Constants GetAggregateName Tests ---"
+
+    ' -------------------------------------------------------
+    ' TC-19: GetAggregateName 'DIAG' -> 'Диагностика'
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Result = Mod_Constants.GetAggregateName("DIAG")
+    If Err.Number <> 0 Then
+        AddResult "TC-19", "GetAggregateName 'DIAG'", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-19", "GetAggregateName 'DIAG'", (Result = "Диагностика"), _
+                  "Ожидалось 'Диагностика', получено '" & Result & "'"
+    End If
+    On Error GoTo 0
+
+    ' -------------------------------------------------------
+    ' TC-20: GetAggregateName 'TO' -> 'ТО'
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Result = Mod_Constants.GetAggregateName("TO")
+    If Err.Number <> 0 Then
+        AddResult "TC-20", "GetAggregateName 'TO'", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-20", "GetAggregateName 'TO'", (Result = "ТО"), _
+                  "Ожидалось 'ТО', получено '" & Result & "'"
+    End If
+    On Error GoTo 0
+
+    ' -------------------------------------------------------
+    ' TC-21: GetAggregateName 'XXX' (неизвестный) -> ''
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Result = Mod_Constants.GetAggregateName("XXX")
+    If Err.Number <> 0 Then
+        AddResult "TC-21", "GetAggregateName 'XXX'", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-21", "GetAggregateName 'XXX'", (Result = ""), _
+                  "Ожидалась пустая строка, получено '" & Result & "'"
+    End If
+    On Error GoTo 0
+
+    Debug.Print ""
+End Sub
+
+' ============================================================
+' Группа: тесты ModelDB Read (TC-22..TC-24)
+' ============================================================
+Private Sub RunModelDBReadTests()
+    Dim col As Collection
+    Dim wb As Workbook
+    Dim groupExists As Boolean
+    Dim item As Variant
+
+    Debug.Print "--- Mod_ModelDB Read Tests ---"
+
+    ' Проверяем наличие файла группы UAZ (рабочие данные)
+    On Error Resume Next
+    groupExists = Mod_ModelDB.ModelGroupFileExists("UAZ")
+    If Err.Number <> 0 Then
+        groupExists = False
+        Err.Clear
+    End If
+    On Error GoTo 0
+
+    If Not groupExists Then
+        AddResult "TC-22", "GetWorkIdentities UAZ", True, "", True, _
+                  "Файл группы UAZ не найден (base/models/UAZ.xlsm)"
+        AddResult "TC-23", "GetPartIdentities UAZ", True, "", True, _
+                  "Файл группы UAZ не найден (base/models/UAZ.xlsm)"
+        AddResult "TC-24", "GetWorks UAZ", True, "", True, _
+                  "Файл группы UAZ не найден (base/models/UAZ.xlsm)"
+        Debug.Print ""
+        Exit Sub
+    End If
+
+    ' -------------------------------------------------------
+    ' TC-22: GetWorkIdentities 'UAZ' — непустая коллекция WorkIdentity
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Set col = Mod_ModelDB.GetWorkIdentities("UAZ")
+    If Err.Number <> 0 Then
+        AddResult "TC-22", "GetWorkIdentities UAZ", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        Dim tc22Ok As Boolean
+        Dim tc22Reason As String
+        tc22Ok = False
+        If col.Count > 0 Then
+            If TypeName(col(1)) = "WorkIdentity" Then
+                Dim wi As WorkIdentity
+                Set wi = col(1)
+                tc22Ok = (Len(wi.OutArticle) > 0) And (Len(wi.Aggregate) > 0)
+                If Not tc22Ok Then
+                    tc22Reason = "OutArticle/Aggregate пусты"
+                End If
+                Set wi = Nothing
+            Else
+                tc22Reason = "Тип элемента: " & TypeName(col(1))
+            End If
+        Else
+            tc22Reason = "Коллекция пуста (нет данных в UAZw)"
+        End If
+        AddResult "TC-22", "GetWorkIdentities UAZ", tc22Ok, tc22Reason
+    End If
+    Set col = Nothing
+    On Error GoTo 0
+
+    ' -------------------------------------------------------
+    ' TC-23: GetPartIdentities 'UAZ' — непустая коллекция PartIdentity
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Set col = Mod_ModelDB.GetPartIdentities("UAZ")
+    If Err.Number <> 0 Then
+        AddResult "TC-23", "GetPartIdentities UAZ", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        Dim tc23Ok As Boolean
+        Dim tc23Reason As String
+        tc23Ok = False
+        If col.Count > 0 Then
+            If TypeName(col(1)) = "PartIdentity" Then
+                Dim pi As PartIdentity
+                Set pi = col(1)
+                tc23Ok = (Len(pi.OutArticle) > 0) And (Len(pi.Aggregate) > 0)
+                If Not tc23Ok Then
+                    tc23Reason = "OutArticle/Aggregate пусты"
+                End If
+                Set pi = Nothing
+            Else
+                tc23Reason = "Тип элемента: " & TypeName(col(1))
+            End If
+        Else
+            tc23Reason = "Коллекция пуста (нет данных в UAZz4)"
+        End If
+        AddResult "TC-23", "GetPartIdentities UAZ", tc23Ok, tc23Reason
+    End If
+    Set col = Nothing
+    On Error GoTo 0
+
+    ' -------------------------------------------------------
+    ' TC-24: GetWorks 'UAZ' — непустая коллекция WorkEntry
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Set col = Mod_ModelDB.GetWorks("UAZ", Empty)
+    If Err.Number <> 0 Then
+        AddResult "TC-24", "GetWorks UAZ", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        Dim tc24Ok As Boolean
+        Dim tc24Reason As String
+        tc24Ok = False
+        If col.Count > 0 Then
+            ' Элементы коллекции — Variant-массивы [Code, Name, Unit, NormHours, Price, Note]
+            item = col(1)   ' item — Variant, теперь это массив
+            tc24Ok = (Len(CStr(item(0))) > 0)   ' Code — первый элемент массива
+            If Not tc24Ok Then
+                tc24Reason = "Code первого элемента пуст"
+            End If
+        Else
+            tc24Reason = "Коллекция пуста (нет данных в UAZ)"
+        End If
+        AddResult "TC-24", "GetWorks UAZ", tc24Ok, tc24Reason
+    End If
+    Set col = Nothing
+    On Error GoTo 0
+
+    ' Закрываем книгу UAZ.xlsm, если она осталась открытой
+    On Error Resume Next
+    Set wb = Nothing
+    On Error Resume Next
+    Set wb = Workbooks("UAZ.xlsm")
+    If Not wb Is Nothing Then
+        wb.Close SaveChanges:=False
+    End If
+    Set wb = Nothing
+    On Error GoTo 0
+
+    Debug.Print ""
+End Sub
+
+' ============================================================
+' Группа: тесты OrderHeader (TC-25..TC-28)
+' ============================================================
+Private Sub RunOrderHeaderTests()
+    Dim wsMain As Worksheet
+    Dim wsSpisok As Worksheet
+    Dim wsModels As Worksheet
+    Dim orderNum As Variant
+    Dim Result As Boolean
+    Dim Header As OrderHeader
+    Dim savedB5toB17 As Variant
+    Dim modelsLastRowBefore As Long
+    Dim modelsLastRowAfter As Long
+    Dim i As Long
+
+    Debug.Print "--- Mod_OrderHeader Tests ---"
+
+    On Error Resume Next
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
+    Set wsSpisok = ThisWorkbook.Sheets(Mod_Constants.SHEET_SPISOK)
+    Set wsModels = ThisWorkbook.Sheets(Mod_Constants.SHEET_MODELS)
+    On Error GoTo 0
+
+    If wsMain Is Nothing Or wsSpisok Is Nothing Or wsModels Is Nothing Then
+        AddResult "TC-25", "FillHeaderFromOrder существующий заказ", True, "", True, _
+                  "Лист main/spisok/models не найден"
+        AddResult "TC-26", "FillHeaderFromOrder несуществующий заказ", True, "", True, _
+                  "Лист main/spisok/models не найден"
+        AddResult "TC-27", "FindOrder существующий заказ", True, "", True, _
+                  "Лист spisok не найден"
+        AddResult "TC-28", "FindOrder несуществующий заказ", True, "", True, _
+                  "Лист spisok не найден"
+        Debug.Print ""
+        Exit Sub
+    End If
+
+    ' Получаем реальный номер заказа: первый непустой номер из столбца A spisok
+    orderNum = Empty
+    For i = 2 To wsSpisok.Cells(wsSpisok.Rows.Count, 1).End(xlUp).Row
+        If Not IsEmpty(wsSpisok.Cells(i, 1).Value) Then
+            orderNum = wsSpisok.Cells(i, 1).Value
+            Exit For
+        End If
+    Next i
+
+    If IsEmpty(orderNum) Then
+        AddResult "TC-25", "FillHeaderFromOrder существующий заказ", True, "", True, _
+                  "В spisok нет ни одного номера заказа"
+        AddResult "TC-27", "FindOrder существующий заказ", True, "", True, _
+                  "В spisok нет ни одного номера заказа"
+    Else
+        ' =====================================================
+        ' TC-25: FillHeaderFromOrder с существующим заказом
+        ' =====================================================
+        ' Сохраняем B5:B17 листа main
+        savedB5toB17 = wsMain.Range("B5:B17").Value
+
+        ' Сохраняем последнюю строку листа models (для детекции автодобавления)
+        modelsLastRowBefore = wsModels.Cells(wsModels.Rows.Count, 1).End(xlUp).Row
+
+        On Error Resume Next
+        Application.EnableEvents = False
+        Result = Mod_OrderHeader.FillHeaderFromOrder(orderNum)
+        Application.EnableEvents = True
+        If Err.Number <> 0 Then
+            AddResult "TC-25", "FillHeaderFromOrder существующий заказ", False, "Ошибка: " & Err.Description
+            Err.Clear
+        Else
+            Dim tc25Ok As Boolean
+            Dim tc25Reason As String
+            tc25Ok = Result And (Len(Trim(CStr(wsMain.Range("B5").Value))) > 0)
+            If Not Result Then
+                tc25Reason = "Функция вернула False"
+            ElseIf Len(Trim(CStr(wsMain.Range("B5").Value))) = 0 Then
+                tc25Reason = "B5 не заполнена"
+            End If
+            AddResult "TC-25", "FillHeaderFromOrder существующий заказ", tc25Ok, tc25Reason
+        End If
+        On Error GoTo 0
+
+        ' Восстанавливаем B5:B17
+        Application.EnableEvents = False
+        wsMain.Range("B5:B17").Value = savedB5toB17
+        Application.EnableEvents = True
+
+        ' Если FillHeaderFromOrder добавил модель в models — удаляем добавленную строку
+        modelsLastRowAfter = wsModels.Cells(wsModels.Rows.Count, 1).End(xlUp).Row
+        If modelsLastRowAfter > modelsLastRowBefore Then
+            wsModels.Rows(modelsLastRowAfter).Delete
+        End If
+
+        ' =====================================================
+        ' TC-27: FindOrder с существующим заказом
+        ' =====================================================
+        On Error Resume Next
+        Result = Mod_OrderHeader.FindOrder(CStr(orderNum), Header)
+        If Err.Number <> 0 Then
+            AddResult "TC-27", "FindOrder существующий заказ", False, "Ошибка: " & Err.Description
+            Err.Clear
+        Else
+            Dim tc27Ok As Boolean
+            Dim tc27Reason As String
+            tc27Ok = Result And (Len(Trim(CStr(Header.OrderNumber))) > 0) _
+                          And (Len(Trim(CStr(Header.ModelName))) > 0)
+            If Not Result Then
+                tc27Reason = "Функция вернула False"
+            ElseIf Len(Trim(CStr(Header.OrderNumber))) = 0 Then
+                tc27Reason = "Header.OrderNumber пуст"
+            ElseIf Len(Trim(CStr(Header.ModelName))) = 0 Then
+                tc27Reason = "Header.ModelName пуст"
+            End If
+            AddResult "TC-27", "FindOrder существующий заказ", tc27Ok, tc27Reason
+        End If
+        On Error GoTo 0
+    End If
+
+    ' =====================================================
+    ' TC-26: FillHeaderFromOrder с несуществующим заказом
+    ' =====================================================
+    savedB5toB17 = wsMain.Range("B5:B17").Value
+
+    On Error Resume Next
+    Application.EnableEvents = False
+    Result = Mod_OrderHeader.FillHeaderFromOrder(999999)
+    Application.EnableEvents = True
+    If Err.Number <> 0 Then
+        AddResult "TC-26", "FillHeaderFromOrder несуществующий заказ", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        Dim tc26Ok As Boolean
+        Dim tc26Reason As String
+        tc26Ok = (Not Result) And IsEmpty(wsMain.Range("B5").Value)
+        If Result Then
+            tc26Reason = "Функция вернула True для несуществующего заказа"
+        ElseIf Not IsEmpty(wsMain.Range("B5").Value) Then
+            tc26Reason = "B5 не очищена"
+        End If
+        AddResult "TC-26", "FillHeaderFromOrder несуществующий заказ", tc26Ok, tc26Reason
+    End If
+    On Error GoTo 0
+
+    ' Восстанавливаем B5:B17
+    Application.EnableEvents = False
+    wsMain.Range("B5:B17").Value = savedB5toB17
+    Application.EnableEvents = True
+
+    ' =====================================================
+    ' TC-28: FindOrder с несуществующим заказом
+    ' =====================================================
+    On Error Resume Next
+    Result = Mod_OrderHeader.FindOrder("999999", Header)
+    If Err.Number <> 0 Then
+        AddResult "TC-28", "FindOrder несуществующий заказ", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-28", "FindOrder несуществующий заказ", (Not Result), _
+                  "Ожидалось False, получено " & CStr(Result)
+    End If
+    On Error GoTo 0
+
+    Set wsMain = Nothing
+    Set wsSpisok = Nothing
+    Set wsModels = Nothing
+
+    Debug.Print ""
+End Sub
+
+' ============================================================
+' Группа: тесты ImportData (TC-29, TC-30)
+' ============================================================
+Private Sub RunImportDataTests()
+    Dim wsMain As Worksheet
+    Dim wsTemp As Worksheet
+    Dim savedLtoN As Variant
+    Dim savedXtoAA As Variant
+    Dim tempName As String
+    Dim lastRow As Long
+
+    Debug.Print "--- Mod_Import Tests ---"
+
+    On Error Resume Next
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
+    On Error GoTo 0
+
+    If wsMain Is Nothing Then
+        AddResult "TC-29", "ImportDataToMain перенос данных", True, "", True, _
+                  "Лист main не найден"
+        AddResult "TC-30", "ImportSheet несуществующий ГРЗ", True, "", True, _
+                  "Лист main не найден"
+        Debug.Print ""
+        Exit Sub
+    End If
+
+    ' =====================================================
+    ' TC-29: ImportDataToMain с временным листом-источником
+    ' =====================================================
+    ' Сохраняем L:N и X:AA листа main
+    lastRow = Application.WorksheetFunction.Max( _
+        wsMain.Cells(wsMain.Rows.Count, 12).End(xlUp).Row, _
+        wsMain.Cells(wsMain.Rows.Count, 24).End(xlUp).Row)
+    If lastRow < 4 Then lastRow = 4
+    savedLtoN = wsMain.Range("L4:N" & lastRow).Value
+    savedXtoAA = wsMain.Range("X4:AA" & lastRow).Value
+
+    ' Создаём временный лист
+    tempName = "TC29_Temp_" & Format$(Timer * 1000, "0")
+    On Error Resume Next
+    Set wsTemp = ThisWorkbook.Sheets.Add(After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count))
+    wsTemp.Name = tempName
+    On Error GoTo 0
+
+    If wsTemp Is Nothing Then
+        AddResult "TC-29", "ImportDataToMain перенос данных", False, "Не удалось создать временный лист"
+    Else
+        ' --- Таблица "Выполненные работы" ---
+        wsTemp.Cells(1, 1).Value = "Выполненные работы"
+        wsTemp.Cells(2, 1).Value = "№"
+        wsTemp.Cells(2, 2).Value = "№ кат."
+        wsTemp.Cells(2, 3).Value = "Наименование"
+        wsTemp.Cells(2, 4).Value = "Кол. оп."
+        wsTemp.Cells(2, 5).Value = "Цена"
+        wsTemp.Cells(2, 6).Value = "Норма"
+        wsTemp.Cells(2, 7).Value = "н/ч"
+        wsTemp.Cells(2, 8).Value = "Всего"
+        wsTemp.Cells(2, 9).Value = "в т.ч. НДС"
+        wsTemp.Cells(3, 1).Value = "1"
+        wsTemp.Cells(3, 2).Value = "2"
+        wsTemp.Cells(3, 3).Value = "3"
+        wsTemp.Cells(3, 4).Value = "4"
+        wsTemp.Cells(3, 5).Value = "5"
+        wsTemp.Cells(3, 6).Value = "6"
+        wsTemp.Cells(3, 7).Value = "7"
+        wsTemp.Cells(3, 8).Value = "8"
+        wsTemp.Cells(3, 9).Value = "9"
+        ' Данные работ: D=Наименование, I=Всего, M=в т.ч. НДС
+        wsTemp.Cells(4, 4).Value = "Тестовая работа 1"
+        wsTemp.Cells(4, 9).Value = 100
+        wsTemp.Cells(4, 13).Value = 20
+        wsTemp.Cells(5, 4).Value = "Тестовая работа 2"
+        wsTemp.Cells(5, 9).Value = 200
+        wsTemp.Cells(5, 13).Value = 40
+        wsTemp.Cells(6, 4).Value = "Итого работ"
+
+        ' --- Таблица "Расходная накладная" ---
+        wsTemp.Cells(8, 1).Value = "Расходная накладная"
+        wsTemp.Cells(9, 1).Value = "№"
+        wsTemp.Cells(9, 2).Value = "№ кат."
+        wsTemp.Cells(9, 3).Value = "Наименование"
+        wsTemp.Cells(9, 4).Value = "Кол-во"
+        wsTemp.Cells(9, 5).Value = "Ед.изм."
+        wsTemp.Cells(9, 6).Value = "Цена"
+        wsTemp.Cells(9, 7).Value = "Всего"
+        wsTemp.Cells(9, 8).Value = "в т.ч. НДС"
+        wsTemp.Cells(10, 1).Value = "1"
+        wsTemp.Cells(10, 2).Value = "2"
+        wsTemp.Cells(10, 3).Value = "3"
+        wsTemp.Cells(10, 4).Value = "4"
+        wsTemp.Cells(10, 5).Value = "5"
+        wsTemp.Cells(10, 6).Value = "6"
+        wsTemp.Cells(10, 7).Value = "7"
+        wsTemp.Cells(10, 8).Value = "8"
+        ' Данные материалов: C=Наименование, D=Кол-во, J=Всего, M=в т.ч. НДС
+        wsTemp.Cells(11, 3).Value = "Тестовая запчасть 1"
+        wsTemp.Cells(11, 4).Value = 2
+        wsTemp.Cells(11, 10).Value = 50
+        wsTemp.Cells(11, 13).Value = 10
+        wsTemp.Cells(12, 3).Value = "Тестовая запчасть 2"
+        wsTemp.Cells(12, 4).Value = 3
+        wsTemp.Cells(12, 10).Value = 60
+        wsTemp.Cells(12, 13).Value = 12
+        wsTemp.Cells(13, 2).Value = "Итого"
+
+        ' Подавляем MsgBox для Mod_Import
+        Mod_Import.SilenceMsgBox = True
+
+        On Error Resume Next
+        Call Mod_Import.ImportDataToMain(wsTemp)
+        If Err.Number <> 0 Then
+            AddResult "TC-29", "ImportDataToMain перенос данных", False, "Ошибка: " & Err.Description
+            Err.Clear
+        Else
+            Dim tc29Ok As Boolean
+            Dim tc29Reason As String
+            ' Проверяем перенос: L4 = D источника, X4 = C источника
+            tc29Ok = (Trim(CStr(wsMain.Cells(4, 12).Value)) = "Тестовая работа 1") _
+                 And (Trim(CStr(wsMain.Cells(4, 24).Value)) = "Тестовая запчасть 1")
+            If Trim(CStr(wsMain.Cells(4, 12).Value)) <> "Тестовая работа 1" Then
+                tc29Reason = "L4 не заполнена: '" & CStr(wsMain.Cells(4, 12).Value) & "'"
+            ElseIf Trim(CStr(wsMain.Cells(4, 24).Value)) <> "Тестовая запчасть 1" Then
+                tc29Reason = "X4 не заполнена: '" & CStr(wsMain.Cells(4, 24).Value) & "'"
+            End If
+            AddResult "TC-29", "ImportDataToMain перенос данных", tc29Ok, tc29Reason
+        End If
+        On Error GoTo 0
+
+        Mod_Import.SilenceMsgBox = False
+
+        ' Удаляем временный лист ([S3])
+        Application.DisplayAlerts = False
+        wsTemp.Delete
+        Application.DisplayAlerts = True
+    End If
+
+    ' Восстанавливаем L:N и X:AA листа main
+    Application.EnableEvents = False
+    wsMain.Range("L4:N" & lastRow).Value = savedLtoN
+    wsMain.Range("X4:AA" & lastRow).Value = savedXtoAA
+    Application.EnableEvents = True
+
+    ' =====================================================
+    ' TC-30: ImportSheet с несуществующим ГРЗ
+    ' =====================================================
+    Mod_Import.SilenceMsgBox = True
+
+    On Error Resume Next
+    Call Mod_Import.ImportSheet("НЕСУЩЕСТВУЮЩИЙ")
+    If Err.Number <> 0 Then
+        AddResult "TC-30", "ImportSheet несуществующий ГРЗ", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-30", "ImportSheet несуществующий ГРЗ", True, ""
+    End If
+    On Error GoTo 0
+
+    Mod_Import.SilenceMsgBox = False
+
+    Set wsMain = Nothing
+    Set wsTemp = Nothing
+
+    Debug.Print ""
+End Sub
+
+' ============================================================
+' Группа: тесты Constants (TC-46)
+' ============================================================
+Private Sub RunConstantsTests()
+    Dim wsLib As Worksheet
+    Dim lastRowBefore As Long
+    Dim lastRowAfter As Long
+    Dim addedRow As Long
+    Dim i As Long
+
+    Debug.Print "--- Mod_Constants AddWorkEntry Tests ---"
+
+    On Error Resume Next
+    Set wsLib = Mod_Utils.GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_LIBNAME)
+    On Error GoTo 0
+
+    If wsLib Is Nothing Then
+        AddResult "TC-46", "AddWorkEntry добавление work.xlsm", True, "", True, _
+                  "Лист libname не найден"
+        Debug.Print ""
+        Exit Sub
+    End If
+
+    ' Сохраняем последнюю строку до теста
+    lastRowBefore = wsLib.Cells(wsLib.Rows.Count, 1).End(xlUp).Row
+
+    ' Вызываем AddWorkEntry
+    On Error Resume Next
+    Call Mod_Constants.AddWorkEntry()
+    If Err.Number <> 0 Then
+        AddResult "TC-46", "AddWorkEntry добавление work.xlsm", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        lastRowAfter = wsLib.Cells(wsLib.Rows.Count, 1).End(xlUp).Row
+        addedRow = lastRowAfter
+
+        ' Проверяем, что запись work.xlsm присутствует в последней строке
+        Dim tc46Ok As Boolean
+        Dim tc46Reason As String
+        tc46Ok = (Trim(CStr(wsLib.Cells(addedRow, 1).Value)) = "work.xlsm")
+        If Not tc46Ok Then
+            tc46Reason = "Последняя строка не содержит work.xlsm: '" & _
+                         CStr(wsLib.Cells(addedRow, 1).Value) & "'"
+        End If
+
+        ' Проверяем идемпотентность: повторный вызов не должен добавить дубликат
+        If tc46Ok Then
+            Call Mod_Constants.AddWorkEntry()
+            Dim lastRowAfter2 As Long
+            lastRowAfter2 = wsLib.Cells(wsLib.Rows.Count, 1).End(xlUp).Row
+            If lastRowAfter2 > lastRowAfter Then
+                tc46Ok = False
+                tc46Reason = "Повторный вызов добавил дубликат (идемпотентность нарушена)"
+            End If
+        End If
+
+        AddResult "TC-46", "AddWorkEntry добавление work.xlsm", tc46Ok, tc46Reason
+
+        ' Восстанавливаем libname: если строка была добавлена тестом — удаляем её
+        If lastRowAfter > lastRowBefore Then
+            Application.DisplayAlerts = False
+            wsLib.Rows(lastRowAfter).Delete
+            Application.DisplayAlerts = True
+        End If
+    End If
+    On Error GoTo 0
+
+    Set wsLib = Nothing
+
+    Debug.Print ""
+End Sub
+
+' ============================================================
 ' Вспомогательные функции
 ' ============================================================
 
@@ -866,7 +1567,7 @@ End Sub
 
 ' --------------------------------------------------------------------------
 ' RunAllTests_UI
-' Запускает все тесты (TC-01..TC-44) и показывает результат
+' Запускает все тесты (TC-01..TC-46) и показывает результат
 ' --------------------------------------------------------------------------
 Public Sub RunAllTests_UI()
     On Error GoTo ErrHandler

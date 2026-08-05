@@ -119,6 +119,7 @@ End Function
 ' GetWorks
 ' Возвращает коллекцию работ из листа {groupName} файла группы
 ' с применением фильтров.
+' Элементы коллекции — Variant-массивы [Code, Name, Unit, NormHours, Price, Note].
 ' На данном этапе — заглушка для будущего использования.
 ' --------------------------------------------------------------------------
 Public Function GetWorks(ByVal groupName As String, ByRef filters As Variant) As Collection
@@ -130,7 +131,6 @@ Public Function GetWorks(ByVal groupName As String, ByRef filters As Variant) As
     Dim lastRow As Long
     Dim i As Long
     Dim entry As Variant
-    Dim tmpEntry As Mod_ModelTypes.WorkEntry
 
     Set result = New Collection
 
@@ -162,13 +162,14 @@ Public Function GetWorks(ByVal groupName As String, ByRef filters As Variant) As
     ' Читаем данные (столбцы: A=Code, B=Name, C=Unit, D=NormHours, E=Price, F=Note)
     For i = 4 To lastRow
         If Not IsEmpty(ws.Cells(i, 1).Value) Then
-            tmpEntry.Code = CStr(ws.Cells(i, 1).Value)
-            tmpEntry.Name = CStr(ws.Cells(i, 2).Value)
-            tmpEntry.Unit = CStr(ws.Cells(i, 3).Value)
-            tmpEntry.NormHours = Val(ws.Cells(i, 4).Value)
-            tmpEntry.Price = Val(ws.Cells(i, 5).Value)
-            tmpEntry.Note = CStr(ws.Cells(i, 6).Value)
-            entry = tmpEntry
+            ' Массив [Code, Name, Unit, NormHours, Price, Note]
+            entry = Array( _
+                CStr(ws.Cells(i, 1).Value), _
+                CStr(ws.Cells(i, 2).Value), _
+                CStr(ws.Cells(i, 3).Value), _
+                Val(ws.Cells(i, 4).Value), _
+                Val(ws.Cells(i, 5).Value), _
+                CStr(ws.Cells(i, 6).Value))
             result.Add entry
         End If
     Next i

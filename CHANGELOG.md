@@ -5,6 +5,16 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v0.18.0] — 2026-08-05
+
+### Added
+- **`.stignore`** — корневой файл исключений Syncthing для исправления ошибок синхронизации проекта между устройствами (`.venv/`, `venv/`, `__pycache__/`, `*.pyc`, `*.pyo`, `_temp_export/`, `_temp_import/`, `_backup/`, `workOt/`, `src/sheets/*.bak`, `~$*`, `*.tmp`, `*.log`, `*.sync-conflict-*`, `Thumbs.db`, `Desktop.ini`, `.DS_Store`, `node_modules/`)
+- **`scripts/sync_fix.ps1`** — PowerShell 7 скрипт для применения обновлений конфигурации синхронизации Syncthing на других устройствах (перенастройка папки на `SysW`, переименование в `SysW-syncthing`, создание `.stfolder`, проверка `.stignore`)
+
+### Changed
+- **Синхронизация Syncthing** — исключены объекты, нарушающие целостность проекта (виртуальное окружение Python с абсолютными путями, резервные копии, блокировки Excel, кэш и временные файлы). `.stignore` не добавлен в `.gitignore`, чтобы распространяться через git на все устройства
+- **Папка синхронизации Syncthing** — перенастроена с родительской папки `L:\PROject` на папку проекта `L:\PROject\SysW`, переименована из `PROject-syncthing` в `SysW-syncthing`. Это устраняет синхронизацию посторонних подпапок (`AI/`, `copy/`, `GoogleDrive/`, `WORK/`) и делает `.stignore` действующим
+
 ## [v0.17.0] — 2026-08-03
 
 ### Added
