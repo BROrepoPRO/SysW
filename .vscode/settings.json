@@ -22,11 +22,13 @@
     "terminal.integrated.defaultProfile": "SourceCraft",
     "terminal.integrated.profiles.windows": {
         "SourceCraft": {
-            "path": "cmd.exe",
+            "path": "pwsh.exe",
             "args": [
-                "/K",
-                ".venv\\Scripts\\activate.bat"
-            ]
+                "-NoExit",
+                "-Command",
+                ". \"L:\\PROject\\SysW\\.venv\\Scripts\\Activate.ps1\""
+            ],
+            "icon": "terminal-powershell"
         },
         "PowerShell": {
             "source": "PowerShell",

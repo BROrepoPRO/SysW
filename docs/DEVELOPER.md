@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v1.0.0)
+# Техническая документация разработчика — SysW (v1.0.2)
 
 ## 1. Архитектура проекта
 
@@ -918,5 +918,4 @@ Mod_Utils
 | [`config.py`](../scripts/config.py) | Конфигурация проекта (пути, настройки) | UTF-8 |
 | [`config.ps1`](../scripts/config.ps1) | Конфигурация окружения PowerShell | UTF-8 with BOM |
 | [`Set-ExcelTrust.ps1`](../scripts/Set-ExcelTrust.ps1) | Настройка доверия Excel для работы VBA-макросов | UTF-8 with BOM |
-| [`sync_fix.ps1`](../scripts/sync_fix.ps1) | Синхронизация и исправление | UTF-8 with BOM |
 | [`check_docs.py`](../scripts/check_docs.py) | Проверка актуальности документации | UTF-8 |

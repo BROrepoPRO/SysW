@@ -67,7 +67,6 @@ SCRIPTS = [
     "impVBA.py",
     "run_tests.py",
     "Set-ExcelTrust.ps1",
-    "sync_fix.ps1",
 ]
 
 

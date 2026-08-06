@@ -5,6 +5,17 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.0.2] — 2026-08-06
+
+### Fixed
+- **Активация виртуального окружения Python в терминале SourceCraft:** в `.vscode/settings.json` путь к активатору `.venv\Scripts\activate.bat` заменён на относительный через переменную `${workspaceFolder}`. Теперь терминал корректно активирует `.venv` независимо от фактического расположения проекта на диске.
+
+### Removed
+- **Синхронизация через Syncthing:** удалены `scripts/sync_fix.ps1` и корневой `.stignore`. Из документации (`docs/CHANGELOG.md`, `docs/ARCHITECTURE.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`, `docs/git-workflow.md`, `README.md`) убраны все упоминания Syncthing, `sync_fix`, `SysW-syncthing`, `.stfolder`, `.stignore` и файловой синхронизации через Syncthing. Из `scripts/check_docs.py` удалена запись о `sync_fix.ps1`.
+
+### Added
+- **Интеграция MCP-серверов File System и Git Tools** (пакеты `@modelcontextprotocol/server-filesystem` и `@modelcontextprotocol/server-git`) в `.sourcecraft` — доступ к файловой системе и Git-репозиторию проекта через `${workspaceFolder}`. В `docs/sourcecraft-guide.md` добавлен соответствующий раздел документации.
+
 ## [v1.0.0] — 2026-08-06
 
 ### Fixed
@@ -22,7 +33,7 @@
 - **`scripts/export_vba.py`:** запись `Mod_MainButtons` удалена из `COMPONENTS`
 
 ### Added
-- **`scripts/check_docs.py`** — инструмент проверки актуальности документации: проверяет версию v1.0.0, отсутствие упоминаний удалённого `Mod_MainButtons`, наличие новых элементов (`Mod_ModelTypes`, `PartIdentity`, `WorkIdentity`, `sync_fix`), корректность путей к скриптам (`scripts/`) и модулям (`src/modules/`), отсутствие ссылок на `ARCHITECTURE_SQLITE.md`
+- **`scripts/check_docs.py`** — инструмент проверки актуальности документации: проверяет версию v1.0.0, отсутствие упоминаний удалённого `Mod_MainButtons`, наличие новых элементов (`Mod_ModelTypes`, `PartIdentity`, `WorkIdentity`), корректность путей к скриптам (`scripts/`) и модулям (`src/modules/`), отсутствие ссылок на `ARCHITECTURE_SQLITE.md`
 - **`.github/workflows/docs-check.yml`** — GitHub Actions workflow для автоматической проверки документации при `push` и `pull_request` (установка Python, запуск `python scripts/check_docs.py`, публикация отчёта)
 - **Единый источник версии** — версия проекта централизована в трёх точках: `Mod_Constants.APP_VERSION` (VBA), `config.APP_VERSION` (Python), `$Script:AppVersion` (PowerShell). `scripts/check_docs.py` теперь импортирует версию из `config.APP_VERSION` вместо дублирования константы
 - **`scripts/update_version.py`** — скрипт автоматического обновления версии при релизе (`python scripts/update_version.py 1.1.0`): обновляет `Mod_Constants.bas`, `config.py`, `config.ps1`, `README.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`, `docs/ARCHITECTURE.md` и добавляет новый раздел в `docs/CHANGELOG.md`
@@ -30,16 +41,6 @@
 ### Changed
 - **`docs/ARCHITECTURE_SQLITE.md`** переименован в **`docs/ARCHITECTURE.md`** — актуализация имени документа архитектуры; обновлены все внутренние ссылки в README, DEVELOPER, ROADMAP, sourcecraft-guide и `.ycarules`
 - **Документация актуализирована до v0.18.0** — README.md, docs/ROADMAP.md, docs/DEVELOPER.md, docs/sourcecraft-guide.md, docs/git-workflow.md приведены в соответствие с фактической структурой проекта (13 модулей, классы `PartIdentity.cls`/`WorkIdentity.cls`, архивные классы листов `.bak`)
-
-## [v0.18.0] — 2026-08-05
-
-### Added
-- **`.stignore`** — корневой файл исключений Syncthing для исправления ошибок синхронизации проекта между устройствами (`.venv/`, `venv/`, `__pycache__/`, `*.pyc`, `*.pyo`, `_temp_export/`, `_temp_import/`, `_backup/`, `workOt/`, `src/sheets/*.bak`, `~$*`, `*.tmp`, `*.log`, `*.sync-conflict-*`, `Thumbs.db`, `Desktop.ini`, `.DS_Store`, `node_modules/`)
-- **`scripts/sync_fix.ps1`** — PowerShell 7 скрипт для применения обновлений конфигурации синхронизации Syncthing на других устройствах (перенастройка папки на `SysW`, переименование в `SysW-syncthing`, создание `.stfolder`, проверка `.stignore`)
-
-### Changed
-- **Синхронизация Syncthing** — исключены объекты, нарушающие целостность проекта (виртуальное окружение Python с абсолютными путями, резервные копии, блокировки Excel, кэш и временные файлы). `.stignore` не добавлен в `.gitignore`, чтобы распространяться через git на все устройства
-- **Папка синхронизации Syncthing** — перенастроена с родительской папки `L:\PROject` на папку проекта `L:\PROject\SysW`, переименована из `PROject-syncthing` в `SysW-syncthing`. Это устраняет синхронизацию посторонних подпапок (`AI/`, `copy/`, `GoogleDrive/`, `WORK/`) и делает `.stignore` действующим
 
 ## [v0.17.0] — 2026-08-03
 

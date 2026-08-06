@@ -43,9 +43,14 @@ def validate_version(version):
         sys.exit(1)
 
 
-def replace_in_file(path, old, new):
+def replace_in_file(path, prefix, version):
     """
-    Заменяет в файле первое вхождение old на new.
+    Заменяет в файле первое вхождение старой версии (после заданного префикса)
+    на новую, полностью удаляя остаток старого номера.
+
+    Использует регулярное выражение: ищет префикс + семантическую версию
+    (X.Y.Z), поэтому не оставляет «хвостов» вида 1.0.21.0.0 независимо от
+    длины старой и новой версий (например, 1.0.0 -> 1.0.2, 1.0.2 -> 1.0.3).
     Возвращает True, если замена выполнена, иначе False.
     """
     if not path.exists():
@@ -53,13 +58,18 @@ def replace_in_file(path, old, new):
         return False
 
     text = path.read_text(encoding="utf-8")
-    if old not in text:
-        print(f"  ПРОПУЩЕН: шаблон '{old}' не найден — {path}")
+
+    # Паттерн: экранированный префикс + полный номер версии (X.Y.Z).
+    # Захватываем весь номер, чтобы при замене не оставался хвост старой версии.
+    pattern = re.escape(prefix) + r"(\d+\.\d+\.\d+)"
+    new_text, count = re.subn(pattern, prefix + version, text, count=1)
+
+    if count == 0:
+        print(f"  ПРОПУЩЕН: шаблон '{prefix}<версия>' не найден — {path}")
         return False
 
-    new_text = text.replace(old, new, 1)
     path.write_text(new_text, encoding="utf-8")
-    print(f"  ОБНОВЛЕНО: {path}  ({old} -> {new})")
+    print(f"  ОБНОВЛЕНО: {path}  ({prefix}<старая версия> -> {version})")
     return True
 
 
@@ -68,7 +78,7 @@ def update_vba_const(path, version):
     return replace_in_file(
         path,
         'Public Const APP_VERSION As String = "',
-        f'Public Const APP_VERSION As String = "{version}"',
+        version,
     )
 
 
@@ -77,7 +87,7 @@ def update_python_config(path, version):
     return replace_in_file(
         path,
         'APP_VERSION = "',
-        f'APP_VERSION = "{version}"',
+        version,
     )
 
 
@@ -86,7 +96,7 @@ def update_powershell_config(path, version):
     return replace_in_file(
         path,
         '$Script:AppVersion = "',
-        f'$Script:AppVersion = "{version}"',
+        version,
     )
 
 
@@ -95,7 +105,7 @@ def update_readme(path, version):
     return replace_in_file(
         path,
         "**Версия:** v",
-        f"**Версия:** v{version}",
+        version,
     )
 
 
@@ -104,7 +114,7 @@ def update_developer(path, version):
     return replace_in_file(
         path,
         "SysW (v",
-        f"SysW (v{version}",
+        version,
     )
 
 
@@ -113,7 +123,7 @@ def update_roadmap(path, version):
     return replace_in_file(
         path,
         "**Версия системы:** ",
-        f"**Версия системы:** {version}",
+        version,
     )
 
 
@@ -122,7 +132,7 @@ def update_architecture(path, version):
     return replace_in_file(
         path,
         "Проект: SysW v",
-        f"Проект: SysW v{version}",
+        version,
     )
 
 

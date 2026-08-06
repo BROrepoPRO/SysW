@@ -41,6 +41,15 @@
 
 Использование `${workspaceFolder}` гарантирует, что конфигурация работает на любой машине, независимо от фактического расположения проекта на диске.
 
+##### Интегрированные MCP-серверы (@modelcontextprotocol)
+
+В проекте используются официальные MCP-серверы из реестра `@modelcontextprotocol`:
+
+- **File System** (`@modelcontextprotocol/server-filesystem`) — предоставляет ассистенту доступ к файловой системе проекта. Запускается командой `npx -y @modelcontextprotocol/server-filesystem "${workspaceFolder}"` и ограничен корнем рабочей директории.
+- **Git Tools** (`@modelcontextprotocol/server-git`) — предоставляет доступ к Git-репозиторию проекта (просмотр статуса, история, ветки, коммиты). Запускается командой `npx -y @modelcontextprotocol/server-git --repository "${workspaceFolder}"`.
+
+Оба сервера запускаются через `npx` и используют переменную `${workspaceFolder}`, что делает конфигурацию переносимой между машинами без привязки к конкретному пути на диске.
+
 #### 2. Кастомные инструкции (`customInstructions.file`)
 
 Ссылка на файл [`.ycarules`](../.ycarules), который содержит развёрнутые правила для ассистента (легенда, запреты, требования к кодировке, структура проекта и т.д.). SourceCraft автоматически подгружает содержимое этого файла как инструкции.
@@ -140,8 +149,7 @@ L:\PROject\SysW\
 │   ├── export_vba.py         # Выгрузка VBA-модулей из Excel (CP1251 → UTF-8)
 │   ├── impVBA.py             # Загрузка VBA-модулей в Excel (UTF-8 → CP1251)
 │   ├── run_tests.py          # Запуск тестов VBA
-│   ├── Set-ExcelTrust.ps1    # Настройка доверия Excel
-│   └── sync_fix.ps1          # Синхронизация и исправление
+│   └── Set-ExcelTrust.ps1    # Настройка доверия Excel
 ├── src/                  # Исходный код VBA
 │   ├── modules/              # 13 .bas модулей
 │   │   ├── Mod_AutoMatch.bas
@@ -213,7 +221,6 @@ L:\PROject\SysW\
 |--------|-----------|
 | [`config.ps1`](../scripts/config.ps1) | Конфигурация окружения PowerShell |
 | [`Set-ExcelTrust.ps1`](../scripts/Set-ExcelTrust.ps1) | Настройка доверия Excel для работы VBA-макросов |
-| [`sync_fix.ps1`](../scripts/sync_fix.ps1) | Синхронизация и исправление |
 
 **Важно:** PowerShell-скрипты должны быть в кодировке UTF-8 with BOM (требование PowerShell для корректной обработки кириллицы).
 
@@ -223,8 +230,8 @@ L:\PROject\SysW\
 
 | Версия | Дата | Изменения |
 |--------|------|-----------|
-| 0.18.0 | 2026-08-06 | Актуализация документации: переименование `ARCHITECTURE_SQLITE.md` → `ARCHITECTURE.md`, добавление `Mod_ModelTypes.bas`, `PartIdentity.cls`, `WorkIdentity.cls`, `sync_fix.ps1`, инструмент проверки документации `check_docs.py` |
-| 0.17.0 | 2026-08-05 | Добавлены классы `PartIdentity.cls`, `WorkIdentity.cls`; модуль `Mod_ModelTypes.bas`; скрипт `sync_fix.ps1` |
+| 0.18.0 | 2026-08-06 | Актуализация документации: переименование `ARCHITECTURE_SQLITE.md` → `ARCHITECTURE.md`, добавление `Mod_ModelTypes.bas`, `PartIdentity.cls`, `WorkIdentity.cls`, инструмент проверки документации `check_docs.py` |
+| 0.17.0 | 2026-08-05 | Добавлены классы `PartIdentity.cls`, `WorkIdentity.cls`; модуль `Mod_ModelTypes.bas` |
 | 0.16.0 | 2026-08-03 | Добавлен `.sourcecraft` с MCP-серверами (относительные пути `${workspaceFolder}`), интеграция `.ycarules` через `customInstructions.file`, правила exclude/include/critical. Удалён `.vscode/mcp.json` |
 | 0.15.0 | 2026-07-25 | Тесты TC-31..TC-44 (Mod_ModelDB, Mod_PickWork, Mod_AutoMatch); покрытие 46% → 69%; deprecated MODELDB_BASE_PATH; делегирование Btn_main_ImportVH_Click; COMPONENTS расширен до 13+3; $ProjectPath в Set-ExcelTrust.ps1 |
 | 0.14.0 | 2026-07-25 | Централизация логов: LOGS_DIR, директория logs/, перенос логов из корня; удаление мусора из base/models/ |
