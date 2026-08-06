@@ -34,7 +34,6 @@ COMPONENTS = {
     "Mod_FullTestRunner": "modules/Mod_FullTestRunner.bas",
     "Mod_Import": "modules/Mod_Import.bas",
     "Mod_Logger": "modules/Mod_Logger.bas",
-    "Mod_MainButtons": "modules/Mod_MainButtons.bas",
     "Mod_ModelDB": "modules/Mod_ModelDB.bas",
     "Mod_OrderHeader": "modules/Mod_OrderHeader.bas",
     "Mod_PickWork": "modules/Mod_PickWork.bas",

@@ -5,6 +5,13 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [Unreleased]
+
+### Removed
+- **Дублирующие обработчики кнопок из `Mod_MainButtons.bas`:** удалены `Btn_main_Import`, `Btn_main_AUTOz4`, `Btn_main_AUTOw`, `Btn_main_MANWRK`, `Btn_main_ImportVH_Click` (обёртки-делегирования, дублирующие канонические обработчики в `Mod_ButtonDispatcher.bas`)
+- **Модуль `Mod_MainButtons.bas`:** удалён целиком (после удаления всех процедур модуль стал пустым и не вызывался нигде в кодовой базе)
+- **`scripts/export_vba.py`:** запись `Mod_MainButtons` удалена из `COMPONENTS`
+
 ## [v0.18.0] — 2026-08-05
 
 ### Added
