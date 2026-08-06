@@ -5,12 +5,31 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.0.0] — 2026-08-06
+
+### Fixed
+- **`docs/ARCHITECTURE.md`:** исправлен раздел 1.3 «Структура файла модельной группы» — удалён несуществующий лист `matlib{GroupName}`, структура файла `base/models/{GroupName}.xlsm` приведена к фактическим 4 листам (`z4`, `{GroupName}z4`, `{GroupName}`, `{GroupName}w`). Соответствия хранятся внутри листов `{GroupName}z4` и `{GroupName}w`.
+- **`docs/ARCHITECTURE.md`:** устранены все упоминания несуществующего листа `matlib{GroupName}` (разделы 1.4, 2.5, 3.2, 3.3, 5.2, 5.4). Раздел 2.5 переработан в описание хранения соответствий внутри листов `{GroupName}z4`/`{GroupName}w`; функция `GetMatLibEntries` переработана на чтение соответствий из этих листов; из SQLite-схемы удалена таблица `matlib`.
+
+### Changed
+- **Версия проекта обновлена до v1.0.0** — `README.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`, `docs/ARCHITECTURE.md`, `scripts/check_docs.py`, `plans/update_docs_plan.md`.
+
 ## [Unreleased]
 
 ### Removed
 - **Дублирующие обработчики кнопок из `Mod_MainButtons.bas`:** удалены `Btn_main_Import`, `Btn_main_AUTOz4`, `Btn_main_AUTOw`, `Btn_main_MANWRK`, `Btn_main_ImportVH_Click` (обёртки-делегирования, дублирующие канонические обработчики в `Mod_ButtonDispatcher.bas`)
 - **Модуль `Mod_MainButtons.bas`:** удалён целиком (после удаления всех процедур модуль стал пустым и не вызывался нигде в кодовой базе)
 - **`scripts/export_vba.py`:** запись `Mod_MainButtons` удалена из `COMPONENTS`
+
+### Added
+- **`scripts/check_docs.py`** — инструмент проверки актуальности документации: проверяет версию v1.0.0, отсутствие упоминаний удалённого `Mod_MainButtons`, наличие новых элементов (`Mod_ModelTypes`, `PartIdentity`, `WorkIdentity`, `sync_fix`), корректность путей к скриптам (`scripts/`) и модулям (`src/modules/`), отсутствие ссылок на `ARCHITECTURE_SQLITE.md`
+- **`.github/workflows/docs-check.yml`** — GitHub Actions workflow для автоматической проверки документации при `push` и `pull_request` (установка Python, запуск `python scripts/check_docs.py`, публикация отчёта)
+- **Единый источник версии** — версия проекта централизована в трёх точках: `Mod_Constants.APP_VERSION` (VBA), `config.APP_VERSION` (Python), `$Script:AppVersion` (PowerShell). `scripts/check_docs.py` теперь импортирует версию из `config.APP_VERSION` вместо дублирования константы
+- **`scripts/update_version.py`** — скрипт автоматического обновления версии при релизе (`python scripts/update_version.py 1.1.0`): обновляет `Mod_Constants.bas`, `config.py`, `config.ps1`, `README.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`, `docs/ARCHITECTURE.md` и добавляет новый раздел в `docs/CHANGELOG.md`
+
+### Changed
+- **`docs/ARCHITECTURE_SQLITE.md`** переименован в **`docs/ARCHITECTURE.md`** — актуализация имени документа архитектуры; обновлены все внутренние ссылки в README, DEVELOPER, ROADMAP, sourcecraft-guide и `.ycarules`
+- **Документация актуализирована до v0.18.0** — README.md, docs/ROADMAP.md, docs/DEVELOPER.md, docs/sourcecraft-guide.md, docs/git-workflow.md приведены в соответствие с фактической структурой проекта (13 модулей, классы `PartIdentity.cls`/`WorkIdentity.cls`, архивные классы листов `.bak`)
 
 ## [v0.18.0] — 2026-08-05
 

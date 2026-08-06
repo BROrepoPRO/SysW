@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v0.15.0)
+# Техническая документация разработчика — SysW (v1.0.0)
 
 ## 1. Архитектура проекта
 
@@ -13,15 +13,17 @@
 - **Тестовый раннер** ([`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas)) — автоматическое тестирование
 - **Логирование** ([`Mod_Logger.bas`](../src/modules/Mod_Logger.bas)) — логирование с ротацией
 - **Операции с листами** ([`Mod_SheetOps.bas`](../src/modules/Mod_SheetOps.bas)) — операции с листами
-- **Кнопки листа main** ([`Mod_MainButtons.bas`](../src/modules/Mod_MainButtons.bas)) — кнопки листа main
 - **Кнопки листов z4/work** ([`Mod_SheetButtons.bas`](../src/modules/Mod_SheetButtons.bas)) — кнопки листов z4/work
 - **Константы и реестр имён** ([`Mod_Constants.bas`](../src/modules/Mod_Constants.bas)) — константы столбцов и управление листом libname
+- **Типы данных моделей** ([`Mod_ModelTypes.bas`](../src/modules/Mod_ModelTypes.bas)) — Type-структуры модельных данных
 - **Доступ к файлам групп** ([`Mod_ModelDB.bas`](../src/modules/Mod_ModelDB.bas)) — открытие файлов групп, чтение работ/запчастей
 - **Ручной подбор работ** ([`Mod_PickWork.bas`](../src/modules/Mod_PickWork.bas)) — ручной подбор работ из справочника группы
 - **Автоматический подбор** ([`Mod_AutoMatch.bas`](../src/modules/Mod_AutoMatch.bas)) — автоматический подбор работ/запчастей
+- **Объект детали** ([`PartIdentity.cls`](../src/classes/PartIdentity.cls)) — класс-объект детали
+- **Объект работы** ([`WorkIdentity.cls`](../src/classes/WorkIdentity.cls)) — класс-объект работы
 - **Лист main** ([`Лист2_main.cls`](../src/sheets/Лист2_main.cls)) — обработчик событий листа
-- **Лист work** ([`Sheet_work.cls`](../src/sheets/Sheet_work.cls)) — обработчик событий листа work
-- **Лист z4** ([`Sheet_z4.cls`](../src/sheets/Sheet_z4.cls)) — обработчик событий листа z4
+- **Лист work** ([`Sheet_work.cls.bak`](../src/sheets/Sheet_work.cls.bak)) — обработчик событий листа work (архивный)
+- **Лист z4** ([`Sheet_z4.cls.bak`](../src/sheets/Sheet_z4.cls.bak)) — обработчик событий листа z4 (архивный)
 
 ### 1.2 Схема взаимодействия модулей
 
@@ -41,15 +43,6 @@ Mod_ButtonDispatcher (обработчики кнопок)
        ├── Mod_Import.ClearHeader_UI()
        ├── Mod_OrderHeader.FillHeaderFromOrder_UI()
        └── ...
-
-Mod_MainButtons (кнопки листа main)
-       │
-       ├── Mod_Import (вызовы импорта)
-       ├── Mod_OrderHeader (заполнение шапки)
-       ├── Mod_SheetOps (операции с листами)
-       └── Mod_PickWork (ручной подбор работ)
-              │
-              └── Mod_ModelDB (доступ к файлам групп)
 
 Mod_SheetButtons (кнопки листов z4/work)
        │
@@ -278,22 +271,35 @@ python scripts/run_tests.py
 | `ClearMainSheet_UI([silent])` | Очищает все данные на листе main с подтверждением |
 | `ClearHeader_UI()` | Очищает шапку заказа (B5:B17) на листе main |
 
-### 2.9 Mod_MainButtons.bas — Кнопки листа main
+### 2.9 Mod_ModelTypes.bas — Типы данных моделей
 
-**Файл:** [`Mod_MainButtons.bas`](../src/modules/Mod_MainButtons.bas)
+**Файл:** [`Mod_ModelTypes.bas`](../src/modules/Mod_ModelTypes.bas)
 
-**Назначение:** Обработчики кнопок, расположенных на листе main. Содержит бизнес-логику, специфичную для листа main.
+**Назначение:** Централизованное хранение Type-структур модельных данных, используемых модулями `Mod_ModelDB`, `Mod_PickWork` и `Mod_AutoMatch`.
 
-**Обработчики:**
+**Типы данных:**
 
-| Процедура | Описание |
-|-----------|----------|
-| `Btn_main_Import()` | Импорт данных на лист main |
-| `Btn_main_AUTOz4()` | Заглушка: автоподбор запчастей — в разработке |
-| `Btn_main_AUTOw()` | Заглушка: автоподбор работ — в разработке |
-| `Btn_main_AUTO()` | Автоматический подбор работ/запчастей через `Mod_AutoMatch.AutoMatch_UI` |
-| `Btn_main_MANz4()` | Заглушка: ручной подбор запчастей — в разработке |
-| `Btn_main_MANWRK()` | Ручной подбор работ — открывает файл группы через `Mod_PickWork.PickWork_UI` |
+| Тип | Поле | Описание |
+|-----|------|----------|
+| `PartEntry` | `Code As String` | Код запчасти |
+| | `Name As String` | Наименование запчасти |
+| | `Unit As String` | Единица измерения |
+| | `Price As Currency` | Цена запчасти |
+| | `Note As String` | Примечание |
+| `WorkEntry` | `Code As String` | Код работы |
+| | `Name As String` | Наименование работы |
+| | `Unit As String` | Единица измерения |
+| | `NormHours As Double` | Норматив в нормо-часах |
+| | `Price As Currency` | Цена работы |
+| | `Note As String` | Примечание |
+| `MatLibEntry` | `Code As String` | Код материала |
+| | `Name As String` | Наименование материала |
+| | `Unit As String` | Единица измерения |
+| | `Price As Currency` | Цена материала |
+| `ModelPartEntry` | `Part As PartEntry` | Запчасть модели |
+| | `Model As String` | Модель |
+| `ModelWorkEntry` | `Work As WorkEntry` | Работа модели |
+| | `Model As String` | Модель |
 
 ### 2.10 Mod_SheetButtons.bas — Кнопки листов z4/work
 
@@ -436,7 +442,7 @@ python scripts/run_tests.py
 | `InitLibName()` | Заполняет лист libname начальными данными реестра имён |
 | `AddWorkEntry()` | Добавляет запись для work.xlsm в конец списка на листе libname |
 
-> **Примечание:** Ранее функциональность реестра имён находилась в отдельном модуле `Mod_LibName.bas` (удалён в v0.9.0), который был объединён с `Mod_Constants.bas` для централизованного управления константами.
+> **Примечание:** Ранее функциональность реестра имён находилась в отдельном модуле `Mod_LibName.bas` (удалён в v1.0.0), который был объединён с `Mod_Constants.bas` для централизованного управления константами.
 
 ### 2.15 Лист2_main.cls — Основной лист
 
@@ -450,25 +456,37 @@ python scripts/run_tests.py
 3. Очистка диапазона B5:B17
 4. Вызов `Mod_OrderHeader.FillHeaderFromOrder(CStr(b4Value))`
 
-### 2.16 Sheet_work.cls — Лист work
+### 2.16 Sheet_work.cls.bak — Лист work (архивный)
 
-**Файл:** [`Sheet_work.cls`](../src/sheets/Sheet_work.cls)
+**Файл:** [`Sheet_work.cls.bak`](../src/sheets/Sheet_work.cls.bak)
 
-**Назначение:** Класс листа work. Обрабатывает события, специфичные для листа work.
-
-**Обработчики:**
-- `Worksheet_Activate` — закрепление первых двух строк при активации листа
-
-### 2.17 Sheet_z4.cls — Лист z4
-
-**Файл:** [`Sheet_z4.cls`](../src/sheets/Sheet_z4.cls)
-
-**Назначение:** Класс листа z4. Обрабатывает события, специфичные для листа z4.
+**Назначение:** Класс листа work. Обрабатывает события, специфичные для листа work. Файл переименован в `.bak` и не является активным модулем.
 
 **Обработчики:**
 - `Worksheet_Activate` — закрепление первых двух строк при активации листа
 
-### 2.18 Структура листов work и z4
+### 2.17 Sheet_z4.cls.bak — Лист z4 (архивный)
+
+**Файл:** [`Sheet_z4.cls.bak`](../src/sheets/Sheet_z4.cls.bak)
+
+**Назначение:** Класс листа z4. Обрабатывает события, специфичные для листа z4. Файл переименован в `.bak` и не является активным модулем.
+
+**Обработчики:**
+- `Worksheet_Activate` — закрепление первых двух строк при активации листа
+
+### 2.18 PartIdentity.cls — Объект детали
+
+**Файл:** [`PartIdentity.cls`](../src/classes/PartIdentity.cls)
+
+**Назначение:** Класс-объект, представляющий деталь (запчасть). Используется для идентификации и передачи данных о детали между модулями.
+
+### 2.19 WorkIdentity.cls — Объект работы
+
+**Файл:** [`WorkIdentity.cls`](../src/classes/WorkIdentity.cls)
+
+**Назначение:** Класс-объект, представляющий работу. Используется для идентификации и передачи данных о работе между модулями.
+
+### 2.20 Структура листов work и z4
 
 #### Лист work (работы)
 
@@ -568,14 +586,16 @@ python scripts/impVBA.py
 | `Mod_Logger` | `src/modules/Mod_Logger.bas` | Стандартный модуль |
 | `Mod_Constants` | `src/modules/Mod_Constants.bas` | Стандартный модуль |
 | `Mod_SheetOps` | `src/modules/Mod_SheetOps.bas` | Стандартный модуль |
-| `Mod_MainButtons` | `src/modules/Mod_MainButtons.bas` | Стандартный модуль |
 | `Mod_SheetButtons` | `src/modules/Mod_SheetButtons.bas` | Стандартный модуль |
+| `Mod_ModelTypes` | `src/modules/Mod_ModelTypes.bas` | Стандартный модуль |
 | `Mod_ModelDB` | `src/modules/Mod_ModelDB.bas` | Стандартный модуль |
 | `Mod_PickWork` | `src/modules/Mod_PickWork.bas` | Стандартный модуль |
 | `Mod_AutoMatch` | `src/modules/Mod_AutoMatch.bas` | Стандартный модуль |
+| `PartIdentity` | `src/classes/PartIdentity.cls` | Класс |
+| `WorkIdentity` | `src/classes/WorkIdentity.cls` | Класс |
 | `Лист2` | `src/sheets/Лист2_main.cls` | Класс листа |
-| `Sheet_work` | `src/sheets/Sheet_work.cls` | Класс листа |
-| `Sheet_z4` | `src/sheets/Sheet_z4.cls` | Класс листа |
+| `Sheet_work` | `src/sheets/Sheet_work.cls.bak` | Класс листа (архивный) |
+| `Sheet_z4` | `src/sheets/Sheet_z4.cls.bak` | Класс листа (архивный) |
 
 **Использование:**
 ```bash
@@ -778,7 +798,7 @@ python scripts/run_tests.py
 
 | Шаг | Что проверяет | Действие при неудаче |
 |-----|--------------|---------------------|
-| 1. Check VBA files exist | Наличие всех 16 VBA-файлов (13 `.bas` + 3 `.cls`) | Fail |
+| 1. Check VBA files exist | Наличие всех 18 VBA-файлов (13 `.bas` + 2 класса + 3 класса листов) | Fail |
 | 2. Check UTF-8 encoding | Валидная UTF-8 кодировка каждого файла | Fail |
 | 3. Check VBA syntax (basic) | Отсутствие недопустимых символов (коды < 32, кроме \n\r\t) | Fail |
 | 4. Check CHANGELOG updated | Наличие записи за сегодняшнюю дату | Warning (non-blocking) |
@@ -821,8 +841,8 @@ git push
 - [`README.md`](../README.md) — общее описание проекта, быстрый старт
 - [`docs/sourcecraft-guide.md`](sourcecraft-guide.md) — руководство по работе с SourceCraft Code Assistant
 - [`docs/git-workflow.md`](git-workflow.md) — Git-инструкции и веточная стратегия
-- [`docs/ARCHITECTURE_SQLITE.md`](ARCHITECTURE_SQLITE.md) — архитектура выноса данных в SQLite
-- [`CHANGELOG.md`](../CHANGELOG.md) — история версий проекта
+- [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) — архитектура выноса данных в SQLite
+- [`CHANGELOG.md`](CHANGELOG.md) — история версий проекта
 
 ---
 
@@ -833,8 +853,8 @@ git push
   └── Mod_OrderHeader.FillHeaderFromOrder()
         └── Mod_Utils (GetSheetByName, FileExists, FormatDateSQL)
 
-Sheet_work.cls ─── Mod_SheetButtons
-Sheet_z4.cls   ─── Mod_SheetButtons
+Sheet_work.cls.bak ─── Mod_SheetButtons
+Sheet_z4.cls.bak   ─── Mod_SheetButtons
 
 Mod_ButtonDispatcher
   ├── Mod_SheetOps (ClearMainSheet_UI, ClearHeader_UI)
@@ -842,15 +862,6 @@ Mod_ButtonDispatcher
   ├── Mod_OrderHeader (FillHeaderFromOrder_UI, FindOrder_UI)
   ├── Mod_FullTestRunner (RunAllTests_UI)
   └── Mod_Utils (WriteLog_UI, ShowWorkbookPath_UI, ShowCurrentUser_UI, CheckFileExists_UI)
-
-Mod_MainButtons
-  ├── Mod_Import (вызовы импорта)
-  ├── Mod_OrderHeader (заполнение шапки)
-  ├── Mod_SheetOps (операции с листами)
-  ├── Mod_PickWork (ручной подбор работ)
-  │     └── Mod_ModelDB (доступ к файлам групп)
-  └── Mod_AutoMatch (автоматический подбор)
-        └── Mod_ModelDB (доступ к файлам групп)
 
 Mod_SheetButtons
   ├── Mod_Import (вызовы импорта)
@@ -886,14 +897,16 @@ Mod_Utils
 | `Mod_Logger` | `src/modules/Mod_Logger.bas` | Стандартный модуль |
 | `Mod_Constants` | `src/modules/Mod_Constants.bas` | Стандартный модуль |
 | `Mod_SheetOps` | `src/modules/Mod_SheetOps.bas` | Стандартный модуль |
-| `Mod_MainButtons` | `src/modules/Mod_MainButtons.bas` | Стандартный модуль |
 | `Mod_SheetButtons` | `src/modules/Mod_SheetButtons.bas` | Стандартный модуль |
+| `Mod_ModelTypes` | `src/modules/Mod_ModelTypes.bas` | Стандартный модуль |
 | `Mod_ModelDB` | `src/modules/Mod_ModelDB.bas` | Стандартный модуль |
 | `Mod_PickWork` | `src/modules/Mod_PickWork.bas` | Стандартный модуль |
 | `Mod_AutoMatch` | `src/modules/Mod_AutoMatch.bas` | Стандартный модуль |
+| `PartIdentity` | `src/classes/PartIdentity.cls` | Класс |
+| `WorkIdentity` | `src/classes/WorkIdentity.cls` | Класс |
 | `Лист2` | `src/sheets/Лист2_main.cls` | Класс листа |
-| `Sheet_work` | `src/sheets/Sheet_work.cls` | Класс листа |
-| `Sheet_z4` | `src/sheets/Sheet_z4.cls` | Класс листа |
+| `Sheet_work` | `src/sheets/Sheet_work.cls.bak` | Класс листа (архивный) |
+| `Sheet_z4` | `src/sheets/Sheet_z4.cls.bak` | Класс листа (архивный) |
 
 ## Приложение C: Скрипты автоматизации
 
@@ -905,3 +918,5 @@ Mod_Utils
 | [`config.py`](../scripts/config.py) | Конфигурация проекта (пути, настройки) | UTF-8 |
 | [`config.ps1`](../scripts/config.ps1) | Конфигурация окружения PowerShell | UTF-8 with BOM |
 | [`Set-ExcelTrust.ps1`](../scripts/Set-ExcelTrust.ps1) | Настройка доверия Excel для работы VBA-макросов | UTF-8 with BOM |
+| [`sync_fix.ps1`](../scripts/sync_fix.ps1) | Синхронизация и исправление | UTF-8 with BOM |
+| [`check_docs.py`](../scripts/check_docs.py) | Проверка актуальности документации | UTF-8 |

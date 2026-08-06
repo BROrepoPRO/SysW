@@ -314,7 +314,13 @@ Public Function GetPartIdentities(ByVal groupName As String) As Collection
     End If
 
     ' Определяем последнюю строку (данные с 4-й строки)
+    On Error Resume Next
     lastRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row
+    If Err.Number <> 0 Then
+        Call Mod_Logger.WriteLog("Mod_ModelDB", "GetPartIdentities: Error getting lastRow: " & Err.Description)
+        Err.Clear
+    End If
+    On Error GoTo ErrHandler
     If lastRow < 4 Then
         Set GetPartIdentities = result
         Exit Function
@@ -322,6 +328,7 @@ Public Function GetPartIdentities(ByVal groupName As String) As Collection
 
     ' Читаем данные
     For i = 4 To lastRow
+        On Error Resume Next
         If Not IsEmpty(ws.Cells(i, 2).Value) Then
             If Not IsEmpty(ws.Cells(i, 9).Value) Then ' I — АГРЕГАТ
                 Set identity = New PartIdentity
@@ -335,6 +342,11 @@ Public Function GetPartIdentities(ByVal groupName As String) As Collection
                 result.Add identity
             End If
         End If
+        If Err.Number <> 0 Then
+            Call Mod_Logger.WriteLog("Mod_ModelDB", "GetPartIdentities: Error at row " & CStr(i) & ": " & Err.Description)
+            Err.Clear
+        End If
+        On Error GoTo ErrHandler
     Next i
 
     Set GetPartIdentities = result

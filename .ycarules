@@ -218,7 +218,7 @@
   | Путь | Содержимое |
   |------|------------|
   | `base/models/` | Модели групп: `4x4.xlsm`, `2170.xlsm`, `2180.xlsm`, `2190.xlsm`, `GAZ.xlsm`, `UAZ.xlsm` |
-  | `docs/` | Документация (`ARCHITECTURE_SQLITE.md`, `DEVELOPER.md`, `git-workflow.md`, `sourcecraft-guide.md`) |
+  | `docs/` | Документация (`ARCHITECTURE.md`, `DEVELOPER.md`, `git-workflow.md`, `sourcecraft-guide.md`) |
   | `logs/` | Лог-файлы |
   | `plans/` | Планы, отчёты, решения |
   | `plans/_archive/` | Архив выполненных планов |
@@ -240,7 +240,6 @@
   | `Mod_FullTestRunner.bas` | Запуск тестов |
   | `Mod_Import.bas` | Импорт данных |
   | `Mod_Logger.bas` | Логирование |
-  | `Mod_MainButtons.bas` | Основные кнопки |
   | `Mod_ModelDB.bas` | Работа с базой моделей |
   | `Mod_ModelTypes.bas` | Типы данных |
   | `Mod_OrderHeader.bas` | Шапка заказа |
@@ -259,10 +258,12 @@
 - **`[S4]` POWERSHELL-СКРИПТЫ** (`scripts/`)
   - `config.ps1` – конфигурация.
   - `Set-ExcelTrust.ps1` – настройка доверия Excel.
+  - `sync_fix.ps1` – синхронизация и исправление.
   - Кодировка – **UTF‑8 с BOM**.
   - **Запрещено** изменять VBA-модули напрямую – только через скрипты импорта/экспорта.
 
 - **`[S5]` PYTHON-СКРИПТЫ** (`scripts/`)
+  - `check_docs.py` – проверка актуальности документации.
   - `config.py` – конфигурация.
   - `export_vba.py` – экспорт (CP1251 → UTF‑8).
   - `impVBA.py` – импорт (UTF‑8 → CP1251).
@@ -320,7 +321,7 @@
 - **`[E2]` ОБЯЗАТЕЛЬНОЕ ВХОЖДЕНИЕ (`Include`)**
   Ассистент **обязан учитывать** указанные файлы/папки при анализе контекста, даже если они не открыты.
   *Пример:* `Include: "docs/*.md", "src/modules/Mod_Utils.bas"`
-  *Рекомендуемые:* `Include: "docs/DEVELOPER.md", "docs/ARCHITECTURE_SQLITE.md", "src/modules/Mod_Constants.bas"`
+  *Рекомендуемые:* `Include: "docs/DEVELOPER.md", "docs/ARCHITECTURE.md", "src/modules/Mod_Constants.bas"`
 
 - **`[E3]` КРИТИЧЕСКИЕ ФАЙЛЫ (защита)**
   Перечень (относительные пути):
@@ -390,7 +391,7 @@
 - все изменения согласовывать перед реализацией (создавать план в `plans/` или устный запрос у юзера)
 - отвечать — только на русском языке
 - комментарии в коде — на русском языке
-- строго соблюдать правила `.ycarules`
+- строго соблюдать правила `@.ycarules`
 - при неоднозначности — переспрашивать, а не делать предположения
 - после завершения задачи проверка чистоты проекта от мусора
 - после завершения всех задач - запрос у юзера и выполнение коммита и пуша

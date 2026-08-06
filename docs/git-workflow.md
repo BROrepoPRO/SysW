@@ -82,7 +82,7 @@ git status
 
 ```bash
 # Windows: экспорт VBA-модулей из Excel на диск
-python export_vba.py
+python scripts/export_vba.py
 ```
 
 ### 3. Обновить CHANGELOG.md
@@ -107,8 +107,8 @@ python export_vba.py
 VBA-файлы должны быть в UTF-8 (без BOM). Проверка:
 
 ```bash
-python3 -c "
-with open('Mod_Utils.bas', 'rb') as f:
+python -c "
+with open('src/modules/Mod_Utils.bas', 'rb') as f:
     raw = f.read()
 raw.decode('utf-8')  # вызовет ошибку, если не UTF-8
 print('OK: UTF-8')

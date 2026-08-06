@@ -7,6 +7,9 @@
 """
 from pathlib import Path
 
+# Версия приложения (единый источник для всей системы)
+APP_VERSION = "1.0.0"
+
 # Корень проекта — родительская директория scripts/
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 

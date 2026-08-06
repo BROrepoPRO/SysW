@@ -26,7 +26,7 @@
 
 ## Конфигурация SourceCraft (`.sourcecraft`)
 
-Начиная с версии v0.16.0, проект использует корневой файл [`.sourcecraft`](../.sourcecraft) для централизованной конфигурации SourceCraft Code Assistant.
+Начиная с версии v1.0.0, проект использует корневой файл [`.sourcecraft`](../.sourcecraft) для централизованной конфигурации SourceCraft Code Assistant.
 
 ### Структура `.sourcecraft`
 
@@ -55,7 +55,7 @@
 
 ### Перенос с `.vscode/mcp.json`
 
-Ранее конфигурация MCP-серверов хранилась в [`.vscode/mcp.json`](../.vscode/mcp.json). Начиная с v0.16.0, этот файл удалён, а его функциональность полностью перенесена в `.sourcecraft` с заменой абсолютных путей на `${workspaceFolder}`.
+Ранее конфигурация MCP-серверов хранилась в [`.vscode/mcp.json`](../.vscode/mcp.json). Начиная с v1.0.0, этот файл удалён, а его функциональность полностью перенесена в `.sourcecraft` с заменой абсолютных путей на `${workspaceFolder}`.
 
 ---
 
@@ -105,11 +105,11 @@ VBA-файлы (`.bas`, `.cls`) используют двухфазную мод
 
 1. Работа с VBA-модулями — только через скрипты импорта/экспорта
 2. После изменений — запустить тесты: `python scripts/run_tests.py`
-3. Обновить [`CHANGELOG.md`](../CHANGELOG.md)
+3. Обновить [`CHANGELOG.md`](CHANGELOG.md)
 
 ### Обновление CHANGELOG.md
 
-При любых изменениях, влияющих на функциональность проекта, обновлять [`CHANGELOG.md`](../CHANGELOG.md) в формате [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/).
+При любых изменениях, влияющих на функциональность проекта, обновлять [`CHANGELOG.md`](CHANGELOG.md) в формате [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/).
 
 ---
 
@@ -127,16 +127,21 @@ L:\PROject\SysW\
 │   ├── sourcecraft-guide.md      # Настоящее руководство
 │   ├── git-workflow.md           # Git-инструкции (ветки, коммиты, CI)
 │   ├── DEVELOPER.md              # Техническая документация разработчика
-│   └── ARCHITECTURE_SQLITE.md    # Архитектура выноса данных в SQLite
+│   ├── ARCHITECTURE.md           # Архитектура выноса данных в SQLite
+│   ├── ROADMAP.md                # Единый план развития
+│   └── table.md                  # Справочник таблиц
 ├── plans/                # Планы изменений, архитектурные решения, отчёты
+    ├──_promts/             # Задания текущие и завершенные
 │   └── _archive/             # Архив выполненных планов
 ├── scripts/              # Скрипты автоматизации
+│   ├── check_docs.py           # Проверка актуальности документации
 │   ├── config.py             # Конфигурация проекта (пути, настройки)
 │   ├── config.ps1            # Конфигурация окружения PowerShell
 │   ├── export_vba.py         # Выгрузка VBA-модулей из Excel (CP1251 → UTF-8)
 │   ├── impVBA.py             # Загрузка VBA-модулей в Excel (UTF-8 → CP1251)
 │   ├── run_tests.py          # Запуск тестов VBA
-│   └── Set-ExcelTrust.ps1    # Настройка доверия Excel
+│   ├── Set-ExcelTrust.ps1    # Настройка доверия Excel
+│   └── sync_fix.ps1          # Синхронизация и исправление
 ├── src/                  # Исходный код VBA
 │   ├── modules/              # 13 .bas модулей
 │   │   ├── Mod_AutoMatch.bas
@@ -145,17 +150,20 @@ L:\PROject\SysW\
 │   │   ├── Mod_FullTestRunner.bas
 │   │   ├── Mod_Import.bas
 │   │   ├── Mod_Logger.bas
-│   │   ├── Mod_MainButtons.bas
 │   │   ├── Mod_ModelDB.bas
+│   │   ├── Mod_ModelTypes.bas
 │   │   ├── Mod_OrderHeader.bas
 │   │   ├── Mod_PickWork.bas
 │   │   ├── Mod_SheetButtons.bas
 │   │   ├── Mod_SheetOps.bas
 │   │   └── Mod_Utils.bas
+│   ├── classes/               # 2 .cls класса
+│   │   ├── PartIdentity.cls
+│   │   └── WorkIdentity.cls
 │   └── sheets/               # 3 .cls листа
 │       ├── Лист2_main.cls
-│       ├── Sheet_work.cls
-│       └── Sheet_z4.cls
+│       ├── Sheet_work.cls.bak
+│       └── Sheet_z4.cls.bak
 ├── .gitattributes        # Настройки Git для нормализации кодировок
 ├── .sourcecraft          # Конфигурация SourceCraft (MCP-серверы, правила, инструкции)
 ├── .ycarules             # Правила для SourceCraft Code Assistant
@@ -173,7 +181,7 @@ L:\PROject\SysW\
 | `plans/` | Планы изменений, архитектурные решения, отчёты. Создаются перед изменением VBA-модулей |
 | `plans/_archive/` | Архив выполненных планов |
 | `scripts/` | Скрипты автоматизации (Python + PowerShell). Python-скрипты в UTF-8, PowerShell в UTF-8 with BOM |
-| `docs/` | Документация проекта: `sourcecraft-guide.md` (руководство по SourceCraft), `git-workflow.md` (Git-инструкции), `DEVELOPER.md` (техническая документация), `ARCHITECTURE_SQLITE.md` (архитектура SQLite) |
+| `docs/` | Документация проекта: `sourcecraft-guide.md` (руководство по SourceCraft), `git-workflow.md` (Git-инструкции), `DEVELOPER.md` (техническая документация), `ARCHITECTURE.md` (архитектура проекта) |
 | `.vscode/` | Настройки VS Code (кодировка UTF-8, кастомный терминал, VBA Language Server) |
 
 ### Ключевые файлы конфигурации
@@ -193,6 +201,7 @@ L:\PROject\SysW\
 
 | Скрипт | Назначение | Кодировка |
 |--------|-----------|-----------|
+| [`check_docs.py`](../scripts/check_docs.py) | Проверка актуальности документации | UTF-8 |
 | [`config.py`](../scripts/config.py) | Конфигурация проекта (пути, настройки) | UTF-8 |
 | [`export_vba.py`](../scripts/export_vba.py) | Выгрузка VBA-модулей из Excel на диск (CP1251 → UTF-8) | UTF-8 |
 | [`impVBA.py`](../scripts/impVBA.py) | Загрузка VBA-модулей с диска в Excel (UTF-8 → CP1251) | UTF-8 |
@@ -204,6 +213,7 @@ L:\PROject\SysW\
 |--------|-----------|
 | [`config.ps1`](../scripts/config.ps1) | Конфигурация окружения PowerShell |
 | [`Set-ExcelTrust.ps1`](../scripts/Set-ExcelTrust.ps1) | Настройка доверия Excel для работы VBA-макросов |
+| [`sync_fix.ps1`](../scripts/sync_fix.ps1) | Синхронизация и исправление |
 
 **Важно:** PowerShell-скрипты должны быть в кодировке UTF-8 with BOM (требование PowerShell для корректной обработки кириллицы).
 
@@ -213,6 +223,8 @@ L:\PROject\SysW\
 
 | Версия | Дата | Изменения |
 |--------|------|-----------|
+| 0.18.0 | 2026-08-06 | Актуализация документации: переименование `ARCHITECTURE_SQLITE.md` → `ARCHITECTURE.md`, добавление `Mod_ModelTypes.bas`, `PartIdentity.cls`, `WorkIdentity.cls`, `sync_fix.ps1`, инструмент проверки документации `check_docs.py` |
+| 0.17.0 | 2026-08-05 | Добавлены классы `PartIdentity.cls`, `WorkIdentity.cls`; модуль `Mod_ModelTypes.bas`; скрипт `sync_fix.ps1` |
 | 0.16.0 | 2026-08-03 | Добавлен `.sourcecraft` с MCP-серверами (относительные пути `${workspaceFolder}`), интеграция `.ycarules` через `customInstructions.file`, правила exclude/include/critical. Удалён `.vscode/mcp.json` |
 | 0.15.0 | 2026-07-25 | Тесты TC-31..TC-44 (Mod_ModelDB, Mod_PickWork, Mod_AutoMatch); покрытие 46% → 69%; deprecated MODELDB_BASE_PATH; делегирование Btn_main_ImportVH_Click; COMPONENTS расширен до 13+3; $ProjectPath в Set-ExcelTrust.ps1 |
 | 0.14.0 | 2026-07-25 | Централизация логов: LOGS_DIR, директория logs/, перенос логов из корня; удаление мусора из base/models/ |

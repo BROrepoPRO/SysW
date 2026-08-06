@@ -1,26 +1,26 @@
 # План развития системы SysW (Roadmap)
 
-> **Версия системы:** 0.14.0
-> **Дата:** 2026-07-25
-> **Статус:** Актуализирован (Фаза 1.1 выполнена, рефакторинг Mod_LibName выполнен, ImportFromB2_UI реализован, логи вынесены в `logs/`)
+> **Версия системы:** 1.0.0
+> **Дата:** 2026-08-06
+> **Статус:** Актуализирован (Фаза 1.1 выполнена, рефакторинг Mod_LibName выполнен, ImportFromB2_UI реализован, логи вынесены в `logs/`, документация приведена к v1.0.0)
 
 ---
 
 ## 1. Текущее состояние
 
-Система SysW (v0.14.0) — модульная VBA-надстройка для Excel с обвязкой на Python/PowerShell, автоматизирующая обработку заказ-нарядов авторемонта (импорт данных из отчётов, заполнение шапки заказа, поиск по ГРЗ, учёт работ и запчастей).
+Система SysW (v1.0.0) — модульная VBA-надстройка для Excel с обвязкой на Python/PowerShell, автоматизирующая обработку заказ-нарядов авторемонта (импорт данных из отчётов, заполнение шапки заказа, поиск по ГРЗ, учёт работ и запчастей).
 
 ### Что реализовано
 
 | Область | Статус | Подробности |
 |---------|--------|-------------|
-| **Структура проекта** | ✅ v0.6.0 | `src/modules/` (10 `.bas`), `src/sheets/` (3 `.cls`), `scripts/`, `docs/`, `plans/` |
-| **Тестирование** | ✅ v0.2.0, v0.7.0 | `Mod_FullTestRunner` — 30 тестов (TC-01..TC-30), покрытие ~77% |
+| **Структура проекта** | ✅ v0.6.0 | `src/modules/` (13 `.bas`), `src/classes/` (2 `.cls`), `src/sheets/` (3 `.cls`), `scripts/`, `docs/`, `plans/` |
+| **Тестирование** | ✅ v0.2.0, v0.7.0 | `Mod_FullTestRunner` — 44 теста, покрытие ~89% |
 | **Техническая документация** | ✅ v0.5.0 | `docs/DEVELOPER.md` — архитектура, кодировка, CI/CD, тестирование |
 | **CI/CD** | ✅ v0.4.0 | GitHub Actions (`vba-check.yml`), `docs/git-workflow.md` |
 | **SourceCraft интеграция** | ✅ v0.3.0 | `.ycarules`, `docs/sourcecraft-guide.md` |
 | **Двухфазная кодировка** | ✅ | UTF-8 на диске, CP1251 в Excel |
-| **Скрипты экспорта/импорта** | ✅ | `export_vba.py`, `impVBA.py`, `Import-VbaFromExcel.ps1` |
+| **Скрипты экспорта/импорта** | ✅ | `export_vba.py`, `impVBA.py` |
 | **README.md** | ✅ | Архитектура, быстрый старт, состав команды |
 | **CHANGELOG.md** | ✅ | История версий в формате Keep a Changelog |
 | **Фаза 1.1 — Критические исправления (P0)** | ✅ v0.7.1 | R-01..R-06: исправление кодировки, `export_vba.py`, утечки, `isProcessing`, диапазоны, дублирование |
@@ -33,8 +33,8 @@
 ### Модульная архитектура VBA
 
 ```
-UI-слой:              Sheet1_main.cls  |  Sheet_work.cls  |  Sheet_z4.cls
-                      Mod_ButtonDispatcher  |  Mod_MainButtons  |  Mod_SheetButtons
+UI-слой:              Лист2_main.cls  |  Sheet_work.cls.bak  |  Sheet_z4.cls.bak
+                      Mod_ButtonDispatcher  |  Mod_SheetButtons
                            │                          │
 Бизнес-логика:       Mod_OrderHeader  |  Mod_Import  |  Mod_SheetOps
                            │                          │
@@ -56,16 +56,16 @@ UI-слой:              Sheet1_main.cls  |  Sheet_work.cls  |  Sheet_z4.cls
 | R-01 | Исправление кодировки в VBA-модулях | Проверить и исправить кракозябры в комментариях и строках. Пересохранить файлы в UTF-8 без BOM через `export_vba.py` | `Mod_FullTestRunner.bas`, `Mod_Constants.bas`, `Mod_SheetOps.bas`, `Mod_Import.bas`, `Mod_OrderHeader.bas` | v0.7.1 |
 | R-02 | Исправление `export_vba.py` | Корректный экспорт в UTF-8 без BOM, обработка пустых строк, добавление недостающих модулей в `COMPONENTS` | `scripts/export_vba.py` | v0.7.1 |
 | R-03 | Устранение утечки обработчика | Освобождение обработчика (`wbReport.Close`) во всех модулях при ошибках | `Mod_Import.bas` | v0.7.1 |
-| R-04 | Замена `isProcessing` на модульный флаг | Убрать глобальный статический флаг `isProcessing` из `Sheet1_main.cls`, сделать локальный для каждого модуля | `Sheet1_main.cls` | v0.7.1 |
-| R-05 | Диапазон очистки `Mod_SheetOps` | Исправить обработку граничных значений: заменить `"A2:XFD"` на `"B2:ZZ"` | `Mod_Import.bas`, `Mod_MainButtons.bas` | v0.7.1 |
-| R-06 | Устранение дублирования кода | Вынести повторяющиеся блоки в `Mod_Utils`. Устранить дублирование `Btn_main_Import` | `Mod_MainButtons.bas`, `Mod_Utils.bas` | v0.7.1 |
+| R-04 | Замена `isProcessing` на модульный флаг | Убрать глобальный статический флаг `isProcessing` из `Лист2_main.cls`, сделать локальный для каждого модуля | `Лист2_main.cls` | v0.7.1 |
+| R-05 | Диапазон очистки `Mod_SheetOps` | Исправить обработку граничных значений: заменить `"A2:XFD"` на `"B2:ZZ"` | `Mod_Import.bas` | v0.7.1 |
+| R-06 | Устранение дублирования кода | Вынести повторяющиеся блоки в `Mod_Utils`. Устранить дублирование `Btn_main_Import` | `Mod_Utils.bas` | v0.7.1 |
 
 ### Рефакторинг и новая функциональность — ✅ v0.9.0–v0.10.0
 
 | ID | Задача | Описание | Затрагиваемые модули/файлы | Версия |
 |----|--------|----------|---------------------------|--------|
 | R-LN | Объединение `Mod_LibName` → `Mod_Constants` | Централизация констант и реестра имён. Добавлены константы `*_NAME`, `SPISOK_COL_NUM`, `SPISOK_COL_GROUP`, записи `models_col_group`, `z4` | `Mod_Constants.bas`, `Mod_LibName.bas` (удалён) | v0.9.0 |
-| R-IM | Импорт с листа B2 (`ImportFromB2_UI`) | Новая процедура импорта данных на лист "мэйн" из листа `{B2}M`; если листа нет — копирует из `report.xlsx` | `Mod_Import.bas`, `Mod_MainButtons.bas`, `Mod_ButtonDispatcher.bas` | v0.10.0 |
+| R-IM | Импорт с листа B2 (`ImportFromB2_UI`) | Новая процедура импорта данных на лист "мэйн" из листа `{B2}M`; если листа нет — копирует из `report.xlsx` | `Mod_Import.bas`, `Mod_ButtonDispatcher.bas` | v0.10.0 |
 | R-IF | Исправление импорта (пропуск заголовка) | Замена циклов `IsNumeric()` на безусловный пропуск 2 строк заголовка таблиц | `Mod_Import.bas` | v0.10.0 |
 
 ---
@@ -81,11 +81,11 @@ UI-слой:              Sheet1_main.cls  |  Sheet_work.cls  |  Sheet_z4.cls
 |----|--------|----------|---------------------------|---------------------|
 | R-07 | Выделение `Mod_Logger` в отдельный модуль | Централизованное логирование с ротацией вместо `Mod_Utils.WriteLog`. Реализовать: `WriteLog(Message, Level)`, `SetLogFile(Path)`, `SetMaxSize(Bytes)`, автоматическую ротацию | `Mod_Logger.bas` (доработать), `Mod_Utils.bas` (удалить `WriteLog`) | Логи пишутся с уровнями; ротация работает при превышении размера |
 | R-08 | Замена `MsgBox` на Logger | Во всех модулях заменить прямые вызовы `MsgBox` на `Mod_Logger`. Создать `_UI`-обёртки для пользовательских диалогов | Все модули | `MsgBox` остаётся только в `_UI`-обёртках; чистые функции не содержат диалогов |
-| R-09 | Рефакторинг `Mod_OrderHeader` | Разделение на подфункции, уменьшение связанности. Убрать `MsgBox` из `FillHeaderFromOrder`, вынести в `_UI`-обёртку | `Mod_OrderHeader.bas`, `Sheet1_main.cls` | `FillHeaderFromOrder` — чистая функция; `_UI`-обёртка в диспетчере |
+| R-09 | Рефакторинг `Mod_OrderHeader` | Разделение на подфункции, уменьшение связанности. Убрать `MsgBox` из `FillHeaderFromOrder`, вынести в `_UI`-обёртку | `Mod_OrderHeader.bas`, `Лист2_main.cls` | `FillHeaderFromOrder` — чистая функция; `_UI`-обёртка в диспетчере |
 | R-10 | Рефакторинг `Mod_Constants` | Вынести магические строки/числа в константы, структурировать по группам. Перенести тип `OrderHeader` из `Mod_Utils`. Создать единый словарь маппинга столбцов | `Mod_Constants.bas`, `Mod_Utils.bas`, `Mod_OrderHeader.bas`, `Mod_Import.bas` | Все константы в одном модуле; магические числа заменены; компиляция проходит |
 | R-11 | Маппинг листов | Создать единый словарь маппинга листов вместо разрозненных ссылок по всему коду | `Mod_Constants.bas`, все модули, использующие имена листов | Единая точка изменений для имён листов |
 | R-12 | Рефакторинг `Mod_SheetOps` | Разделить на логические блоки, уменьшить размер. Перенести операции с листами из `Mod_Import` | `Mod_SheetOps.bas`, `Mod_Import.bas`, `Mod_ButtonDispatcher.bas` | `Mod_Import` сокращён; все операции с листами в `Mod_SheetOps` |
-| R-13 | Унификация кнопок | `Mod_ButtonDispatcher`, `Mod_MainButtons`, `Mod_SheetButtons` — единый интерфейс. Унифицировать нейминг: `Btn_<лист>_<действие>_Click`. Удалить дублирующиеся обработчики | `Mod_ButtonDispatcher.bas`, `Mod_MainButtons.bas`, `Mod_SheetButtons.bas` | Все 13+ кнопок работают; единый стиль именования; нет дублирования |
+| R-13 | Унификация кнопок | `Mod_ButtonDispatcher`, `Mod_SheetButtons` — единый интерфейс. Унифицировать нейминг: `Btn_<лист>_<действие>_Click`. Удалить дублирующиеся обработчики | `Mod_ButtonDispatcher.bas`, `Mod_SheetButtons.bas` | Все 13+ кнопок работают; единый стиль именования; нет дублирования |
 
 ### Фаза 2 — Высокий приоритет (P1, ~5.5 ч)
 
@@ -94,8 +94,8 @@ UI-слой:              Sheet1_main.cls  |  Sheet_work.cls  |  Sheet_z4.cls
 
 | ID | Задача | Описание | Затрагиваемые модули/файлы | Критерии готовности |
 |----|--------|----------|---------------------------|---------------------|
-| R-14 | Выделение `Mod_Selection` | Модуль работы с выделенным диапазоном. Перенести заглушки из `Mod_MainButtons` и `Mod_SheetButtons`. Реализовать базовую логику подбора запчастей и работ | `Mod_Selection.bas` (создать), `Mod_MainButtons.bas`, `Mod_SheetButtons.bas`, `Mod_ButtonDispatcher.bas` | Заглушки перенесены; кнопки подбора не падают с ошибкой |
-| R-15 | Объединение листов | Унификация `Sheet_work`, `Sheet_z4`, `Sheet1_main`. Вынести общую логику в `Mod_SheetCommon` или признать дубль допустимым с синхронизацией комментариев | `Sheet_work.cls`, `Sheet_z4.cls`, `Sheet1_main.cls` | Нет дублирования кода событий; или дубль явно задокументирован |
+| R-14 | Выделение `Mod_Selection` | Модуль работы с выделенным диапазоном. Перенести заглушки из `Mod_SheetButtons`. Реализовать базовую логику подбора запчастей и работ | `Mod_Selection.bas` (создать, не реализован), `Mod_SheetButtons.bas`, `Mod_ButtonDispatcher.bas` | Заглушки перенесены; кнопки подбора не падают с ошибкой |
+| R-15 | Объединение листов | Унификация `Sheet_work`, `Sheet_z4`, `Лист2_main`. Вынести общую логику в `Mod_SheetCommon` или признать дубль допустимым с синхронизацией комментариев | `Sheet_work.cls.bak`, `Sheet_z4.cls.bak`, `Лист2_main.cls` | Нет дублирования кода событий; или дубль явно задокументирован |
 | R-16 | Расширение `run_tests.py` | Добавить аргументы командной строки (`--module`, `--verbose`, `--output`), генерацию отчётов (JSON/HTML), поддержку выборочного запуска тестов | `scripts/run_tests.py` | `run_tests.py --help` показывает все аргументы; отчёты сохраняются |
 | R-17 | Обновление документации после архитектурного рефакторинга | После завершения Фазы 1.2 (R-07..R-13) обновить `DEVELOPER.md` и `README.md` — актуализировать схемы зависимостей, таблицы модулей, маппинг файлов под новую архитектуру | `docs/DEVELOPER.md`, `README.md` | Вся документация соответствует актуальной архитектуре после рефакторинга |
 
@@ -110,10 +110,10 @@ UI-слой:              Sheet1_main.cls  |  Sheet_work.cls  |  Sheet_z4.cls
 
 | ID | Задача | Описание | Затрагиваемые модули/файлы | Критерии готовности |
 |----|--------|----------|---------------------------|---------------------|
-| R-18 | Внешние справочники | Выгрузка справочников в отдельные файлы (CSV/JSON). Создать `справочник_запчастей.xlsx` и `справочник_работ.xlsx`, открываются ReadOnly | `Mod_Selection.bas`, новые файлы справочников | Подбор работает с внешними справочниками; поиск через AutoFilter |
-| R-19 | SQLite | Замена Excel-справочников на SQLite через ADO. Индексация по VIN/модели/ГРЗ для быстрого поиска среди 700000+ записей | `Mod_Selection.bas`, `SysW.db` | Сложные запросы (JOIN, WHERE, ORDER BY) через SQLite; производительность выше циклов VBA |
+| R-18 | Внешние справочники | Выгрузка справочников в отдельные файлы (CSV/JSON). Создать `справочник_запчастей.xlsx` и `справочник_работ.xlsx`, открываются ReadOnly | `Mod_Selection.bas` (не реализован), новые файлы справочников | Подбор работает с внешними справочниками; поиск через AutoFilter |
+| R-19 | SQLite | Замена Excel-справочников на SQLite через ADO. Индексация по VIN/модели/ГРЗ для быстрого поиска среди 700000+ записей | `Mod_Selection.bas` (не реализован), `SysW.db` | Сложные запросы (JOIN, WHERE, ORDER BY) через SQLite; производительность выше циклов VBA |
 | R-20 | CI/CD расширение | Pre-commit hook (проверка кодировки UTF-8 без BOM), автоматические прогоны тестов в GitHub Actions при пуше | `.github/workflows/vba-check.yml`, новый `.husky/pre-commit` | Pre-commit проверяет кодировку; CI прогоняет тесты (с SKIP на Linux/MacOS) |
-| R-21 | Автоматизация экспорта/импорта | Улучшение скриптов: обработка ошибок, `--dry` режим, логирование операций, параллельный экспорт | `scripts/export_vba.py`, `scripts/impVBA.py`, `scripts/Import-VbaFromExcel.ps1` | Все скрипты имеют `--dry` режим; ошибки обрабатываются; есть логи операций |
+| R-21 | Автоматизация экспорта/импорта | Улучшение скриптов: обработка ошибок, `--dry` режим, логирование операций, параллельный экспорт | `scripts/export_vba.py`, `scripts/impVBA.py` | Все скрипты имеют `--dry` режим; ошибки обрабатываются; есть логи операций |
 
 ### Фаза 4 — Низкий приоритет (P3)
 
@@ -133,8 +133,8 @@ UI-слой:              Sheet1_main.cls  |  Sheet_work.cls  |  Sheet_z4.cls
 
 ### Текущее состояние
 
-- **30 тестов** (TC-01..TC-30) в `Mod_FullTestRunner.bas`
-- **Покрытие:** ~77% (26 активных тестов: 20 PASS, 5 SKIP, 0 FAIL, 2 в резерве)
+- **44 теста** в `Mod_FullTestRunner.bas`
+- **Покрытие:** ~89%
 - **Запуск:** `python scripts/run_tests.py` (COM-автоматизация Excel)
 - **CI/CD:** GitHub Actions — проверка наличия файлов, кодировки UTF-8, синтаксиса VBA, актуальности CHANGELOG
 
@@ -162,8 +162,8 @@ UI-слой:              Sheet1_main.cls  |  Sheet_work.cls  |  Sheet_z4.cls
 | `docs/DEVELOPER.md` | ✅ Актуально (v0.9.0) | Техническая документация: архитектура, кодировка, CI/CD, тестирование |
 | `docs/git-workflow.md` | ✅ Актуально | Веточная стратегия, Conventional Commits, pre-commit процедуры |
 | `docs/sourcecraft-guide.md` | ✅ Актуально (v0.9.0) | Руководство по SourceCraft, роли, процессы |
-| `docs/ARCHITECTURE_SQLITE.md` | 🟡 Проектирование | Архитектура выноса данных работ и запчастей из work.xlsm |
-| `plans/ROADMAP.md` | 🆕 Настоящий документ | Единый план развития системы |
+| `docs/ARCHITECTURE.md` | 🟡 Проектирование | Архитектура выноса данных работ и запчастей из work.xlsm |
+| `docs/ROADMAP.md` | 🆕 Настоящий документ | Единый план развития системы |
 
 ### План обновления
 
@@ -189,7 +189,7 @@ UI-слой:              Sheet1_main.cls  |  Sheet_work.cls  |  Sheet_z4.cls
 
 | ID | Задача | Приоритет | Описание |
 |----|--------|-----------|----------|
-| R-37 | Улучшение `.ycarules` | P2 | Добавить правила для новых модулей (`Mod_Selection`), обновить правило `[S1]` |
+| R-37 | Улучшение `.ycarules` | P2 | Добавить правила для новых модулей (`Mod_Selection` — не реализован), обновить правило `[S1]` |
 | **R-YC** | **Доработка `.ycarules` — новые разделы** | **P2** | Добавить раздел 7 "Автодополнение текста" (`[T1]`–`[T4]`) и раздел 8 "Система правил исключений и обязательного вхождения" (`[E1]`–`[E5]`) согласно `plans/_archive/new-ycarules-sections.md` |
 | R-38 | Скрипты автоматизации SourceCraft | P3 | Создать скрипты для автоматической генерации планов, проверки соответствия `.ycarules` |
 | R-39 | GitHub Projects интеграция | P4 | Автоматическое создание issues из задач ROADMAP; связь коммитов с issues |
@@ -217,19 +217,19 @@ UI-слой:              Sheet1_main.cls  |  Sheet_work.cls  |  Sheet_z4.cls
 
 ### Текущее состояние
 
-Разработана архитектура выноса данных (`docs/ARCHITECTURE_SQLITE.md`): спецификация модуля `Mod_ModelDB`, структуры данных, схема связей между файлами. Реализация не начата.
+Разработана архитектура выноса данных (`docs/ARCHITECTURE.md`): спецификация модуля `Mod_ModelDB`, структуры данных, схема связей между файлами. Реализация не начата.
 
 ### План миграции
 
 | ID | Задача | Приоритет | Описание | Затрагиваемые модули/файлы |
 |----|--------|-----------|----------|---------------------------|
 | **R-S1** | **Создание каталога `base/models/`** | **P2** | Создать каталог с `.gitkeep` для хранения файлов модельных групп | `base/models/` |
-| **R-S2** | **Создание `Mod_DataTypes`** | **P2** | Модуль с Type-структурами: `PartEntry`, `WorkEntry`, `MatLibEntry`, `ModelPartEntry`, `ModelWorkEntry` | `Mod_DataTypes.bas` (новый) |
+| **R-S2** | **Создание `Mod_ModelTypes`** | **P2** | Модуль с Type-структурами: `PartEntry`, `WorkEntry`, `MatLibEntry`, `ModelPartEntry`, `ModelWorkEntry` | `Mod_ModelTypes.bas` (реализован) |
 | **R-S3** | **Создание `Mod_ModelDB`** | **P2** | Модуль с базовыми функциями: `CreateModelGroupFile`, `OpenModelGroupFile`, `FindModelGroupByModel`, `GetParts`, `GetWorks`, `GetMatLibEntries` | `Mod_ModelDB.bas` (новый) |
 | **R-S4** | **Перенос данных групп** | **P2** | Для каждой группы из листа `model` создать файл `{GroupName}.xlsx` и перенести работы/запчасти | `base/models/*.xlsx` |
 | **R-S5** | **Интеграция с `Mod_Import`** | **P2** | После `ImportDataToMain` добавить подстановку модельных кодов через `Mod_ModelDB` | `Mod_Import.bas` |
 | **R-S6** | **Интеграция с `Mod_OrderHeader`** | **P2** | Чтение данных работ/запчастей через `Mod_ModelDB` вместо листа `model` | `Mod_OrderHeader.bas` |
-| **R-S7** | **Подготовка абстракций для SQLite** | **P3** | Интерфейсный модуль `IModelDataProvider`, фабричный метод `GetModelDataProvider`, изоляция файловых операций | `Mod_ModelDB.bas`, `Mod_DataTypes.bas` |
+| **R-S7** | **Подготовка абстракций для SQLite** | **P3** | Интерфейсный модуль `IModelDataProvider`, фабричный метод `GetModelDataProvider`, изоляция файловых операций | `Mod_ModelDB.bas`, `Mod_ModelTypes.bas` |
 | **R-S8** | **Создание `Mod_SQLiteDB`** | **P3** | Реализация провайдера данных на SQLite через ADO с идентичным интерфейсом | `Mod_SQLiteDB.bas` (новый), `SysW.db` |
 
 ---
@@ -269,21 +269,19 @@ UI-слой:              Sheet1_main.cls  |  Sheet_work.cls  |  Sheet_z4.cls
 | `Mod_Logger.bas` | R-07, R-08 |
 | `Mod_Constants.bas` | R-01, R-10, R-11, R-LN |
 | `Mod_SheetOps.bas` | R-01, R-05, R-12 |
-| `Mod_MainButtons.bas` | R-05, R-06, R-13, R-14, R-IM |
 | `Mod_SheetButtons.bas` | R-13, R-14 |
-| **`Mod_Selection.bas`** (новый) | R-14, R-18, R-19 |
-| **`Mod_DataTypes.bas`** (новый) | R-S2, R-S7 |
+| **`Mod_Selection.bas`** (не реализован) | R-14, R-18, R-19 |
+| **`Mod_ModelTypes.bas`** (реализован) | R-S2, R-S7 |
 | **`Mod_ModelDB.bas`** (новый) | R-S3, R-S5, R-S6, R-S7 |
 | **`Mod_SQLiteDB.bas`** (новый) | R-S8 |
-| `Sheet1_main.cls` | R-04, R-09, R-15 |
-| `Sheet_work.cls` | R-15, R-WS |
-| `Sheet_z4.cls` | R-15, R-ZS |
+| `Лист2_main.cls` | R-04, R-09, R-15 |
+| `Sheet_work.cls.bak` | R-15, R-WS |
+| `Sheet_z4.cls.bak` | R-15, R-ZS |
 | `scripts/export_vba.py` | R-02, R-21 |
 | `scripts/impVBA.py` | R-21 |
 | `scripts/run_tests.py` | R-16 |
-| `scripts/Import-VbaFromExcel.ps1` | R-21 |
 | `docs/DEVELOPER.md` | R-17, R-32 |
-| `docs/ARCHITECTURE_SQLITE.md` | R-S1..R-S8 |
+| `docs/ARCHITECTURE.md` | R-S1..R-S8 |
 | `README.md` | R-17, R-33 |
 | `.ycarules` | R-37, R-YC |
 | `.github/workflows/vba-check.yml` | R-20, R-30 |
@@ -322,10 +320,10 @@ UI-слой:              Sheet1_main.cls  |  Sheet_work.cls  |  Sheet_z4.cls
 | Техническая документация | `docs/DEVELOPER.md` |
 | Git-инструкции | `docs/git-workflow.md` |
 | Руководство SourceCraft | `docs/sourcecraft-guide.md` |
-| Архитектура SQLite | `docs/ARCHITECTURE_SQLITE.md` |
+| Архитектура SQLite | `docs/ARCHITECTURE.md` |
 | История версий | `CHANGELOG.md` |
 | Общее описание | `README.md` |
 
 ---
 
-*Документ создан на основе анализа: `CHANGELOG.md`, `docs/DEVELOPER.md`, `docs/ARCHITECTURE_SQLITE.md`, `docs/sourcecraft-guide.md`, `README.md`, `.ycarules`, `plans/_archive/structure_current_work.xlsm.md`, `plans/_archive/new-ycarules-sections.md`*
+*Документ создан на основе анализа: `CHANGELOG.md`, `docs/DEVELOPER.md`, `docs/ARCHITECTURE.md`, `docs/sourcecraft-guide.md`, `README.md`, `.ycarules`, `plans/_archive/structure_current_work.xlsm.md`, `plans/_archive/new-ycarules-sections.md`*
