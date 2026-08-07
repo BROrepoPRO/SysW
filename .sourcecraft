@@ -10,10 +10,13 @@
       ]
     },
     "git": {
-      "command": "npx",
+      "command": "uvx",
       "args": [
-        "-y",
-        "@modelcontextprotocol/server-git",
+        "--from",
+        "mcp-server-git",
+        "--with",
+        "mcp<2",
+        "mcp-server-git",
         "--repository",
         "${workspaceFolder}"
       ]

@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "git": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "mcp-server-git",
+        "--with",
+        "mcp<2",
+        "mcp-server-git",
+        "--repository",
+        "L:/PROject/SysW"
+      ]
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "L:/PROject/SysW"
+      ]
+    }
+  }
+}
