@@ -143,6 +143,19 @@
   Все комментарии в коде (VBA, Python, PowerShell) должны быть **на русском языке**.
   Исключение – ключевые слова, названия переменных и констант (латиница).
 
+- **`[G10]` РАБОТА С GITHUB ЧЕРЕЗ MCP GIT TOOLS**
+  Git-операции (статус, diff, log, commit, add, push, branch и др.) выполнять **через MCP-сервер Git Tools**
+  (`mcp-server-git`): инструменты `git_status`, `git_diff`, `git_log`, `git_commit`, `git_add`,
+  `git_branch`, `git_checkout` и аналогичные, **а не** прямыми вызовами системных git-команд.
+  Обязательно при работе с репозиторием SysW и его удалённым GitHub-репозиторием
+  `BROrepoPRO/SysW`.
+
+- **`[G11]` РАБОТА С СИСТЕМОЙ ЧЕРЕЗ MCP FILE SYSTEM**
+  Операции с файлами (чтение, запись, редактирование, перемещение, поиск, список каталогов)
+  выполнять **через MCP-сервер File System** (`@modelcontextprotocol/server-filesystem`):
+  инструменты `read_file`, `write_file`, `edit_file`, `move_file`, `search_files`,
+  `list_directory` и аналогичные, **а не** прямыми системными командами, где это уместно.
+
 ---
 
 ## 3. Запреты и ограничения
