@@ -149,7 +149,17 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
             If Not IsNull(groupFromSpisok) And groupFromSpisok <> "" Then
                 wsMain.Cells(14, 2).Value = groupFromSpisok  ' B14 = группа из spisok
             Else
-                wsMain.Cells(14, 2).ClearContents  ' B14 оставляем пустой
+                ' Группа не задана в spisok — пробуем определить из SysW.db (Фаза B)
+                On Error Resume Next
+                Dim dbGroup As String
+                dbGroup = Mod_ModelDB.FindModelGroupByModel(ModelCode)
+                If Err.Number = 0 And Len(dbGroup) > 0 Then
+                    wsMain.Cells(14, 2).Value = dbGroup   ' B14 = группа из БД
+                Else
+                    wsMain.Cells(14, 2).ClearContents     ' B14 оставляем пустой
+                End If
+                Err.Clear
+                On Error GoTo 0
             End If
         End If
     End If

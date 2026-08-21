@@ -5,6 +5,11 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.0.5] — 2026-08-21
+
+### Added
+- **Единый источник версии и скрипт `update_version.py`:** версия проекта централизована в `config.APP_VERSION`, `Mod_Constants.APP_VERSION` и `$Script:AppVersion`; добавлен скрипт автоматического обновления версии.
+
 ## [v1.0.4] — 2026-08-21
 
 ### Added

@@ -15,7 +15,7 @@ Option Private Module
 ' ============================================================
 ' Версия приложения (единый источник для всей системы)
 ' ============================================================
-Public Const APP_VERSION As String = "1.0.4"
+Public Const APP_VERSION As String = "1.0.5"
 
 ' ============================================================
 ' Константы столбцов листа spisok
@@ -423,3 +423,13 @@ Public Function GetAggregateName(ByVal code As String) As String
         Case Else:       GetAggregateName = ""
     End Select
 End Function
+
+' ============================================================
+' Константы выбора провайдера данных моделей
+' ============================================================
+' True = SQLite (основной провайдер, SysW.db через ADO/ODBC),
+' False = Excel (резервный провайдер, легаси-файлы base/models/*.xlsm).
+' Фабрика Mod_ModelDB.GetModelDataProvider() учитывает эту константу;
+' при True, но недоступных БД/драйвере — автоматический fallback на Excel.
+' ============================================================
+Public Const MODELDB_PROVIDER_SQLITE As Boolean = True

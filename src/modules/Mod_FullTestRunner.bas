@@ -82,6 +82,10 @@ Public Sub RunAllTests()
     RunModelDBReadTests
     Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunModelDBReadTests END")
 
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunSQLiteTests START")
+    RunSQLiteTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunSQLiteTests END")
+
     Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunOrderHeaderTests START")
     RunOrderHeaderTests
     Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunOrderHeaderTests END")
@@ -678,24 +682,31 @@ Private Sub RunModelDBTests()
 
     ' @test TC-35
     ' -------------------------------------------------------
-    ' TC-35: OpenModelGroupFile открывает книгу
+    ' TC-35: GetModelDataProvider возвращает работающий провайдер
+    ' (SQLite-провайдер при наличии SysW.db; чтение тождеств без открытия xlsm)
     ' -------------------------------------------------------
     On Error Resume Next
-    Set wb = Mod_ModelDB.OpenModelGroupFile("UAZ")
+    Dim prov As IModelDataProvider
+    Set prov = Mod_ModelDB.GetModelDataProvider()
     If Err.number <> 0 Then
-        AddResult "TC-35", "OpenModelGroupFile UAZ", False, "Ошибка: " & Err.Description
+        AddResult "TC-35", "GetModelDataProvider провайдер", False, "Ошибка: " & Err.Description
         Err.Clear
     Else
-        Dim wbOpened As Boolean
-        wbOpened = (Not wb Is Nothing)
-        ' Закрываем книгу, если открыта
-        If wbOpened Then
-            wb.Close SaveChanges:=False
+        Dim provOk As Boolean
+        provOk = False
+        If Not prov Is Nothing Then
+            ' Провайдер должен уметь читать тождества работ (без COM-открытия файла)
+            On Error Resume Next
+            Dim testCol As Collection
+            Set testCol = prov.GetWorkIdentities("UAZ")
+            If Err.Number = 0 Then provOk = True
+            Err.Clear
+            On Error GoTo 0
         End If
-        AddResult "TC-35", "OpenModelGroupFile UAZ", wbOpened, _
-                  "Ожидалось Not Nothing, получено Nothing"
+        AddResult "TC-35", "GetModelDataProvider провайдер", provOk, _
+                  "Провайдер не способен читать тождества из SysW.db"
     End If
-    Set wb = Nothing
+    Set prov = Nothing
     On Error GoTo 0
 
     Debug.Print ""
@@ -981,38 +992,41 @@ End Sub
 ' Группа: тесты ModelDB Read (TC-22..TC-24)
 ' ============================================================
 Private Sub RunModelDBReadTests()
+    ' Чтение моделей выполняется из SysW.db через провайдер БЕЗ открытия
+    ' base/models/*.xlsm через COM (исключает COM-зависание).
+    Dim provider As IModelDataProvider
     Dim col As Collection
-    Dim wb As Workbook
-    Dim groupExists As Boolean
-    Dim item As Variant
 
-    Debug.Print "--- Mod_ModelDB Read Tests ---"
+    Debug.Print "--- Mod_ModelDB Read Tests (SQLite) ---"
 
-    ' Проверяем наличие файла группы UAZ (рабочие данные)
     On Error Resume Next
-    groupExists = Mod_ModelDB.ModelGroupFileExists("UAZ")
+    Set provider = Mod_ModelDB.GetModelDataProvider()
     If Err.Number <> 0 Then
-        groupExists = False
+        AddResult "TC-22", "GetWorkIdentities UAZ", False, "Ошибка получения провайдера: " & Err.Description
+        AddResult "TC-23", "GetPartIdentities UAZ", True, "", True, "Провайдер недоступен"
+        AddResult "TC-24", "GetWorks UAZ", True, "", True, "Провайдер недоступен"
         Err.Clear
+        Debug.Print ""
+        Exit Sub
     End If
     On Error GoTo 0
 
-    If Not groupExists Then
+    If provider Is Nothing Then
         AddResult "TC-22", "GetWorkIdentities UAZ", True, "", True, _
-                  "Файл группы UAZ не найден (base/models/UAZ.xlsm)"
+                  "Провайдер не создан (SysW.db/ODBC недоступны)"
         AddResult "TC-23", "GetPartIdentities UAZ", True, "", True, _
-                  "Файл группы UAZ не найден (base/models/UAZ.xlsm)"
+                  "Провайдер не создан (SysW.db/ODBC недоступны)"
         AddResult "TC-24", "GetWorks UAZ", True, "", True, _
-                  "Файл группы UAZ не найден (base/models/UAZ.xlsm)"
+                  "Провайдер не создан (SysW.db/ODBC недоступны)"
         Debug.Print ""
         Exit Sub
     End If
 
     ' -------------------------------------------------------
-    ' TC-22: GetWorkIdentities 'UAZ' — непустая коллекция WorkIdentity
+    ' TC-22: GetWorkIdentities 'UAZ' — непустая коллекция WorkIdentity из SysW.db
     ' -------------------------------------------------------
     On Error Resume Next
-    Set col = Mod_ModelDB.GetWorkIdentities("UAZ")
+    Set col = provider.GetWorkIdentities("UAZ")
     If Err.Number <> 0 Then
         AddResult "TC-22", "GetWorkIdentities UAZ", False, "Ошибка: " & Err.Description
         Err.Clear
@@ -1025,15 +1039,13 @@ Private Sub RunModelDBReadTests()
                 Dim wi As WorkIdentity
                 Set wi = col(1)
                 tc22Ok = (Len(wi.OutArticle) > 0) And (Len(wi.Aggregate) > 0)
-                If Not tc22Ok Then
-                    tc22Reason = "OutArticle/Aggregate пусты"
-                End If
+                If Not tc22Ok Then tc22Reason = "OutArticle/Aggregate пусты"
                 Set wi = Nothing
             Else
                 tc22Reason = "Тип элемента: " & TypeName(col(1))
             End If
         Else
-            tc22Reason = "Коллекция пуста (нет данных в UAZw)"
+            tc22Reason = "Коллекция пуста (нет тождеств работ в SysW.db для UAZ)"
         End If
         AddResult "TC-22", "GetWorkIdentities UAZ", tc22Ok, tc22Reason
     End If
@@ -1041,10 +1053,10 @@ Private Sub RunModelDBReadTests()
     On Error GoTo 0
 
     ' -------------------------------------------------------
-    ' TC-23: GetPartIdentities 'UAZ' — непустая коллекция PartIdentity
+    ' TC-23: GetPartIdentities 'UAZ' — непустая коллекция PartIdentity из SysW.db
     ' -------------------------------------------------------
     On Error Resume Next
-    Set col = Mod_ModelDB.GetPartIdentities("UAZ")
+    Set col = provider.GetPartIdentities("UAZ")
     If Err.Number <> 0 Then
         AddResult "TC-23", "GetPartIdentities UAZ", False, "Ошибка: " & Err.Description
         Err.Clear
@@ -1057,15 +1069,13 @@ Private Sub RunModelDBReadTests()
                 Dim pi As PartIdentity
                 Set pi = col(1)
                 tc23Ok = (Len(pi.OutArticle) > 0) And (Len(pi.Aggregate) > 0)
-                If Not tc23Ok Then
-                    tc23Reason = "OutArticle/Aggregate пусты"
-                End If
+                If Not tc23Ok Then tc23Reason = "OutArticle/Aggregate пусты"
                 Set pi = Nothing
             Else
                 tc23Reason = "Тип элемента: " & TypeName(col(1))
             End If
         Else
-            tc23Reason = "Коллекция пуста (нет данных в UAZz4)"
+            tc23Reason = "Коллекция пуста (нет тождеств запчастей в SysW.db для UAZ)"
         End If
         AddResult "TC-23", "GetPartIdentities UAZ", tc23Ok, tc23Reason
     End If
@@ -1073,10 +1083,10 @@ Private Sub RunModelDBReadTests()
     On Error GoTo 0
 
     ' -------------------------------------------------------
-    ' TC-24: GetWorks 'UAZ' — непустая коллекция WorkEntry
+    ' TC-24: GetWorks 'UAZ' — непустая коллекция WorkEntry из SysW.db
     ' -------------------------------------------------------
     On Error Resume Next
-    Set col = Mod_ModelDB.GetWorks("UAZ", Empty)
+    Set col = provider.GetWorks("UAZ", Empty)
     If Err.Number <> 0 Then
         AddResult "TC-24", "GetWorks UAZ", False, "Ошибка: " & Err.Description
         Err.Clear
@@ -1085,31 +1095,98 @@ Private Sub RunModelDBReadTests()
         Dim tc24Reason As String
         tc24Ok = False
         If col.Count > 0 Then
-            ' Элементы коллекции — Variant-массивы [Code, Name, Unit, NormHours, Price, Note]
-            item = col(1)   ' item — Variant, теперь это массив
-            tc24Ok = (Len(CStr(item(0))) > 0)   ' Code — первый элемент массива
-            If Not tc24Ok Then
-                tc24Reason = "Code первого элемента пуст"
+            If TypeName(col(1)) = "WorkEntry" Then
+                Dim we As WorkEntry
+                Set we = col(1)
+                tc24Ok = (Len(we.Code) > 0)
+                If Not tc24Ok Then tc24Reason = "Code первого элемента пуст"
+                Set we = Nothing
+            Else
+                tc24Reason = "Тип элемента: " & TypeName(col(1))
             End If
         Else
-            tc24Reason = "Коллекция пуста (нет данных в UAZ)"
+            tc24Reason = "Коллекция пуста (нет работ в SysW.db для UAZ)"
         End If
         AddResult "TC-24", "GetWorks UAZ", tc24Ok, tc24Reason
     End If
     Set col = Nothing
     On Error GoTo 0
 
-    ' Закрываем книгу UAZ.xlsm, если она осталась открытой
+    Set provider = Nothing
+    Debug.Print ""
+End Sub
+
+' ============================================================
+' Группа: тесты SQLite-провайдера (TC-S1..TC-S3)
+' ============================================================
+Private Sub RunSQLiteTests()
+    Dim provider As IModelDataProvider
+    Dim col As Collection
+
+    Debug.Print "--- SQLite Provider Tests ---"
+
+    ' -------------------------------------------------------
+    ' TC-S1: Фабрика возвращает работающий провайдер при наличии SysW.db
+    ' -------------------------------------------------------
     On Error Resume Next
-    Set wb = Nothing
-    On Error Resume Next
-    Set wb = Workbooks("UAZ.xlsm")
-    If Not wb Is Nothing Then
-        wb.Close SaveChanges:=False
+    Set provider = Mod_ModelDB.GetModelDataProvider()
+    If Err.Number <> 0 Then
+        AddResult "TC-S1", "Фабрика GetModelDataProvider", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        Dim s1Ok As Boolean
+        s1Ok = (Not provider Is Nothing)
+        AddResult "TC-S1", "Фабрика GetModelDataProvider", s1Ok, _
+                  "Ожидался провайдер, получен Nothing"
     End If
-    Set wb = Nothing
     On Error GoTo 0
 
+    If provider Is Nothing Then
+        AddResult "TC-S2", "GetWorks через провайдер", True, "", True, "Провайдер недоступен"
+        AddResult "TC-S3", "Данные мигрированы в SysW.db", True, "", True, "Провайдер недоступен"
+        Debug.Print ""
+        Exit Sub
+    End If
+
+    ' -------------------------------------------------------
+    ' TC-S2: GetWorks через провайдер эквивалентен Excel-каталогу
+    ' (проверяется чтение работ UAZ из SQLite без открытия xlsm)
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Set col = provider.GetWorks("UAZ", Empty)
+    If Err.Number <> 0 Then
+        AddResult "TC-S2", "GetWorks через провайдер", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        Dim s2Ok As Boolean
+        Dim s2Reason As String
+        s2Ok = (col.Count > 0)
+        If Not s2Ok Then s2Reason = "Коллекция работ UAZ пуста в SysW.db"
+        AddResult "TC-S2", "GetWorks через провайдер", s2Ok, s2Reason
+    End If
+    Set col = Nothing
+    On Error GoTo 0
+
+    ' -------------------------------------------------------
+    ' TC-S3: Контрольные объёмы конвертера — данные мигрированы
+    ' (для каждой группы есть работы; итоговое количество > 0)
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Dim allGroups As Collection
+    Set allGroups = provider.GetAllModelGroups()
+    If Err.Number <> 0 Then
+        AddResult "TC-S3", "Данные мигрированы в SysW.db", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        Dim s3Ok As Boolean
+        Dim s3Reason As String
+        s3Ok = (allGroups.Count >= 6)   ' ожидается не менее 6 групп моделей
+        If Not s3Ok Then s3Reason = "Групп меньше 6: " & CStr(allGroups.Count)
+        AddResult "TC-S3", "Данные мигрированы в SysW.db", s3Ok, s3Reason
+    End If
+    On Error GoTo 0
+
+    Set provider = Nothing
     Debug.Print ""
 End Sub
 

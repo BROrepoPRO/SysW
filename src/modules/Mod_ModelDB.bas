@@ -3,40 +3,110 @@ Option Explicit
 
 ' ============================================================
 ' Модуль: Mod_ModelDB
-' Назначение: Доступ к файлам модельных групп
-'             (базовый слой абстракции для работы с base/models/)
+' Назначение: Доступ к данным модельных групп (базовый слой абстракции).
+'
+' С v1.0.5 модуль является ФАБРИКОЙ и обёрткой над провайдерами,
+' реализующими IModelDataProvider:
+'   - Mod_SQLiteDB       — основной провайдер (SQLite через ADO/ODBC),
+'                           активен при наличии SysW.db и ODBC-драйвера.
+'   - Mod_ModelDBProvider — резервный (Excel) провайдер (чтение легаси-файлов).
+'
+' Фабрика GetModelDataProvider() выбирает активный источник данных.
+' Старые GetWorks/GetWorkIdentities/GetPartIdentities сохранены как
+' ДЕЛЕГАТЫ к активному провайдеру (обратная совместимость вызовов
+' из Mod_AutoMatch и тестов).
 ' ============================================================
 
 ' ============================================================
-' Функция получения базового пути к моделям
+' Фабрика провайдера данных моделей
+' ============================================================
+
+' --------------------------------------------------------------------------
+' GetModelDataProvider
+' Возвращает объект, реализующий IModelDataProvider.
+' Приоритет: SQLite (если константа MODELDB_PROVIDER_SQLITE = True,
+' SysW.db существует рядом с work.xlsm и ODBC-драйвер доступен).
+' Иначе — резервный Excel-провайдер.
+' --------------------------------------------------------------------------
+Public Function GetModelDataProvider() As IModelDataProvider
+    On Error GoTo ErrDiag
+
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetModelDataProvider: START")
+
+    ' Если SQLite отключён константой — сразу Excel
+    If Not Mod_Constants.MODELDB_PROVIDER_SQLITE Then
+        Call Mod_Logger.WriteLog("Mod_ModelDB", "GetModelDataProvider: SQLite выкл константой -> Excel")
+        GoTo ExcelFallback
+    End If
+
+    ' Проверяем наличие SysW.db рядом с work.xlsm
+    Dim dbPath As String
+    dbPath = ThisWorkbook.Path & "\SysW.db"
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetModelDataProvider: dbPath=" & dbPath)
+    If Len(Dir(dbPath)) = 0 Then
+        Call Mod_Logger.WriteLog("Mod_ModelDB", _
+            "GetModelDataProvider: SysW.db не найден (" & dbPath & ") — Excel fallback")
+        GoTo ExcelFallback
+    End If
+
+    ' Пробуем создать SQLite-провайдер и открыть соединение
+    Dim sqlite As Mod_SQLiteDB
+    Set sqlite = New Mod_SQLiteDB
+    sqlite.DbPath = dbPath
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetModelDataProvider: создан Mod_SQLiteDB, вызов OpenConnection")
+
+    On Error Resume Next
+    Call sqlite.OpenConnection
+    If Err.Number <> 0 Then
+        Call Mod_Logger.WriteLog("Mod_ModelDB", _
+            "GetModelDataProvider: OpenConnection error — Excel fallback: " & _
+            Err.Description & " | num=" & CStr(Err.Number))
+        Err.Clear
+        Call sqlite.CloseConnection
+        Set sqlite = Nothing
+        On Error GoTo ExcelFallback
+        GoTo ExcelFallback
+    End If
+    On Error GoTo ExcelFallback
+
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetModelDataProvider: выбран SQLite-провайдер")
+    Set GetModelDataProvider = sqlite
+    Exit Function
+
+ErrDiag:
+    Call Mod_Logger.WriteLog("Mod_ModelDB", _
+        "GetModelDataProvider: ERRDIAG num=" & CStr(Err.Number) & " desc=" & Err.Description)
+    Err.Clear
+    GoTo ExcelFallback
+
+ExcelFallback:
+    On Error Resume Next
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetModelDataProvider: выбран Excel-провайдер")
+    Set GetModelDataProvider = New Mod_ModelDBProvider
+End Function
+
+' ============================================================
+' Функции путей к модельным файлам
 ' ============================================================
 
 ' --------------------------------------------------------------------------
 ' GetModelDBBasePath
 ' Возвращает путь к каталогу base\models\ относительно расположения work.xlsm.
-' Это заменяет жёстко заданный абсолютный путь MODELDB_BASE_PATH.
-' Пример: если work.xlsm в L:\PROject\SysW\, то вернёт L:\PROject\SysW\base\models\
 ' --------------------------------------------------------------------------
 Public Function GetModelDBBasePath() As String
     GetModelDBBasePath = ThisWorkbook.Path & "\base\models\"
 End Function
 
-' ============================================================
-' Вспомогательные функции
-' ============================================================
-
 ' --------------------------------------------------------------------------
 ' GetModelGroupFilePath
-' Возвращает полный путь к файлу группы.
-' Сначала проверяет .xlsm, затем .xlsx.
+' Возвращает полный путь к файлу группы (сначала .xlsm, затем .xlsx).
 ' --------------------------------------------------------------------------
 Public Function GetModelGroupFilePath(ByVal groupName As String) As String
-    Dim xlsmPath As String
-    Dim xlsxPath As String
-
     Dim basePath As String
     basePath = GetModelDBBasePath()
 
+    Dim xlsmPath As String
+    Dim xlsxPath As String
     xlsmPath = basePath & groupName & ".xlsm"
     xlsxPath = basePath & groupName & ".xlsx"
 
@@ -49,7 +119,7 @@ End Function
 
 ' --------------------------------------------------------------------------
 ' ModelGroupFileExists
-' Проверяет существование файла группы
+' Проверяет существование легаси-файла группы.
 ' --------------------------------------------------------------------------
 Public Function ModelGroupFileExists(ByVal groupName As String) As Boolean
     Dim filePath As String
@@ -58,14 +128,13 @@ Public Function ModelGroupFileExists(ByVal groupName As String) As Boolean
 End Function
 
 ' ============================================================
-' Основные функции
+' Открытие файла группы (используется ручным подбором и Excel-провайдером)
 ' ============================================================
 
 ' --------------------------------------------------------------------------
 ' OpenModelGroupFile
 ' Открывает файл группы {groupName}.xlsm/.xlsx (если ещё не открыт)
-' и возвращает ссылку на Workbook.
-' Если файл не найден — возвращает Nothing.
+' и возвращает ссылку на Workbook. Если файл не найден — возвращает Nothing.
 ' --------------------------------------------------------------------------
 Public Function OpenModelGroupFile(ByVal groupName As String) As Workbook
     On Error GoTo ErrHandler
@@ -74,40 +143,31 @@ Public Function OpenModelGroupFile(ByVal groupName As String) As Workbook
     Dim filePath As String
     Dim wbName As String
 
-    ' 1. Определяем путь к файлу (сначала .xlsm, потом .xlsx)
     filePath = GetModelGroupFilePath(groupName)
     If Len(filePath) = 0 Then
         Set OpenModelGroupFile = Nothing
         Exit Function
     End If
 
-    ' Извлекаем имя файла из пути
     wbName = Mid$(filePath, InStrRev(filePath, "\") + 1)
 
-    ' 2. Проверяем, не открыт ли уже файл
+    ' Проверяем, не открыт ли уже файл
     On Error Resume Next
     Set wb = Workbooks(wbName)
     On Error GoTo ErrHandler
 
     If Not wb Is Nothing Then
-        ' Файл уже открыт — возвращаем ссылку
         Set OpenModelGroupFile = wb
-        Call Mod_Logger.WriteLog("Mod_ModelDB", "OpenModelGroupFile: Файл " & wbName & " уже открыт")
         Exit Function
     End If
 
-    ' 3. Проверяем существование файла
     If Not Mod_Utils.FileExists(filePath) Then
-        Call Mod_Logger.WriteLog("Mod_ModelDB", "OpenModelGroupFile: Файл не найден — " & filePath)
         Set OpenModelGroupFile = Nothing
         Exit Function
     End If
 
-    ' 4. Открываем файл
     Set wb = Workbooks.Open(filePath, ReadOnly:=False)
     Set OpenModelGroupFile = wb
-
-    Call Mod_Logger.WriteLog("Mod_ModelDB", "OpenModelGroupFile: Открыт файл " & filePath)
     Exit Function
 
 ErrHandler:
@@ -115,160 +175,96 @@ ErrHandler:
     Set OpenModelGroupFile = Nothing
 End Function
 
+' ============================================================
+' Делегаты к активному провайдеру (обратная совместимость API)
+' ============================================================
+
 ' --------------------------------------------------------------------------
 ' GetWorks
-' Возвращает коллекцию работ из листа {groupName} файла группы
-' с применением фильтров.
-' Элементы коллекции — Variant-массивы [Code, Name, Unit, NormHours, Price, Note].
-' На данном этапе — заглушка для будущего использования.
+' Возвращает Collection записей работ группы (объекты WorkEntry).
 ' --------------------------------------------------------------------------
 Public Function GetWorks(ByVal groupName As String, ByRef filters As Variant) As Collection
     On Error GoTo ErrHandler
-
-    Dim wb As Workbook
-    Dim ws As Worksheet
-    Dim result As Collection
-    Dim lastRow As Long
-    Dim i As Long
-    Dim entry As Variant
-
-    Set result = New Collection
-
-    ' Открываем файл группы
-    Set wb = OpenModelGroupFile(groupName)
-    If wb Is Nothing Then
-        Set GetWorks = result
-        Exit Function
-    End If
-
-    ' Получаем лист {groupName}
-    On Error Resume Next
-    Set ws = wb.Sheets(groupName)
-    On Error GoTo ErrHandler
-
-    If ws Is Nothing Then
-        Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorks: Лист " & groupName & " не найден в файле " & groupName & ".xlsx")
-        Set GetWorks = result
-        Exit Function
-    End If
-
-    ' Определяем последнюю строку (данные с 4-й строки)
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-    If lastRow < 4 Then
-        Set GetWorks = result
-        Exit Function
-    End If
-
-    ' Читаем данные (столбцы: A=Code, B=Name, C=Unit, D=NormHours, E=Price, F=Note)
-    For i = 4 To lastRow
-        If Not IsEmpty(ws.Cells(i, 1).Value) Then
-            ' Массив [Code, Name, Unit, NormHours, Price, Note]
-            entry = Array( _
-                CStr(ws.Cells(i, 1).Value), _
-                CStr(ws.Cells(i, 2).Value), _
-                CStr(ws.Cells(i, 3).Value), _
-                Val(ws.Cells(i, 4).Value), _
-                Val(ws.Cells(i, 5).Value), _
-                CStr(ws.Cells(i, 6).Value))
-            result.Add entry
-        End If
-    Next i
-
-    Set GetWorks = result
+    Dim provider As IModelDataProvider
+    Set provider = GetModelDataProvider()
+    Set GetWorks = provider.GetWorks(groupName, filters)
     Exit Function
-
 ErrHandler:
     Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorks: Ошибка — " & Err.Description)
     Set GetWorks = New Collection
 End Function
 
-' ============================================================
-' Функции чтения тождеств
-' ============================================================
+' --------------------------------------------------------------------------
+' GetParts
+' Возвращает Collection запчастей группы.
+' --------------------------------------------------------------------------
+Public Function GetParts(ByVal groupName As String, ByRef filters As Variant) As Collection
+    On Error GoTo ErrHandler
+    Dim provider As IModelDataProvider
+    Set provider = GetModelDataProvider()
+    Set GetParts = provider.GetParts(groupName, filters)
+    Exit Function
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetParts: Ошибка — " & Err.Description)
+    Set GetParts = New Collection
+End Function
+
+' --------------------------------------------------------------------------
+' GetModelWorks
+' Возвращает Collection модельных работ группы (тождества работ).
+' --------------------------------------------------------------------------
+Public Function GetModelWorks(ByVal groupName As String, ByRef filters As Variant) As Collection
+    On Error GoTo ErrHandler
+    Dim provider As IModelDataProvider
+    Set provider = GetModelDataProvider()
+    Set GetModelWorks = provider.GetModelWorks(groupName, filters)
+    Exit Function
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetModelWorks: Ошибка — " & Err.Description)
+    Set GetModelWorks = New Collection
+End Function
+
+' --------------------------------------------------------------------------
+' GetModelParts
+' Возвращает Collection модельных запчастей группы (тождества запчастей).
+' --------------------------------------------------------------------------
+Public Function GetModelParts(ByVal groupName As String, ByRef filters As Variant) As Collection
+    On Error GoTo ErrHandler
+    Dim provider As IModelDataProvider
+    Set provider = GetModelDataProvider()
+    Set GetModelParts = provider.GetModelParts(groupName, filters)
+    Exit Function
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetModelParts: Ошибка — " & Err.Description)
+    Set GetModelParts = New Collection
+End Function
+
+' --------------------------------------------------------------------------
+' GetMatLibEntries
+' Возвращает Collection библиотеки соответствий по входящему коду.
+' --------------------------------------------------------------------------
+Public Function GetMatLibEntries(ByVal groupName As String, _
+                                 ByVal entryCode As String) As Collection
+    On Error GoTo ErrHandler
+    Dim provider As IModelDataProvider
+    Set provider = GetModelDataProvider()
+    Set GetMatLibEntries = provider.GetMatLibEntries(groupName, entryCode)
+    Exit Function
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetMatLibEntries: Ошибка — " & Err.Description)
+    Set GetMatLibEntries = New Collection
+End Function
 
 ' --------------------------------------------------------------------------
 ' GetWorkIdentities
-' Читает тождества работ из листа {GroupName}w файла группы.
-' Возвращает коллекцию WorkIdentity.
-' Данные начинаются с 4-й строки.
-' Пустая строка или отсутствие агрегата (столбец I) = разделитель/пропуск.
+' Возвращает Collection тождеств работ группы (объекты WorkIdentity).
 ' --------------------------------------------------------------------------
 Public Function GetWorkIdentities(ByVal groupName As String) As Collection
     On Error GoTo ErrHandler
-
-    Dim wb As Workbook
-    Dim ws As Worksheet
-    Dim result As Collection
-    Dim lastRow As Long
-    Dim i As Long
-    Dim identity As WorkIdentity
-    Dim sheetName As String
-
-    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: START groupName=" & groupName)
-
-    sheetName = groupName & "w"
-    Set result = New Collection
-
-    ' Открываем файл группы
-    Set wb = OpenModelGroupFile(groupName)
-    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: wb Is Nothing=" & CStr(wb Is Nothing))
-    If wb Is Nothing Then
-        Set GetWorkIdentities = result
-        Exit Function
-    End If
-
-    ' Получаем лист {GroupName}w
-    On Error Resume Next
-    Set ws = wb.Sheets(sheetName)
-    On Error GoTo ErrHandler
-
-    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: ws Is Nothing=" & CStr(ws Is Nothing))
-    If ws Is Nothing Then
-        Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: Лист " & sheetName & " не найден")
-        Set GetWorkIdentities = result
-        Exit Function
-    End If
-
-    ' Определяем последнюю строку (данные с 4-й строки)
-    On Error Resume Next
-    lastRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row
-    If Err.Number <> 0 Then
-        Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: Error getting lastRow: " & Err.Description)
-        Err.Clear
-    End If
-    On Error GoTo ErrHandler
-    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: lastRow=" & CStr(lastRow))
-    If lastRow < 4 Then
-        Set GetWorkIdentities = result
-        Exit Function
-    End If
-
-    ' Читаем данные
-    For i = 4 To lastRow
-        On Error Resume Next
-        If Not IsEmpty(ws.Cells(i, 2).Value) Then
-            If Not IsEmpty(ws.Cells(i, 9).Value) Then ' I — Агрегат
-                Set identity = New WorkIdentity
-                identity.OutArticle = CStr(ws.Cells(i, 2).Value)  ' B
-                identity.OutName = CStr(ws.Cells(i, 3).Value)     ' C
-                identity.NormHours = Val(ws.Cells(i, 4).Value)    ' D
-                identity.QtyZN = Val(ws.Cells(i, 7).Value)        ' G
-                identity.Aggregate = CStr(ws.Cells(i, 9).Value)   ' I
-                identity.InName = CStr(ws.Cells(i, 10).Value)     ' J
-                result.Add identity
-            End If
-        End If
-        If Err.Number <> 0 Then
-            Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: Error at row " & CStr(i) & ": " & Err.Description)
-            Err.Clear
-        End If
-        On Error GoTo ErrHandler
-    Next i
-
-    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: END count=" & CStr(result.Count))
-    Set GetWorkIdentities = result
+    Dim provider As IModelDataProvider
+    Set provider = GetModelDataProvider()
+    Set GetWorkIdentities = provider.GetWorkIdentities(groupName)
     Exit Function
-
 ErrHandler:
     Call Mod_Logger.WriteLog("Mod_ModelDB", "GetWorkIdentities: Ошибка — " & Err.Description)
     Set GetWorkIdentities = New Collection
@@ -276,83 +272,93 @@ End Function
 
 ' --------------------------------------------------------------------------
 ' GetPartIdentities
-' Читает тождества запчастей из листа {GroupName}z4 файла группы.
-' Возвращает коллекцию PartIdentity.
-' Данные начинаются с 4-й строки.
-' Пустая строка или отсутствие агрегата (столбец I) = разделитель/пропуск.
+' Возвращает Collection тождеств запчастей группы (объекты PartIdentity).
 ' --------------------------------------------------------------------------
 Public Function GetPartIdentities(ByVal groupName As String) As Collection
     On Error GoTo ErrHandler
-
-    Dim wb As Workbook
-    Dim ws As Worksheet
-    Dim result As Collection
-    Dim lastRow As Long
-    Dim i As Long
-    Dim identity As PartIdentity
-    Dim sheetName As String
-
-    sheetName = groupName & "z4"
-    Set result = New Collection
-
-    ' Открываем файл группы
-    Set wb = OpenModelGroupFile(groupName)
-    If wb Is Nothing Then
-        Set GetPartIdentities = result
-        Exit Function
-    End If
-
-    ' Получаем лист {GroupName}z4
-    On Error Resume Next
-    Set ws = wb.Sheets(sheetName)
-    On Error GoTo ErrHandler
-
-    If ws Is Nothing Then
-        Call Mod_Logger.WriteLog("Mod_ModelDB", "GetPartIdentities: Лист " & sheetName & " не найден")
-        Set GetPartIdentities = result
-        Exit Function
-    End If
-
-    ' Определяем последнюю строку (данные с 4-й строки)
-    On Error Resume Next
-    lastRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row
-    If Err.Number <> 0 Then
-        Call Mod_Logger.WriteLog("Mod_ModelDB", "GetPartIdentities: Error getting lastRow: " & Err.Description)
-        Err.Clear
-    End If
-    On Error GoTo ErrHandler
-    If lastRow < 4 Then
-        Set GetPartIdentities = result
-        Exit Function
-    End If
-
-    ' Читаем данные
-    For i = 4 To lastRow
-        On Error Resume Next
-        If Not IsEmpty(ws.Cells(i, 2).Value) Then
-            If Not IsEmpty(ws.Cells(i, 9).Value) Then ' I — АГРЕГАТ
-                Set identity = New PartIdentity
-                identity.OutArticle = CStr(ws.Cells(i, 2).Value)  ' B
-                identity.OutName = CStr(ws.Cells(i, 3).Value)     ' C
-                identity.QtyZN = Val(ws.Cells(i, 7).Value)        ' G
-                identity.Price = Val(ws.Cells(i, 6).Value)        ' F
-                identity.Aggregate = CStr(ws.Cells(i, 9).Value)   ' I
-                identity.InCatNum = CStr(ws.Cells(i, 10).Value)   ' J
-                identity.InName = CStr(ws.Cells(i, 11).Value)     ' K
-                result.Add identity
-            End If
-        End If
-        If Err.Number <> 0 Then
-            Call Mod_Logger.WriteLog("Mod_ModelDB", "GetPartIdentities: Error at row " & CStr(i) & ": " & Err.Description)
-            Err.Clear
-        End If
-        On Error GoTo ErrHandler
-    Next i
-
-    Set GetPartIdentities = result
+    Dim provider As IModelDataProvider
+    Set provider = GetModelDataProvider()
+    Set GetPartIdentities = provider.GetPartIdentities(groupName)
     Exit Function
-
 ErrHandler:
     Call Mod_Logger.WriteLog("Mod_ModelDB", "GetPartIdentities: Ошибка — " & Err.Description)
     Set GetPartIdentities = New Collection
+End Function
+
+' --------------------------------------------------------------------------
+' GetAllModelGroups
+' Возвращает Collection имён всех групп моделей.
+' --------------------------------------------------------------------------
+Public Function GetAllModelGroups() As Collection
+    On Error GoTo ErrHandler
+    Dim provider As IModelDataProvider
+    Set provider = GetModelDataProvider()
+    Set GetAllModelGroups = provider.GetAllModelGroups()
+    Exit Function
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "GetAllModelGroups: Ошибка — " & Err.Description)
+    Set GetAllModelGroups = New Collection
+End Function
+
+' --------------------------------------------------------------------------
+' CreateModelGroupFile
+' Создаёт группу моделей (в SQLite — запись в model_groups).
+' Возвращает True при успехе.
+' --------------------------------------------------------------------------
+Public Function CreateModelGroupFile(ByVal groupName As String) As Boolean
+    On Error GoTo ErrHandler
+    Dim provider As IModelDataProvider
+    Set provider = GetModelDataProvider()
+    CreateModelGroupFile = provider.CreateModelGroupFile(groupName)
+    Exit Function
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "CreateModelGroupFile: Ошибка — " & Err.Description)
+    CreateModelGroupFile = False
+End Function
+
+' --------------------------------------------------------------------------
+' FindModelGroupByModel
+' Ищет имя группы моделей по имени модели (названию ТС).
+' Перебирает все группы из провайдера и возвращает ту, чьё имя совпадает
+' с modelName (с учётом регистра) либо содержится в нём.
+' Если группа не найдена — возвращает пустую строку.
+' Интеграция Фазы B: позволяет читать группу из SysW.db (через провайдер).
+' --------------------------------------------------------------------------
+Public Function FindModelGroupByModel(ByVal modelName As String) As String
+    On Error GoTo ErrHandler
+
+    Dim provider As IModelDataProvider
+    Set provider = GetModelDataProvider()
+
+    Dim groups As Collection
+    Set groups = provider.GetAllModelGroups()
+
+    Dim g As Variant
+    Dim key As String
+    key = UCase$(Trim$(modelName))
+
+    If key <> "" Then
+        ' Точное совпадение имени группы с именем модели
+        For Each g In groups
+            Dim gName As String
+            gName = UCase$(Trim$(CStr(g)))
+            If gName <> "" And gName = key Then
+                FindModelGroupByModel = CStr(g)
+                Exit Function
+            End If
+        Next g
+        ' Совпадение по вхождению имени группы в название модели
+        For Each g In groups
+            gName = UCase$(Trim$(CStr(g)))
+            If gName <> "" And InStr(1, key, gName, vbTextCompare) > 0 Then
+                FindModelGroupByModel = CStr(g)
+                Exit Function
+            End If
+        Next g
+    End If
+
+    Exit Function
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "FindModelGroupByModel: Ошибка — " & Err.Description)
+    FindModelGroupByModel = ""
 End Function
