@@ -47,7 +47,9 @@
     "include": [
       "docs/DEVELOPER.md",
       "docs/ARCHITECTURE.md",
-      "src/modules/Mod_Constants.bas"
+      "src/modules/Mod_Constants.bas",
+      "logs/build.log",
+      "logs/test_results.log"
     ],
     "critical": [
       "work.xlsm",

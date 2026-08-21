@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v1.0.5)
+# Техническая документация разработчика — SysW (v1.0.7)
 
 ## 1. Архитектура проекта
 
@@ -21,6 +21,10 @@
 - **Автоматический подбор** ([`Mod_AutoMatch.bas`](../src/modules/Mod_AutoMatch.bas)) — автоматический подбор работ/запчастей
 - **Объект детали** ([`PartIdentity.cls`](../src/classes/PartIdentity.cls)) — класс-объект детали
 - **Объект работы** ([`WorkIdentity.cls`](../src/classes/WorkIdentity.cls)) — класс-объект работы
+- **Объект записи работы** ([`WorkEntry.cls`](../src/classes/WorkEntry.cls)) — класс-объект записи работы
+- **Интерфейс провайдера данных** ([`IModelDataProvider.cls`](../src/classes/IModelDataProvider.cls)) — контракт доступа к данным моделей
+- **Провайдер доступа к БД** ([`Mod_ModelDBProvider.cls`](../src/classes/Mod_ModelDBProvider.cls)) — фабрика/провайдер данных
+- **SQLite-провайдер** ([`Mod_SQLiteDB.cls`](../src/classes/Mod_SQLiteDB.cls)) — доступ к данным из единой базы `SysW.db`
 - **Лист main** ([`Лист2_main.cls`](../src/sheets/Лист2_main.cls)) — обработчик событий листа
 
 ### 1.2 Схема взаимодействия модулей
@@ -571,7 +575,11 @@ python scripts/impVBA.py
 | `Mod_ModelDB` | `src/modules/Mod_ModelDB.bas` | Стандартный модуль |
 | `Mod_PickWork` | `src/modules/Mod_PickWork.bas` | Стандартный модуль |
 | `Mod_AutoMatch` | `src/modules/Mod_AutoMatch.bas` | Стандартный модуль |
+| `IModelDataProvider` | `src/classes/IModelDataProvider.cls` | Класс |
+| `Mod_ModelDBProvider` | `src/classes/Mod_ModelDBProvider.cls` | Класс |
+| `Mod_SQLiteDB` | `src/classes/Mod_SQLiteDB.cls` | Класс |
 | `PartIdentity` | `src/classes/PartIdentity.cls` | Класс |
+| `WorkEntry` | `src/classes/WorkEntry.cls` | Класс |
 | `WorkIdentity` | `src/classes/WorkIdentity.cls` | Класс |
 | `Лист2` | `src/sheets/Лист2_main.cls` | Класс листа |
 
@@ -862,6 +870,33 @@ git push
 
 ---
 
+## 9. SQLite, единый конвейер и глубокая подстановка (v1.0.7)
+
+### 9.1 SQLite-хранилище `SysW.db`
+
+Единая база данных SQLite расположена в корне проекта (`SysW.db`), DDL-схема — `db/schema.sql`. Доступ из VBA реализован через классы `Mod_SQLiteDB.cls`, `Mod_ModelDBProvider.cls` и интерфейс `IModelDataProvider.cls`. Таблица `works` использует суррогатный первичный ключ `id INTEGER PRIMARY KEY AUTOINCREMENT` (сохраняет дубли наименований). Пересборка базы из `base/models/*` выполняется скриптом `scripts/migrate_models_to_sqlite.py`.
+
+### 9.2 Единый конвейер `scripts/build_all.py`
+
+Полная пересборка проекта запускается одной командой:
+
+```bash
+python scripts/build_all.py
+```
+
+Порядок этапов: резервное копирование (`work.xlsm`, `SysW.db`) → `impVBA.py` → `build_templates.py` → `migrate_models_to_sqlite.py` → контроль целостности БД (`PRAGMA integrity_check` + контрольные количества) → `run_tests.py`. При провале любого этапа конвейер останавливается с ненулевым exit-кодом. Прогресс пишется в `logs/build.log`.
+
+### 9.3 Флаг `ApplyMatLibSubstitution` и бизнес-правило подстановки
+
+Публичный флаг `Mod_Constants.ApplyMatLibSubstitution = True` включает глубокую подстановку модельных кодов при импорте:
+
+- запчасти — по № кат. **X(24)** с fallback по наименованию **Y(25)** → **AB(28)** (`target_type='mod_part'`);
+- работы — по наименованию **L(12)** → **O(15)** (`target_type='mod_work'`).
+
+Подстановка выполняется только при точном совпадении; наименования сохраняются. В `GetMatLibEntries` используется детерминированный `ORDER BY target_type, target_code`. При выключенном флаге поведение импорта идентично прежнему.
+
+---
+
 ## Связанные документы
 
 - [`README.md`](../README.md) — общее описание проекта, быстрый старт
@@ -925,7 +960,11 @@ Mod_Utils
 | `Mod_ModelDB` | `src/modules/Mod_ModelDB.bas` | Стандартный модуль |
 | `Mod_PickWork` | `src/modules/Mod_PickWork.bas` | Стандартный модуль |
 | `Mod_AutoMatch` | `src/modules/Mod_AutoMatch.bas` | Стандартный модуль |
+| `IModelDataProvider` | `src/classes/IModelDataProvider.cls` | Класс |
+| `Mod_ModelDBProvider` | `src/classes/Mod_ModelDBProvider.cls` | Класс |
+| `Mod_SQLiteDB` | `src/classes/Mod_SQLiteDB.cls` | Класс |
 | `PartIdentity` | `src/classes/PartIdentity.cls` | Класс |
+| `WorkEntry` | `src/classes/WorkEntry.cls` | Класс |
 | `WorkIdentity` | `src/classes/WorkIdentity.cls` | Класс |
 | `Лист2` | `src/sheets/Лист2_main.cls` | Класс листа |
 
@@ -936,6 +975,8 @@ Mod_Utils
 | [`export_vba.py`](../scripts/export_vba.py) | Выгрузка VBA из Excel на диск (CP1251 → UTF-8) | UTF-8 |
 | [`impVBA.py`](../scripts/impVBA.py) | Загрузка VBA с диска в Excel (UTF-8 → CP1251) | UTF-8 |
 | [`run_tests.py`](../scripts/run_tests.py) | Запуск тестов VBA | UTF-8 |
+| [`build_all.py`](../scripts/build_all.py) | Единый конвейер сборки: бэкап → импорт VBA → шаблоны → миграция БД → контроль целостности → тесты | UTF-8 |
+| [`migrate_models_to_sqlite.py`](../scripts/migrate_models_to_sqlite.py) | Пересборка `SysW.db` из `base/models/*` | UTF-8 |
 | [`config.py`](../scripts/config.py) | Конфигурация проекта (пути, настройки) | UTF-8 |
 | [`config.ps1`](../scripts/config.ps1) | Конфигурация окружения PowerShell | UTF-8 with BOM |
 | [`Set-ExcelTrust.ps1`](../scripts/Set-ExcelTrust.ps1) | Настройка доверия Excel для работы VBA-макросов | UTF-8 with BOM |

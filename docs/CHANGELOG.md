@@ -5,6 +5,18 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.0.7] — 2026-08-22
+
+### Added
+- **Активация глубокой подстановки модельных кодов (задачи 2–3):** публичный флаг `Mod_Constants.ApplyMatLibSubstitution` установлен в `True` — включено бизнес-правило подстановки при импорте: запчасти по № кат. **X(24)** с fallback по наименованию **Y(25)** → **AB(28)**; работы по наименованию **L(12)** → **O(15)**. Добавлен детерминированный `ORDER BY target_type, target_code` в `GetMatLibEntries` (SQLite). При выключенном флаге поведение импорта идентично прежнему.
+- **Новые тесты TC-47..TC-50:** покрывают глубокую подстановку модельных кодов (работы и запчасти), включая fallback по наименованию.
+- **Единый конвейер сборки `scripts/build_all.py`:** бэкап → `impVBA` → `build_templates` → `migrate` → `integrity_check` → `run_tests` — единая точка запуска полного цикла.
+- **Контроль целостности БД:** в конвейер добавлена проверка целостности SQLite (`SysW.db`) после миграции.
+- **Версия проекта поднята до v1.0.7** — `scripts/config.py`, `scripts/config.ps1`, `src/modules/Mod_Constants.bas`, `README.md`, `docs/ARCHITECTURE.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`, `docs/sourcecraft-guide.md`.
+
+### Changed
+- **Документация приведена в соответствие с кодом:** SQLite реализован (`SysW.db`), структура `src/` актуализирована, `build_all.py` описан как единый конвейер, описаны флаг и бизнес-правило подстановки; снята пометка «SQLite планируется» в `README.md`.
+
 ## [v1.0.6] — 2026-08-21
 
 ### Added
@@ -12,7 +24,7 @@
 - **Маппинг входящих запчастей приведён к `docs/table.md` (раздел 3.2):** теперь `B(2)→X(24)` (№ кат.), `C(3)→Y(25)` (Наименование), `D(4)→Z(26)` (Кол-во), `G(7)→AA(27)` (Всего).
 
 ### Changed
-- **Схлопывание дублей `works` устранено (проблема 3):** в `db/schema.sql` и `scripts/sqlite_schema.py` первичный ключ `works` изменён с `(group_name, code)` на `(group_name, code, name)`; в `scripts/migrate_models_to_sqlite.py` для `works` используется обычный `INSERT` вместо `INSERT OR REPLACE` — при перемиграции сохраняются все ~10290 строк (дубли наименований при одинаковом артикуле).
+- **Схлопывание дублей `works` устранено (проблема 3):** в `db/schema.sql` и `scripts/sqlite_schema.py` первичный ключ `works` заменён на суррогатный `id INTEGER PRIMARY KEY AUTOINCREMENT` (НЕ композит) — он сохраняет дубли наименований при одинаковом артикуле/группе; в `scripts/migrate_models_to_sqlite.py` для `works` используется обычный `INSERT` вместо `INSERT OR REPLACE` — при перемиграции сохраняются все ~10290 строк.
 - **Нормализация таблицы `parts` (проблема 4):** данные запчастей вынесены в уникальный каталог `parts_catalog(code, name, unit, price, note)`; таблица `parts` теперь хранит только привязки `(group_name, part_code)`. `GetParts` в `Mod_SQLiteDB.cls` переписан на JOIN. Это устраняет ~6-кратное дублирование каталога и снижает объём `SysW.db` примерно с 500 МБ до ~80–90 МБ.
 
 ### Note

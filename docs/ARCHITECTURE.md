@@ -1,10 +1,10 @@
 # Архитектура выноса данных работ и запчастей из work.xlsm
 
 > Версия: 1.0
-> Проект: SysW v1.0.5
-> Статус: Частично реализовано
+> Проект: SysW v1.0.7
+> Статус: Реализовано (SQLite-хранилище внедрено в v1.0.7)
 >
-> **Актуальный статус:** Часть задач по миграции на SQLite уже реализована (модуль `Mod_ModelDB`, структуры данных в `Mod_ModelTypes`, классы `PartIdentity`/`WorkIdentity`). Оставшиеся задачи включены в единый ROADMAP проекта — см. [`docs/ROADMAP.md`](../docs/ROADMAP.md) (раздел 9, задачи R-S1..R-S8).
+> **Актуальный статус:** Миграция на SQLite реализована — единая база `SysW.db` (корень проекта), DDL в `db/schema.sql`, провайдеры `Mod_SQLiteDB.cls` / `Mod_ModelDBProvider.cls` / `IModelDataProvider.cls`, пересборка скриптом `scripts/migrate_models_to_sqlite.py` и контроль целостности в составе конвейера `scripts/build_all.py`.
 
 ---
 
@@ -34,10 +34,17 @@ SysW\
 │       ├── 2190.xlsm            # Группа 2190
 │       └── ...                  # Другие группы
 │
-├── src\                         # Исходный код VBA (без изменений)
+├── src\                         # Исходный код VBA (13 .bas, 6 .cls, 1 лист)
+│   ├── modules\                 # 13 стандартных модулей
+│   ├── classes\                 # 6 классов (PartIdentity, WorkIdentity, WorkEntry,
+│   │                            #   IModelDataProvider, Mod_ModelDBProvider, Mod_SQLiteDB)
+│   └── sheets\                  # 1 класс листа (Лист2_main)
+├── db\                          # DDL-схема
+│   └── schema.sql               # Схема SysW.db
 ├── docs\                        # Документация
 ├── plans\                       # Планы
-└── scripts\                     # Скрипты автоматизации
+├── SysW.db                      # Единая база данных SQLite
+└── scripts\                     # Скрипты автоматизации (в т.ч. build_all.py)
 ```
 
 #### Защита листов шаблонов (v1.0.4)
@@ -605,11 +612,11 @@ flowchart LR
 
 ---
 
-## 5. Подготовка к SQLite
+## 5. Миграция на SQLite (реализована в v1.0.7)
 
-### 5.1. Абстракции, закладываемые сейчас
+### 5.1. Абстракции провайдера данных
 
-Для облегчения будущей миграции с Excel на SQLite, в `Mod_ModelDB` закладываются следующие абстракции:
+Для изоляции хранилищ (Excel/`base/models/` ↔ SQLite/`SysW.db`) в проекте реализованы следующие абстракции:
 
 #### 5.1.1. Интерфейсный модуль `IModelDataProvider`
 
@@ -650,7 +657,7 @@ End Function
 - `CreateModelGroupFile` → `CreateSQLiteDatabase`
 - Чтение листов → SQL-запросы `SELECT`
 
-### 5.2. Будущий модуль `Mod_SQLiteDB`
+### 5.2. Модуль `Mod_SQLiteDB` (реализован)
 
 **Сигнатуры функций** (идентичны `Mod_ModelDB`):
 
@@ -758,6 +765,19 @@ CREATE TABLE model_works (
 CREATE INDEX idx_works_group ON works(group_name);
 CREATE INDEX idx_group_parts_group ON group_parts(group_name);
 ```
+
+### 5.5. Единый конвейер и глубокая подстановка (v1.0.7)
+
+Полная пересборка проекта выполняется единым конвейером `scripts/build_all.py`:
+бэкап (`work.xlsm`, `SysW.db`) → `impVBA.py` → `build_templates.py` →
+`migrate_models_to_sqlite.py` → контроль целостности БД → `run_tests.py`.
+
+При импорте действует бизнес-правило глубокой подстановки модельных кодов
+(флаг `Mod_Constants.ApplyMatLibSubstitution = True`):
+- запчасти — по № кат. **X(24)** с fallback по наименованию **Y(25)** → **AB(28)**;
+- работы — по наименованию **L(12)** → **O(15)**.
+
+В `GetMatLibEntries` используется детерминированный `ORDER BY target_type, target_code`.
 
 ---
 

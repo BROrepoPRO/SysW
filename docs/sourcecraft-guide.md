@@ -26,7 +26,7 @@
 
 ## Конфигурация SourceCraft (`.sourcecraft`)
 
-Актуально с v1.0.4, проект использует корневой файл [`.sourcecraft`](../.sourcecraft) для централизованной конфигурации SourceCraft Code Assistant.
+Проект использует корневой файл [`.sourcecraft`](../.sourcecraft) для централизованной конфигурации SourceCraft Code Assistant (актуализировано в v1.0.7).
 
 ### Структура `.sourcecraft`
 
@@ -165,8 +165,12 @@ SysW\
 │   │   ├── Mod_SheetButtons.bas
 │   │   ├── Mod_SheetOps.bas
 │   │   └── Mod_Utils.bas
-│   ├── classes/               # 2 .cls класса
+│   ├── classes/               # 6 .cls классов
+│   │   ├── IModelDataProvider.cls
+│   │   ├── Mod_ModelDBProvider.cls
+│   │   ├── Mod_SQLiteDB.cls
 │   │   ├── PartIdentity.cls
+│   │   ├── WorkEntry.cls
 │   │   └── WorkIdentity.cls
 │   └── sheets/               # 1 .cls лист
 │       └── Лист2_main.cls
@@ -214,6 +218,7 @@ SysW\
 | [`export_vba.py`](../scripts/export_vba.py) | Выгрузка VBA-модулей из Excel на диск (CP1251 → UTF-8) | UTF-8 |
 | [`impVBA.py`](../scripts/impVBA.py) | Загрузка VBA-модулей с диска в Excel (UTF-8 → CP1251) | UTF-8 |
 | [`run_tests.py`](../scripts/run_tests.py) | Запуск тестов VBA | UTF-8 |
+| [`build_all.py`](../scripts/build_all.py) | Единый конвейер сборки: бэкап → импорт VBA → шаблоны → миграция БД → контроль целостности → тесты | UTF-8 |
 
 ### PowerShell-скрипты
 
@@ -230,6 +235,10 @@ SysW\
 
 | Версия | Дата | Изменения |
 |--------|------|-----------|
+| 1.0.7 | 2026-08-22 | Активация глубокой подстановки модельных кодов (`ApplyMatLibSubstitution=True`) с бизнес-правилом; новые тесты TC-47..TC-50; единый конвейер `build_all.py`; контроль целостности БД; суррогатный PK `works.id` |
+| 1.0.6 | 2026-08-21 | Глубокая подстановка модельных кодов при импорте; маппинг входящих запчастей к `docs/table.md`; нормализация каталога `parts_catalog`; суррогатный PK `works.id` |
+| 1.0.5 | 2026-08-21 | Единый источник версии и скрипт `update_version.py`, централизация версии в `config.APP_VERSION` / `Mod_Constants.APP_VERSION` / `$Script:AppVersion` |
+| 1.0.4 | 2026-08-21 | Каталог шаблонов `base/templates/`, защита листов шаблонов, SQLite-инфраструктура (стадия проектирования), новые скрипты `build_templates.py`, `apply_protection_templates.py` |
 | 1.0.3 | 2026-08-21 | Архивация планов, создание объединённого плана `integration_1.0.3.md`, актуализация документации (16 VBA-файлов, 1 лист `Лист2_main`) |
 | 1.0.2 | 2026-08-06 | Актуализация документации под 1.0.2, единый источник версии, интеграция MCP-серверов File System и Git Tools |
 | 0.18.0 | 2026-08-06 | Актуализация документации: переименование `ARCHITECTURE_SQLITE.md` → `ARCHITECTURE.md`, добавление `Mod_ModelTypes.bas`, `PartIdentity.cls`, `WorkIdentity.cls`, инструмент проверки документации `check_docs.py` |

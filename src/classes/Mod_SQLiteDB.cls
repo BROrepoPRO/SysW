@@ -381,6 +381,9 @@ End Function
 ' --------------------------------------------------------------------------
 ' GetMatLibEntries — Collection массивов [target_type,target_code,target_name,
 '                                         coefficient] по входящему коду.
+' v1.0.7: детерминированный порядок ORDER BY target_type, target_code —
+' потребитель берёт первую запись нужного типа (mod_part/mod_work),
+' пропуская записи другого типа.
 ' --------------------------------------------------------------------------
 Private Function IModelDataProvider_GetMatLibEntries(ByVal groupName As String, _
                                                      ByVal entryCode As String) As Collection
@@ -391,7 +394,8 @@ Private Function IModelDataProvider_GetMatLibEntries(ByVal groupName As String, 
     Dim rs As Object
     Set rs = ExecuteQuery( _
         "SELECT target_type, target_code, target_name, coefficient " & _
-        "FROM matlib_entries WHERE group_name = ? AND entry_code = ?", _
+        "FROM matlib_entries WHERE group_name = ? AND entry_code = ? " & _
+        "ORDER BY target_type, target_code", _
         Array(groupName, entryCode))
 
     Do While Not rs.EOF

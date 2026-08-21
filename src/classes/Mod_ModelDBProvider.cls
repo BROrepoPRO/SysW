@@ -293,6 +293,9 @@ End Function
 ' --------------------------------------------------------------------------
 ' GetMatLibEntries — Collection массивов [target_type,target_code,target_name,
 '                                         coefficient] по входящему коду.
+' v1.0.7: порядок детерминирован (сначала mod_work, затем mod_part); потребитель
+' (SubstituteWorkArticle/SubstitutePartArticle) выбирает первую запись нужного типа,
+' пропуская записи другого типа — согласовано между ветками Excel и SQLite.
 ' Строится из тождеств работ/запчастей листов {G}w/{G}z4.
 ' --------------------------------------------------------------------------
 Private Function IModelDataProvider_GetMatLibEntries(ByVal groupName As String, _

@@ -1,6 +1,6 @@
 ﻿# SysW — Система автоматизации обработки заказ-нарядов авторемонта
 
-**Версия:** v1.0.5
+**Версия:** v1.0.7
 
 **Назначение:** импорт, анализ и учёт данных заказ-нарядов из Excel.
 
@@ -8,7 +8,7 @@
 
 ### Архитектура
 
-Проект построен на модульной архитектуре VBA с разделением на 13 стандартных модулей (`.bas`), 2 класса (`.cls`) и 1 класс листа (`.cls`). Исходный код организован в директории `src/`:
+Проект построен на модульной архитектуре VBA с разделением на 13 стандартных модулей (`.bas`), 6 классов (`.cls`) и 1 класс листа (`.cls`). Исходный код организован в директории `src/`:
 - `src/modules/` — бизнес-логика, утилиты, логирование, обработчики кнопок
 - `src/classes/` — классы-объекты (деталь, работа)
 - `src/sheets/` — классы-обработчики событий листов Excel
@@ -24,7 +24,7 @@
 | **VBA (Excel)** | Модульная система: импорт, парсинг, заполнение шапки, тестирование |
 | **Python** | Скрипты экспорта/импорта VBA-модулей, запуск тестов |
 | **PowerShell** | Альтернативный скрипт импорта VBA из Excel |
-| **SQLite** | **Планируется** (задачи R-S1..R-S8 в ROADMAP). Текущее хранение — в `work.xlsm` и внешних Excel-файлах (`base/models/*.xlsx`) |
+| **SQLite** | **Реализован** — единая база `SysW.db` в корне проекта, DDL в `db/schema.sql`, доступ из VBA через `Mod_SQLiteDB` / `Mod_ModelDBProvider` |
 | **Git / GitHub** | Контроль версий, CI/CD (GitHub Actions) |
 | **SourceCraft Code Assistant** | Многоролевая архитектура разработки |
 
@@ -36,11 +36,13 @@
 SysW (https://github.com/BROrepoPRO/SysW.git)
 ├── src/                       # Исходный код VBA
 │   ├── modules/               # 13 .bas модулей
-│   ├── classes/               # 2 .cls класса (PartIdentity, WorkIdentity)
+│   ├── classes/               # 6 .cls классов
 │   └── sheets/                # 1 .cls лист
 ├── base/                      # Шаблоны и образцы данных
 │   ├── templates/             # Шаблоны (work, work0, model, model0, report0)
 │   └── models/                # Модели данных (Excel-файлы)
+├── db/                        # Схема базы данных SQLite
+│   └── schema.sql             # DDL-схема SysW.db
 ├── scripts/                   # Python + PowerShell скрипты
 │   ├── config.py              # Общая конфигурация путей (Python)
 │   ├── config.ps1             # Общая конфигурация путей (PowerShell)
@@ -49,6 +51,8 @@ SysW (https://github.com/BROrepoPRO/SysW.git)
 │   ├── run_tests.py           # Запуск тестов
 │   ├── build_templates.py     # Создание шаблонов base/templates/
 │   ├── apply_protection_templates.py  # Защита листов шаблонов
+│   ├── migrate_models_to_sqlite.py    # Пересборка SysW.db из base/models/
+│   ├── build_all.py           # Единый конвейер сборки (бэкап → импорт → шаблоны → миграция → тесты)
 │   └── Set-ExcelTrust.ps1     # Настройка доверия Excel к VBA
 ├── logs/                      # Логи и результаты тестов
 │   ├── log.txt                # Основной лог VBA-модулей
@@ -68,7 +72,8 @@ SysW (https://github.com/BROrepoPRO/SysW.git)
 ├── .vscode/                   # Настройки VS Code
 ├── .ycarules                  # Правила SourceCraft
 ├── .gitattributes             # Нормализация Git
-└── work.xlsm                  # Excel-файл с макросами (в .gitignore)
+├── work.xlsm                  # Excel-файл с макросами (в .gitignore)
+└── SysW.db                    # Единая база данных SQLite (в .gitignore)
 ```
 
 ## CI/CD
@@ -115,6 +120,11 @@ SysW (https://github.com/BROrepoPRO/SysW.git)
 7. **Запустить тесты:**
    ```bash
    python scripts/run_tests.py
+   ```
+
+8. **Полная пересборка проекта** (бэкап → импорт VBA → шаблоны → миграция БД → контроль целостности → тесты):
+   ```bash
+   python scripts/build_all.py
    ```
 
 ---

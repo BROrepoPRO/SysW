@@ -4,7 +4,7 @@ Option Explicit
 ' ============================================================
 ' Модуль: Mod_FullTestRunner
 ' Назначение: Набор технических тестов для проекта SysW
-' Покрытие: TC-01 .. TC-46 (автоматические тесты)
+' Покрытие: TC-01 .. TC-50 (автоматические тесты) + TC-S1..TC-S3
 ' ============================================================
 
 ' ---- Счётчики результатов ----
@@ -31,7 +31,7 @@ Public Sub RunAllTests()
     Mod_Constants.SilenceMsgBox = True
 
     Debug.Print "=============================================="
-    Debug.Print "  Запуск набора тестов (TC-01..TC-46)"
+    Debug.Print "  Запуск набора тестов (TC-01..TC-50)"
     Debug.Print "=============================================="
     Debug.Print ""
 
@@ -1117,7 +1117,7 @@ Private Sub RunModelDBReadTests()
 End Sub
 
 ' ============================================================
-' Группа: тесты SQLite-провайдера (TC-S1..TC-S3)
+' Группа: тесты SQLite-провайдера (TC-S1..TC-S3, TC-47..TC-50)
 ' ============================================================
 Private Sub RunSQLiteTests()
     Dim provider As IModelDataProvider
@@ -1184,6 +1184,198 @@ Private Sub RunSQLiteTests()
         If Not s3Ok Then s3Reason = "Групп меньше 6: " & CStr(allGroups.Count)
         AddResult "TC-S3", "Данные мигрированы в SysW.db", s3Ok, s3Reason
     End If
+    On Error GoTo 0
+
+    ' ============================================================
+    ' Расширенное покрытие SQLite-провайдера (Задача 3, v1.0.7):
+    ' TC-47 GetParts (JOIN parts_catalog), TC-48 works с дублями,
+    ' TC-49 чтение parts_catalog, TC-50 GetMatLibEntries (порядок).
+    ' ============================================================
+
+    ' Доступ к ADO-запросам того же соединения через конкретный класс.
+    Dim sql As Mod_SQLiteDB
+    On Error Resume Next
+    Set sql = provider
+    On Error GoTo 0
+
+    If sql Is Nothing Then
+        ' Активный провайдер — не SQLite (Excel fallback): тесты неприменимы.
+        AddResult "TC-47", "GetParts через SQLite (JOIN parts_catalog)", True, "", True, _
+                  "SQLite-провайдер недоступен"
+        AddResult "TC-48", "works с дублями наименований без схлопывания", True, "", True, _
+                  "SQLite-провайдер недоступен"
+        AddResult "TC-49", "Чтение parts_catalog", True, "", True, _
+                  "SQLite-провайдер недоступен"
+        AddResult "TC-50", "GetMatLibEntries: детерминированный порядок", True, "", True, _
+                  "SQLite-провайдер недоступен"
+        Set provider = Nothing
+        Debug.Print ""
+        Exit Sub
+    End If
+
+    Dim noP As Variant
+    noP = Array()
+
+    ' ---------------------------------------------------------------
+    ' TC-47: GetParts через SQLite — JOIN parts + parts_catalog
+    ' (нормализация v1.0.6). Возвращает [code,name,unit,price,note];
+    ' по одной записи на каждую привязку группы.
+    ' ---------------------------------------------------------------
+    On Error Resume Next
+    Dim pc As Collection
+    Set pc = provider.GetParts("UAZ", Empty)
+    If Err.Number <> 0 Then
+        AddResult "TC-47", "GetParts через SQLite (JOIN parts_catalog)", False, _
+                  "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        Dim tc47Ok As Boolean
+        Dim tc47Reason As String
+        Dim bindCount As Long
+        bindCount = Val(sql.ExecuteScalar( _
+            "SELECT COUNT(*) FROM parts WHERE group_name = 'UAZ'", noP))
+        tc47Ok = (pc.Count > 0) And (pc.Count = bindCount)
+        If Not tc47Ok Then
+            tc47Reason = "parts.Count=" & CStr(pc.Count) & ", привязок=" & CStr(bindCount)
+        Else
+            Dim parr As Variant
+            parr = pc(1)
+            tc47Ok = (UBound(parr) = 4) And (Len(CStr(parr(0))) > 0) And (Len(CStr(parr(1))) > 0)
+            If Not tc47Ok Then
+                tc47Reason = "неверная форма записи (ожидается [code,name,unit,price,note])"
+            End If
+        End If
+        AddResult "TC-47", "GetParts через SQLite (JOIN parts_catalog)", tc47Ok, tc47Reason
+    End If
+    Set pc = Nothing
+    On Error GoTo 0
+
+    ' ---------------------------------------------------------------
+    ' TC-48: Чтение works с дублями наименований — суррогатный PK id
+    ' (AUTOINCREMENT) сохраняет все дубли. Сверяем число строк GetWorks
+    ' с числом строк таблицы для группы, где присутствуют дубли.
+    ' ---------------------------------------------------------------
+    On Error Resume Next
+    Dim dupGroup As Variant
+    dupGroup = sql.ExecuteScalar( _
+        "SELECT group_name FROM works " & _
+        "GROUP BY group_name, code, name HAVING COUNT(*) > 1 LIMIT 1", noP)
+    If Err.Number <> 0 Then
+        AddResult "TC-48", "works с дублями наименований без схлопывания", False, _
+                  "Ошибка: " & Err.Description
+        Err.Clear
+    ElseIf IsEmpty(dupGroup) Then
+        AddResult "TC-48", "works с дублями наименований без схлопывания", True, "", True, _
+                  "В SysW.db нет групп с дублирующимися (code,name) работами"
+    Else
+        Dim tc48Ok As Boolean
+        Dim tc48Reason As String
+        Dim rawWorks As Long
+        rawWorks = Val(sql.ExecuteScalar( _
+            "SELECT COUNT(*) FROM works WHERE group_name = ?", Array(CStr(dupGroup))))
+        Dim wc As Collection
+        Set wc = provider.GetWorks(CStr(dupGroup), Empty)
+        tc48Ok = (wc.Count = rawWorks)
+        If Not tc48Ok Then
+            tc48Reason = "GetWorks=" & CStr(wc.Count) & ", таблица=" & CStr(rawWorks) & _
+                         " (дубли схлопнуты)"
+        End If
+        AddResult "TC-48", "works с дублями наименований без схлопывания", tc48Ok, tc48Reason
+        Set wc = Nothing
+    End If
+    On Error GoTo 0
+
+    ' ---------------------------------------------------------------
+    ' TC-49: Чтение parts_catalog — глобальный уникальный каталог;
+    ' все привязки parts ссылаются на существующие коды каталога.
+    ' ---------------------------------------------------------------
+    On Error Resume Next
+    Dim catalogCount As Long
+    catalogCount = Val(sql.ExecuteScalar( _
+        "SELECT COUNT(*) FROM parts_catalog", noP))
+    Dim orphanCount As Long
+    orphanCount = Val(sql.ExecuteScalar( _
+        "SELECT COUNT(*) FROM parts p LEFT JOIN parts_catalog c ON c.code = p.part_code " & _
+        "WHERE c.code IS NULL", noP))
+    If Err.Number <> 0 Then
+        AddResult "TC-49", "Чтение parts_catalog", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        Dim tc49Ok As Boolean
+        Dim tc49Reason As String
+        tc49Ok = (catalogCount > 0) And (orphanCount = 0)
+        If Not tc49Ok Then
+            tc49Reason = "каталог=" & CStr(catalogCount) & ", битых ссылок=" & CStr(orphanCount)
+        End If
+        AddResult "TC-49", "Чтение parts_catalog", tc49Ok, tc49Reason
+    End If
+    On Error GoTo 0
+
+    ' ---------------------------------------------------------------
+    ' TC-50: GetMatLibEntries через SQLite — возврат записей и
+    ' детерминированный порядок (ORDER BY target_type, target_code);
+    ' потребитель берёт первую запись нужного типа (mod_part для ЗЧ).
+    ' ---------------------------------------------------------------
+    On Error Resume Next
+    Dim mlRS As Object
+    Set mlRS = sql.ExecuteQuery( _
+        "SELECT group_name, entry_code FROM matlib_entries " & _
+        "WHERE target_type = 'mod_part' LIMIT 1", noP)
+    If Err.Number <> 0 Then
+        AddResult "TC-50", "GetMatLibEntries: детерминированный порядок", False, _
+                  "Ошибка: " & Err.Description
+        Err.Clear
+    ElseIf mlRS Is Nothing Then
+        AddResult "TC-50", "GetMatLibEntries: детерминированный порядок", True, "", True, _
+                  "В SysW.db нет записей matlib_entries типа mod_part"
+    ElseIf mlRS.EOF Then
+        AddResult "TC-50", "GetMatLibEntries: детерминированный порядок", True, "", True, _
+                  "В SysW.db нет записей matlib_entries типа mod_part"
+    Else
+        Dim mlGroup As String
+        Dim mlCode As String
+        mlGroup = CStr(mlRS.Fields(0).Value)
+        mlCode = CStr(mlRS.Fields(1).Value)
+        mlRS.Close
+
+        Dim meCol1 As Collection
+        Set meCol1 = provider.GetMatLibEntries(mlGroup, mlCode)
+        Dim meCol2 As Collection
+        Set meCol2 = provider.GetMatLibEntries(mlGroup, mlCode)
+
+        Dim seq1 As String
+        Dim seq2 As String
+        Dim firstNeed1 As Long
+        Dim firstNeed2 As Long
+        Dim k As Long
+        firstNeed1 = 0
+        firstNeed2 = 0
+        For k = 1 To meCol1.Count
+            Dim earr1 As Variant
+            earr1 = meCol1(k)
+            seq1 = seq1 & UCase$(CStr(earr1(0))) & "|"
+            If firstNeed1 = 0 And UCase$(CStr(earr1(0))) = "MOD_PART" Then firstNeed1 = k
+        Next k
+        For k = 1 To meCol2.Count
+            Dim earr2 As Variant
+            earr2 = meCol2(k)
+            seq2 = seq2 & UCase$(CStr(earr2(0))) & "|"
+            If firstNeed2 = 0 And UCase$(CStr(earr2(0))) = "MOD_PART" Then firstNeed2 = k
+        Next k
+
+        Dim tc50Ok As Boolean
+        Dim tc50Reason As String
+        tc50Ok = (meCol1.Count > 0) And (seq1 = seq2) And (firstNeed1 > 0) And _
+                 (firstNeed1 = firstNeed2)
+        If Not tc50Ok Then
+            tc50Reason = "count=" & CStr(meCol1.Count) & ", детерминизм=" & CStr(seq1 = seq2) & _
+                         ", first1=" & CStr(firstNeed1) & ", first2=" & CStr(firstNeed2)
+        End If
+        AddResult "TC-50", "GetMatLibEntries: детерминированный порядок", tc50Ok, tc50Reason
+        Set meCol1 = Nothing
+        Set meCol2 = Nothing
+    End If
+    Set mlRS = Nothing
     On Error GoTo 0
 
     Set provider = Nothing

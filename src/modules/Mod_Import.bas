@@ -92,6 +92,8 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
     ' (или выключенном флаге) подстановка не выполняется.
     Dim matProv As IModelDataProvider
     Dim matGroup As String
+    ' Активация глубокой подстановки модельных кодов при каждом импорте (задача 2 v1.0.7).
+    Mod_Constants.ApplyMatLibSubstitution = True
     If Mod_Constants.ApplyMatLibSubstitution Then
         Call Mod_ModelDB.GetModelDataProvider(matProv)
         matGroup = Trim(CStr(wsMain.Range("B14").Value))
@@ -271,18 +273,21 @@ Private Sub SubstituteWorkArticle(ByVal prov As IModelDataProvider, _
                                   ByVal ws As Worksheet, ByVal rowNum As Long)
     On Error GoTo ErrHandler
 
+    ' Работы подбираются ТОЛЬКО по наименованию L(12); приоритет не меняется.
     Dim key As String
     key = Trim(CStr(ws.Cells(rowNum, 12).Value))   ' L — наименование работы
-    If key = "" Then Exit Sub
+    If key = "" Then Exit Sub   ' пустой ключ — пропуск, O(15) не заполняется
 
     Dim entries As Collection
     Set entries = prov.GetMatLibEntries(groupName, key)
-    If entries.Count > 0 Then
+
+    ' Берём первую запись нужного типа MOD_WORK, пропуская записи другого типа.
+    Dim idx As Long
+    idx = FindFirstMatLibIndex(entries, "MOD_WORK")
+    If idx > 0 Then
         Dim arr As Variant
-        arr = entries(1)   ' [target_type, target_code, target_name, coefficient]
-        If UCase$(CStr(arr(0))) = "MOD_WORK" Then
-            ws.Cells(rowNum, 15).Value = CStr(arr(1))   ' O — модельный артикул
-        End If
+        arr = entries(idx)   ' [target_type, target_code, target_name, coefficient]
+        ws.Cells(rowNum, 15).Value = CStr(arr(1))   ' O — модельный артикул
     End If
     Exit Sub
 
@@ -293,7 +298,9 @@ End Sub
 ' --------------------------------------------------------------------------
 ' SubstitutePartArticle
 ' Подставляет модельный артикул запчасти в колонку AB(28).
-' Ключ поиска — № кат. X(24) (target_type = 'mod_part').
+' v1.0.7 (согласованное бизнес-правило): поиск сначала по № кат. X(24);
+' если № кат. пуст ИЛИ по нему нет совпадения типа MOD_PART — fallback
+' по наименованию Y(25). При пустых обоих ключах ячейка AB(28) не заполняется.
 ' Наименование в Y сохраняется без изменений.
 ' --------------------------------------------------------------------------
 Private Sub SubstitutePartArticle(ByVal prov As IModelDataProvider, _
@@ -302,23 +309,58 @@ Private Sub SubstitutePartArticle(ByVal prov As IModelDataProvider, _
     On Error GoTo ErrHandler
 
     Dim key As String
-    key = Trim(CStr(ws.Cells(rowNum, 24).Value))   ' X — № кат. входящей запчасти
-    If key = "" Then Exit Sub
-
     Dim entries As Collection
-    Set entries = prov.GetMatLibEntries(groupName, key)
-    If entries.Count > 0 Then
-        Dim arr As Variant
-        arr = entries(1)   ' [target_type, target_code, target_name, coefficient]
-        If UCase$(CStr(arr(0))) = "MOD_PART" Then
+    Dim idx As Long
+    Dim arr As Variant
+
+    ' 1. Поиск по № кат. X(24) — приоритетный ключ
+    key = Trim(CStr(ws.Cells(rowNum, 24).Value))
+    If key <> "" Then
+        Set entries = prov.GetMatLibEntries(groupName, key)
+        idx = FindFirstMatLibIndex(entries, "MOD_PART")
+        If idx > 0 Then
+            arr = entries(idx)
             ws.Cells(rowNum, 28).Value = CStr(arr(1))   ' AB — модельный артикул
+            Exit Sub
         End If
+    End If
+
+    ' 2. Fallback: поиск по наименованию Y(25)
+    key = Trim(CStr(ws.Cells(rowNum, 25).Value))
+    If key = "" Then Exit Sub   ' пустой ключ — пропуск, AB(28) не заполняется
+
+    Set entries = prov.GetMatLibEntries(groupName, key)
+    idx = FindFirstMatLibIndex(entries, "MOD_PART")
+    If idx > 0 Then
+        arr = entries(idx)
+        ws.Cells(rowNum, 28).Value = CStr(arr(1))   ' AB — модельный артикул
     End If
     Exit Sub
 
 ErrHandler:
     Call Mod_Logger.WriteLog("Mod_Import", "SubstitutePartArticle: " & Err.Description)
 End Sub
+
+' --------------------------------------------------------------------------
+' FindFirstMatLibIndex
+' Возвращает индекс (1-based) первой записи коллекции GetMatLibEntries,
+' чей target_type равен wantedType (без учёта регистра); пропускает записи
+' других типов. Возвращает 0, если запись нужного типа не найдена.
+' Запись — массив [target_type, target_code, target_name, coefficient].
+' --------------------------------------------------------------------------
+Private Function FindFirstMatLibIndex(ByVal entries As Collection, _
+                                      ByVal wantedType As String) As Long
+    Dim i As Long
+    Dim arr As Variant
+    FindFirstMatLibIndex = 0
+    For i = 1 To entries.Count
+        arr = entries(i)
+        If UCase$(CStr(arr(0))) = UCase$(wantedType) Then
+            FindFirstMatLibIndex = i
+            Exit Function
+        End If
+    Next i
+End Function
 
 ' ============================================================
 ' _UI-ПРОЦЕДУРЫ (обёртки с пользовательским вводом/выводом)

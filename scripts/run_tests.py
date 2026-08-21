@@ -36,7 +36,7 @@ def main() -> int:
     ensure_logs_dir()
 
     print("=" * 60)
-    print("ЗАПУСК ТЕСТОВ (TC-01..TC-44)")
+    print("ЗАПУСК ТЕСТОВ (TC-01..TC-50)")
     print("=" * 60)
     print()
 
