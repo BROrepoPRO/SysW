@@ -74,15 +74,28 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
 
     Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
-    ' Очистка диапазонов L:N и X:AA
-    Dim lastRowL As Long, lastRowX As Long
+    ' Очистка диапазонов работ L:O и запчастей X:AB.
+    ' O(15)/AB(28) — колонки подставленных модельных артикулов (проблема 2).
+    Dim lastRowL As Long, lastRowO As Long, lastRowX As Long, lastRowAB As Long
     lastRowL = wsMain.Cells(wsMain.Rows.count, 12).End(xlUp).Row
+    lastRowO = wsMain.Cells(wsMain.Rows.count, 15).End(xlUp).Row
     lastRowX = wsMain.Cells(wsMain.Rows.count, 24).End(xlUp).Row
-    lastRow = Application.WorksheetFunction.Max(lastRowL, lastRowX)
+    lastRowAB = wsMain.Cells(wsMain.Rows.count, 28).End(xlUp).Row
+    lastRow = Application.WorksheetFunction.Max(lastRowL, lastRowO, lastRowX, lastRowAB)
     If lastRow < 4 Then lastRow = 4
 
-    wsMain.Range("L4:N" & lastRow).ClearContents
-    wsMain.Range("X4:AA" & lastRow).ClearContents
+    wsMain.Range("L4:O" & lastRow).ClearContents
+    wsMain.Range("X4:AB" & lastRow).ClearContents
+
+    ' Провайдер и группа для глубокой подстановки модельных кодов.
+    ' Получаются ОДИН раз на весь импорт; при Nothing либо пустой группе
+    ' (или выключенном флаге) подстановка не выполняется.
+    Dim matProv As IModelDataProvider
+    Dim matGroup As String
+    If Mod_Constants.ApplyMatLibSubstitution Then
+        Call Mod_ModelDB.GetModelDataProvider(matProv)
+        matGroup = Trim(CStr(wsMain.Range("B14").Value))
+    End If
 
     foundWorks = False
     foundMaterials = False
@@ -146,6 +159,10 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
                 If IsNumeric(wsMain.Cells(targetRow, 14).Value) Then
                     wsMain.Cells(targetRow, 14).NumberFormat = "# ##0,00"
                 End If
+                ' Глубокая подстановка модельного артикула работы (O), если флаг включён
+                If Not matProv Is Nothing And matGroup <> "" Then
+                    Call SubstituteWorkArticle(matProv, matGroup, wsMain, targetRow)
+                End If
                 targetRow = targetRow + 1
             End If
         Next i
@@ -159,7 +176,9 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
     '   Строка 3+: данные
     ' Колонки: A(1)=№, B(2)=№ кат., C(3)=Наименование, D(4)=Кол-во,
     '          E(5)=Ед.изм., F(6)=Цена, G(7)=Всего, H(8)=в т.ч. НДС
-    ' Маппинг на main: C(3)→X(24), D(4)→Y(25), J(10)→Z(26), M(13)→AA(27)
+    ' Маппинг на main (v1.0.6, согласован с docs/table.md разд. 3.2):
+    ' B(2)→X(24) № кат., C(3)→Y(25) Наименование, D(4)→Z(26) Кол-во,
+    ' G(7)→AA(27) Всего. Подставленный модельный артикул — AB(28).
     ' ============================================================
     Set cell = wsSource.Cells.Find(What:="Расходная накладная", LookAt:=xlPart, SearchOrder:=xlByRows)
 
@@ -190,10 +209,10 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
         targetRow = 4 ' данные на main начинаем писать со строки 4
         For i = dataStartRow To srcLastRow
             If wsSource.Cells(i, 2).Value <> "" Then
-                wsMain.Cells(targetRow, 24).Value = wsSource.Cells(i, 3).Value ' C(3) -> X(24)
-                wsMain.Cells(targetRow, 25).Value = wsSource.Cells(i, 4).Value ' D(4) -> Y(25)
-                wsMain.Cells(targetRow, 26).Value = wsSource.Cells(i, 10).Value ' J(10) -> Z(26)
-                wsMain.Cells(targetRow, 27).Value = wsSource.Cells(i, 13).Value ' M(13) -> AA(27)
+                wsMain.Cells(targetRow, 24).Value = wsSource.Cells(i, 2).Value ' B(2) -> X(24): № кат.
+                wsMain.Cells(targetRow, 25).Value = wsSource.Cells(i, 3).Value ' C(3) -> Y(25): Наименование
+                wsMain.Cells(targetRow, 26).Value = wsSource.Cells(i, 4).Value ' D(4) -> Z(26): Кол-во
+                wsMain.Cells(targetRow, 27).Value = wsSource.Cells(i, 7).Value ' G(7) -> AA(27): Всего
                 ' Форматируем числовые колонки
                 If IsNumeric(wsMain.Cells(targetRow, 26).Value) Then
                     If wsMain.Cells(targetRow, 26).Value = Int(wsMain.Cells(targetRow, 26).Value) Then
@@ -201,7 +220,13 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
                     End If
                 End If
                 If IsNumeric(wsMain.Cells(targetRow, 27).Value) Then
-                    wsMain.Cells(targetRow, 27).NumberFormat = "# ##0,00"
+                    If wsMain.Cells(targetRow, 27).Value = Int(wsMain.Cells(targetRow, 27).Value) Then
+                        wsMain.Cells(targetRow, 27).NumberFormat = "# ##0,00"
+                    End If
+                End If
+                ' Глубокая подстановка модельного артикула запчасти (AB), если флаг включён
+                If Not matProv Is Nothing And matGroup <> "" Then
+                    Call SubstitutePartArticle(matProv, matGroup, wsMain, targetRow)
                 End If
                 targetRow = targetRow + 1
             End If
@@ -224,6 +249,75 @@ ErrHandler:
     Application.DisplayAlerts = True
     MsgBox "Ошибка при импорте данных: " & Err.Description & ". Импорт прерван.", vbCritical, "Ошибка"
     Call Mod_Logger.WriteLog("Mod_Import", "ImportDataToMain: " & Err.Description)
+End Sub
+
+' ============================================================
+' ГЛУБОКАЯ ПОДСТАНОВКА МОДЕЛЬНЫХ КОДОВ (проблема 2)
+' Вызывается из ImportDataToMain при включённом флаге
+' Mod_Constants.ApplyMatLibSubstitution.
+' Ключ поиска — matlib_entries.group_name + entry_code; подставляется
+' target_code ТОЛЬКО при наличии точного совпадения и подходящем target_type.
+' При отсутствии совпадения целевая ячейка остаётся пустой/без изменений.
+' ============================================================
+
+' --------------------------------------------------------------------------
+' SubstituteWorkArticle
+' Подставляет модельный артикул работы в колонку O(15).
+' Ключ поиска — наименование работы L(12) (target_type = 'mod_work').
+' Наименование в L сохраняется без изменений.
+' --------------------------------------------------------------------------
+Private Sub SubstituteWorkArticle(ByVal prov As IModelDataProvider, _
+                                  ByVal groupName As String, _
+                                  ByVal ws As Worksheet, ByVal rowNum As Long)
+    On Error GoTo ErrHandler
+
+    Dim key As String
+    key = Trim(CStr(ws.Cells(rowNum, 12).Value))   ' L — наименование работы
+    If key = "" Then Exit Sub
+
+    Dim entries As Collection
+    Set entries = prov.GetMatLibEntries(groupName, key)
+    If entries.Count > 0 Then
+        Dim arr As Variant
+        arr = entries(1)   ' [target_type, target_code, target_name, coefficient]
+        If UCase$(CStr(arr(0))) = "MOD_WORK" Then
+            ws.Cells(rowNum, 15).Value = CStr(arr(1))   ' O — модельный артикул
+        End If
+    End If
+    Exit Sub
+
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_Import", "SubstituteWorkArticle: " & Err.Description)
+End Sub
+
+' --------------------------------------------------------------------------
+' SubstitutePartArticle
+' Подставляет модельный артикул запчасти в колонку AB(28).
+' Ключ поиска — № кат. X(24) (target_type = 'mod_part').
+' Наименование в Y сохраняется без изменений.
+' --------------------------------------------------------------------------
+Private Sub SubstitutePartArticle(ByVal prov As IModelDataProvider, _
+                                  ByVal groupName As String, _
+                                  ByVal ws As Worksheet, ByVal rowNum As Long)
+    On Error GoTo ErrHandler
+
+    Dim key As String
+    key = Trim(CStr(ws.Cells(rowNum, 24).Value))   ' X — № кат. входящей запчасти
+    If key = "" Then Exit Sub
+
+    Dim entries As Collection
+    Set entries = prov.GetMatLibEntries(groupName, key)
+    If entries.Count > 0 Then
+        Dim arr As Variant
+        arr = entries(1)   ' [target_type, target_code, target_name, coefficient]
+        If UCase$(CStr(arr(0))) = "MOD_PART" Then
+            ws.Cells(rowNum, 28).Value = CStr(arr(1))   ' AB — модельный артикул
+        End If
+    End If
+    Exit Sub
+
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_Import", "SubstitutePartArticle: " & Err.Description)
 End Sub
 
 ' ============================================================

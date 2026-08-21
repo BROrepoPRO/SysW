@@ -23,18 +23,24 @@ Option Explicit
 
 ' --------------------------------------------------------------------------
 ' GetModelDataProvider
-' Возвращает объект, реализующий IModelDataProvider.
+' Заполняет провайдер через ByRef-параметр (а не возвратом интерфейса из функции),
+' чтобы исключить COM-маршалинг интерфейсного объекта в невидимом Excel при
+' внешнем запуске (COM-ошибка 0x80020009 / 0x800AC472 на RunModelDBTests).
 ' Приоритет: SQLite (если константа MODELDB_PROVIDER_SQLITE = True,
 ' SysW.db существует рядом с work.xlsm и ODBC-драйвер доступен).
 ' Иначе — резервный Excel-провайдер.
 ' --------------------------------------------------------------------------
-Public Function GetModelDataProvider() As IModelDataProvider
+Public Sub GetModelDataProvider(ByRef provider As IModelDataProvider)
     On Error GoTo ErrDiag
 
     Call Mod_Logger.WriteLog("Mod_ModelDB", "GetModelDataProvider: START")
 
-    ' Если SQLite отключён константой — сразу Excel
-    If Not Mod_Constants.MODELDB_PROVIDER_SQLITE Then
+    ' Если SQLite отключён константой — сразу Excel.
+    ' Чтение флага через функцию Mod_Constants.SqliteProviderEnabled():
+    ' прямое обращение к Public Const из другого модуля в этой книге
+    ' даёт ошибку компиляции (461 / Variable not defined), поэтому
+    ' значение константы возвращается через функцию модуля.
+    If Not Mod_Constants.SqliteProviderEnabled() Then
         Call Mod_Logger.WriteLog("Mod_ModelDB", "GetModelDataProvider: SQLite выкл константой -> Excel")
         GoTo ExcelFallback
     End If
@@ -70,8 +76,8 @@ Public Function GetModelDataProvider() As IModelDataProvider
     On Error GoTo ExcelFallback
 
     Call Mod_Logger.WriteLog("Mod_ModelDB", "GetModelDataProvider: выбран SQLite-провайдер")
-    Set GetModelDataProvider = sqlite
-    Exit Function
+    Set provider = sqlite
+    Exit Sub
 
 ErrDiag:
     Call Mod_Logger.WriteLog("Mod_ModelDB", _
@@ -82,8 +88,8 @@ ErrDiag:
 ExcelFallback:
     On Error Resume Next
     Call Mod_Logger.WriteLog("Mod_ModelDB", "GetModelDataProvider: выбран Excel-провайдер")
-    Set GetModelDataProvider = New Mod_ModelDBProvider
-End Function
+    Set provider = New Mod_ModelDBProvider
+End Sub
 
 ' ============================================================
 ' Функции путей к модельным файлам
@@ -186,7 +192,7 @@ End Function
 Public Function GetWorks(ByVal groupName As String, ByRef filters As Variant) As Collection
     On Error GoTo ErrHandler
     Dim provider As IModelDataProvider
-    Set provider = GetModelDataProvider()
+    Call GetModelDataProvider(provider)
     Set GetWorks = provider.GetWorks(groupName, filters)
     Exit Function
 ErrHandler:
@@ -201,7 +207,7 @@ End Function
 Public Function GetParts(ByVal groupName As String, ByRef filters As Variant) As Collection
     On Error GoTo ErrHandler
     Dim provider As IModelDataProvider
-    Set provider = GetModelDataProvider()
+    Call GetModelDataProvider(provider)
     Set GetParts = provider.GetParts(groupName, filters)
     Exit Function
 ErrHandler:
@@ -216,7 +222,7 @@ End Function
 Public Function GetModelWorks(ByVal groupName As String, ByRef filters As Variant) As Collection
     On Error GoTo ErrHandler
     Dim provider As IModelDataProvider
-    Set provider = GetModelDataProvider()
+    Call GetModelDataProvider(provider)
     Set GetModelWorks = provider.GetModelWorks(groupName, filters)
     Exit Function
 ErrHandler:
@@ -231,7 +237,7 @@ End Function
 Public Function GetModelParts(ByVal groupName As String, ByRef filters As Variant) As Collection
     On Error GoTo ErrHandler
     Dim provider As IModelDataProvider
-    Set provider = GetModelDataProvider()
+    Call GetModelDataProvider(provider)
     Set GetModelParts = provider.GetModelParts(groupName, filters)
     Exit Function
 ErrHandler:
@@ -247,7 +253,7 @@ Public Function GetMatLibEntries(ByVal groupName As String, _
                                  ByVal entryCode As String) As Collection
     On Error GoTo ErrHandler
     Dim provider As IModelDataProvider
-    Set provider = GetModelDataProvider()
+    Call GetModelDataProvider(provider)
     Set GetMatLibEntries = provider.GetMatLibEntries(groupName, entryCode)
     Exit Function
 ErrHandler:
@@ -262,7 +268,7 @@ End Function
 Public Function GetWorkIdentities(ByVal groupName As String) As Collection
     On Error GoTo ErrHandler
     Dim provider As IModelDataProvider
-    Set provider = GetModelDataProvider()
+    Call GetModelDataProvider(provider)
     Set GetWorkIdentities = provider.GetWorkIdentities(groupName)
     Exit Function
 ErrHandler:
@@ -277,7 +283,7 @@ End Function
 Public Function GetPartIdentities(ByVal groupName As String) As Collection
     On Error GoTo ErrHandler
     Dim provider As IModelDataProvider
-    Set provider = GetModelDataProvider()
+    Call GetModelDataProvider(provider)
     Set GetPartIdentities = provider.GetPartIdentities(groupName)
     Exit Function
 ErrHandler:
@@ -292,7 +298,7 @@ End Function
 Public Function GetAllModelGroups() As Collection
     On Error GoTo ErrHandler
     Dim provider As IModelDataProvider
-    Set provider = GetModelDataProvider()
+    Call GetModelDataProvider(provider)
     Set GetAllModelGroups = provider.GetAllModelGroups()
     Exit Function
 ErrHandler:
@@ -308,7 +314,7 @@ End Function
 Public Function CreateModelGroupFile(ByVal groupName As String) As Boolean
     On Error GoTo ErrHandler
     Dim provider As IModelDataProvider
-    Set provider = GetModelDataProvider()
+    Call GetModelDataProvider(provider)
     CreateModelGroupFile = provider.CreateModelGroupFile(groupName)
     Exit Function
 ErrHandler:
@@ -328,7 +334,7 @@ Public Function FindModelGroupByModel(ByVal modelName As String) As String
     On Error GoTo ErrHandler
 
     Dim provider As IModelDataProvider
-    Set provider = GetModelDataProvider()
+    Call GetModelDataProvider(provider)
 
     Dim groups As Collection
     Set groups = provider.GetAllModelGroups()

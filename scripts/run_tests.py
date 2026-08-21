@@ -10,6 +10,7 @@ import time
 import os
 import win32com.client
 from win32com.client import gencache
+import gc
 
 from config import WORKBOOK_PATH, TEST_LOG_FILE, LOGS_DIR
 EXCEL_PATH = str(WORKBOOK_PATH)
@@ -45,7 +46,15 @@ def main() -> int:
 
     try:
         write_log("[1/5] Создание COM-объекта Excel...")
-        excel = win32com.client.gencache.EnsureDispatch("Excel.Application")
+        # Используем DispatchEx, чтобы создать НОВЫЙ выделенный экземпляр Excel
+        # вместо повторного подключения к зависшему/скрытому EXCEL.EXE,
+        # который вызывает DISP_E_EXCEPTION (0x80020009) на COM-вызовах.
+        try:
+            excel = win32com.client.DispatchEx("Excel.Application")
+            write_log("    DispatchEx OK (новый выделенный экземпляр)")
+        except Exception:
+            excel = win32com.client.gencache.EnsureDispatch("Excel.Application")
+            write_log("    DispatchEx недоступен, использую EnsureDispatch")
         excel.Visible = False
         excel.DisplayAlerts = False
 
@@ -126,10 +135,10 @@ def main() -> int:
             print()
 
             if failed > 0:
-                print("  ❌ ОБНАРУЖЕНЫ ОШИБКИ! Проверьте логи для деталей.")
+                print("  [FAIL] ОБНАРУЖЕНЫ ОШИБКИ! Проверьте логи для деталей.")
                 exit_code = 1
             else:
-                print("  ✅ Все тесты успешно пройдены!")
+                print("  [OK] Все тесты успешно пройдены!")
                 exit_code = 0
 
             write_log(f"Итог: Total={total}, Passed={passed}, Failed={failed}, Skipped={skipped}")
@@ -162,6 +171,12 @@ def main() -> int:
                 write_log("Excel закрыт.")
             except Exception:
                 pass
+
+        # Освобождаем COM-ссылки и вызываем сборщик мусора,
+        # чтобы гарантированно завершить процесс EXCEL.EXE
+        workbook = None
+        excel = None
+        gc.collect()
 
         print()
         print("=" * 60)

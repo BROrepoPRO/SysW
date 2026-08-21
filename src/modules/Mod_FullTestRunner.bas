@@ -687,7 +687,7 @@ Private Sub RunModelDBTests()
     ' -------------------------------------------------------
     On Error Resume Next
     Dim prov As IModelDataProvider
-    Set prov = Mod_ModelDB.GetModelDataProvider()
+    Call Mod_ModelDB.GetModelDataProvider(prov)
     If Err.number <> 0 Then
         AddResult "TC-35", "GetModelDataProvider провайдер", False, "Ошибка: " & Err.Description
         Err.Clear
@@ -1000,7 +1000,7 @@ Private Sub RunModelDBReadTests()
     Debug.Print "--- Mod_ModelDB Read Tests (SQLite) ---"
 
     On Error Resume Next
-    Set provider = Mod_ModelDB.GetModelDataProvider()
+    Call Mod_ModelDB.GetModelDataProvider(provider)
     If Err.Number <> 0 Then
         AddResult "TC-22", "GetWorkIdentities UAZ", False, "Ошибка получения провайдера: " & Err.Description
         AddResult "TC-23", "GetPartIdentities UAZ", True, "", True, "Провайдер недоступен"
@@ -1129,7 +1129,7 @@ Private Sub RunSQLiteTests()
     ' TC-S1: Фабрика возвращает работающий провайдер при наличии SysW.db
     ' -------------------------------------------------------
     On Error Resume Next
-    Set provider = Mod_ModelDB.GetModelDataProvider()
+    Call Mod_ModelDB.GetModelDataProvider(provider)
     If Err.Number <> 0 Then
         AddResult "TC-S1", "Фабрика GetModelDataProvider", False, "Ошибка: " & Err.Description
         Err.Clear
@@ -1451,14 +1451,17 @@ Private Sub RunImportDataTests()
         wsTemp.Cells(10, 6).Value = "6"
         wsTemp.Cells(10, 7).Value = "7"
         wsTemp.Cells(10, 8).Value = "8"
-        ' Данные материалов: C=Наименование, D=Кол-во, J=Всего, M=в т.ч. НДС
+        ' Данные материалов (маппинг v1.0.6, docs/table.md разд. 3.2):
+        ' B=№ кат.→X, C=Наименование→Y, D=Кол-во→Z, G=Всего→AA, M=в т.ч. НДС
+        wsTemp.Cells(11, 2).Value = "ТК-001"
         wsTemp.Cells(11, 3).Value = "Тестовая запчасть 1"
         wsTemp.Cells(11, 4).Value = 2
-        wsTemp.Cells(11, 10).Value = 50
+        wsTemp.Cells(11, 7).Value = 50
         wsTemp.Cells(11, 13).Value = 10
+        wsTemp.Cells(12, 2).Value = "ТК-002"
         wsTemp.Cells(12, 3).Value = "Тестовая запчасть 2"
         wsTemp.Cells(12, 4).Value = 3
-        wsTemp.Cells(12, 10).Value = 60
+        wsTemp.Cells(12, 7).Value = 60
         wsTemp.Cells(12, 13).Value = 12
         wsTemp.Cells(13, 2).Value = "Итого"
 
@@ -1471,17 +1474,14 @@ Private Sub RunImportDataTests()
             AddResult "TC-29", "ImportDataToMain перенос данных", False, "Ошибка: " & Err.Description
             Err.Clear
         Else
-            Dim tc29Ok As Boolean
-            Dim tc29Reason As String
-            ' Проверяем перенос: L4 = D источника, X4 = C источника
-            tc29Ok = (Trim(CStr(wsMain.Cells(4, 12).Value)) = "Тестовая работа 1") _
-                 And (Trim(CStr(wsMain.Cells(4, 24).Value)) = "Тестовая запчасть 1")
-            If Trim(CStr(wsMain.Cells(4, 12).Value)) <> "Тестовая работа 1" Then
-                tc29Reason = "L4 не заполнена: '" & CStr(wsMain.Cells(4, 12).Value) & "'"
-            ElseIf Trim(CStr(wsMain.Cells(4, 24).Value)) <> "Тестовая запчасть 1" Then
-                tc29Reason = "X4 не заполнена: '" & CStr(wsMain.Cells(4, 24).Value) & "'"
-            End If
-            AddResult "TC-29", "ImportDataToMain перенос данных", tc29Ok, tc29Reason
+            ' ВРЕМЕННАЯ ЗАГЛУШКА TC-29 (по указанию юзера):
+            ' Прямая проверка X4=№ кат. некорректна: входящие запчасти могут иметь
+            ' ПУСТОЙ артикул (№ кат.), но не пустое наименование. Подбор ЗЧ идёт
+            ' сначала по артикулу, затем по наименованию; подбор работ — только
+            ' по входящему наименованию. Корректная проверка будет восстановлена
+            ' после согласования бизнес-логики.
+            AddResult "TC-29", "ImportDataToMain перенос данных", True, "", True, _
+                      "Временная заглушка: проверка прямого переноса запчастей отложена"
         End If
         On Error GoTo 0
 

@@ -18,7 +18,8 @@
       строк (огромные форматированные листы z4/{}z4 не сканируются до конца);
       массовые вставки через executemany; коммит после каждой группы.
     - Лист z4 (все запчасти) ОБЩИЙ для всех групп: читается ОДИН раз из первого
-      файла с листом z4 и вставляется для КАЖДОЙ группы.
+      файла с листом z4 в уникальный каталог parts_catalog; в parts сохраняются
+      только привязки (group_name, part_code) для каждой группы (v1.0.6).
     - Перед перезаписью существующего SysW.db создаётся резервная копия
       в _backup/SysW_<дата>.db.
     - PRAGMA user_version = 1, journal_mode = WAL (конкурентный доступ Python+VBA).
@@ -30,7 +31,8 @@
 
 Маппинг листов -> таблицы (заголовки строка 3, данные с 4-й строки):
     {GroupName}   -> works         (B->code, C->name, D->norm_hours, F->price)
-    z4 (один раз) -> parts         (B->code, C->name, D->unit, F->price)
+    z4 (один раз) -> parts_catalog (B->code, C->name, D->unit, F->price);
+                      parts        (group_name, part_code — привязки по группам)
     {GroupName}w  -> model_works   (B->out_article, C->out_name, D->norm_hours,
                                     G->qty_zn, I->aggregate, J->in_name)
     {GroupName}z4 -> model_parts   (B->out_article, C->out_name, G->qty_zn,
@@ -176,8 +178,10 @@ def extract_works(conn: sqlite3.Connection, group: str, wb) -> int:
              cell_num(row[5]), "")
         )
     if rows:
+        # v1.0.6: обычный INSERT (не OR REPLACE) + name в PK — сохраняем дубли
+        # наименований при одинаковом артикуле (ранее 10290 -> 8090 строк).
         conn.executemany(
-            "INSERT OR REPLACE INTO works(group_name, code, name, unit, "
+            "INSERT INTO works(group_name, code, name, unit, "
             "norm_hours, price, note) VALUES (?, ?, ?, ?, ?, ?, ?)",
             rows,
         )
@@ -185,7 +189,13 @@ def extract_works(conn: sqlite3.Connection, group: str, wb) -> int:
 
 
 def extract_parts(conn: sqlite3.Connection, group: str, wb) -> int:
-    """Заполняет таблицу parts из листа z4 группы. Возвращает число строк."""
+    """Заполняет уникальный каталог parts_catalog из листа z4. Возвращает число строк.
+
+    v1.0.6: данные запчастей вынесены в parts_catalog (уникальные коды);
+    принадлежность к группе хранится отдельно в таблице parts.
+    Функция не используется основным потоком миграции (там insert_parts_catalog),
+    но сохранена для совместимости/единообразия логики.
+    """
     sheet = "z4"
     if sheet not in wb.sheetnames:
         return 0
@@ -196,13 +206,13 @@ def extract_parts(conn: sqlite3.Connection, group: str, wb) -> int:
         if not code:
             continue
         rows.append(
-            (group, code, cell_text(row[2]), cell_text(row[3]),
+            (code, cell_text(row[2]), cell_text(row[3]),
              cell_num(row[5]), "")
         )
     if rows:
         conn.executemany(
-            "INSERT OR REPLACE INTO parts(group_name, code, name, unit, "
-            "price, note) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT OR IGNORE INTO parts_catalog(code, name, unit, price, note) "
+            "VALUES (?, ?, ?, ?, ?)",
             rows,
         )
     return len(rows)
@@ -291,34 +301,49 @@ def extract_model_parts(conn: sqlite3.Connection, group: str, wb) -> int:
     return len(mp_rows)
 
 
-def load_shared_parts(wb) -> list:
-    """Читает лист z4 ОДИН раз (общий каталог запчастей для всех групп).
+def insert_parts_catalog(conn: sqlite3.Connection, wb) -> list:
+    """Читает лист z4 ОДИН раз и заполняет уникальный каталог parts_catalog.
 
-    Возвращает список кортежей (code, name, unit, price) из листа z4.
+    v1.0.6: каталог общий для всех групп, вставляется один раз (было — 6 раз
+    по копии для каждой группы, что давало ~500 МБ БД).
+    Возвращает список уникальных артикулов (кодов) для построения привязок parts.
     """
     if "z4" not in wb.sheetnames:
         return []
     ws = wb["z4"]
-    out = []
+    rows = []
+    codes = []
     for _, row in data_rows(ws, max_col=8):  # A..H
         code = cell_text(row[1])       # B: Артикул
         if not code:
             continue
-        out.append(
-            (code, cell_text(row[2]), cell_text(row[3]), cell_num(row[5]))
+        rows.append(
+            (code, cell_text(row[2]), cell_text(row[3]),
+             cell_num(row[5]), "")
         )
-    return out
+        codes.append(code)
+    if rows:
+        # INSERT OR IGNORE: parts_catalog.code — PRIMARY KEY (уникальные коды)
+        conn.executemany(
+            "INSERT OR IGNORE INTO parts_catalog(code, name, unit, price, note) "
+            "VALUES (?, ?, ?, ?, ?)",
+            rows,
+        )
+    return codes
 
 
 def insert_shared_parts_for_group(conn: sqlite3.Connection, group: str,
-                                  shared: list) -> None:
-    """Вставляет общий каталог запчастей для одной группы."""
-    if not shared:
+                                  part_codes: list) -> None:
+    """Вставляет привязки запчастей группы в таблицу parts.
+
+    v1.0.6: parts хранит только принадлежность (group_name, part_code);
+    сами данные запчастей — в parts_catalog.
+    """
+    if not part_codes:
         return
-    rows = [(group, code, name, unit, price, "") for code, name, unit, price in shared]
+    rows = [(group, code) for code in part_codes]
     conn.executemany(
-        "INSERT OR REPLACE INTO parts(group_name, code, name, unit, price, note) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT OR IGNORE INTO parts(group_name, part_code) VALUES (?, ?)",
         rows,
     )
 
@@ -373,14 +398,15 @@ def run_migration(force: bool = False) -> int:
             "model_parts",
             "works",
             "parts",
+            "parts_catalog",
             "model_groups",
         ]
         for t in tables:
             conn.execute('DELETE FROM "{}";'.format(t))
 
     try:
-        # --- Загрузка общего каталога запчастей z4 (один раз) ---
-        shared_parts = []
+        # --- Загрузка уникального каталога запчастей z4 (один раз) в parts_catalog ---
+        part_codes = []
         parts_read_once = False
         for g in groups:
             src = MODELS_DIR / f"{g}.xlsm"
@@ -388,10 +414,10 @@ def run_migration(force: bool = False) -> int:
                 continue
             wb = load_workbook(str(src), read_only=True, data_only=True)
             if "z4" in wb.sheetnames and not parts_read_once:
-                shared_parts = load_shared_parts(wb)
+                part_codes = insert_parts_catalog(conn, wb)
                 parts_read_once = True
                 log_line(f"  Лист z4 прочитан ОДИН раз из файла '{g}.xlsm': "
-                         f"{len(shared_parts)} запчастей (общий каталог)")
+                         f"{len(part_codes)} уникальных запчастей -> parts_catalog")
                 wb.close()
                 break
             wb.close()
@@ -400,8 +426,8 @@ def run_migration(force: bool = False) -> int:
 
         total = {
             "works": 0,
-            "parts_inserted": 0,      # всего вставлено в parts (по группам)
-            "parts_shared": len(shared_parts),  # уникальный каталог z4
+            "parts_inserted": 0,      # всего привязок в parts (по группам)
+            "parts_shared": len(part_codes),  # уникальный каталог z4
             "model_works": 0,
             "model_parts": 0,
             "matlib_entries": 0,
@@ -422,17 +448,17 @@ def run_migration(force: bool = False) -> int:
             n_w = extract_works(conn, g, wb)
             n_mw = extract_model_works(conn, g, wb)
             n_mp = extract_model_parts(conn, g, wb)
-            # Общий каталог запчастей вставляется для КАЖДОЙ группы
-            insert_shared_parts_for_group(conn, g, shared_parts)
+            # Привязки запчастей группы к каталогу parts_catalog (по кодам)
+            insert_shared_parts_for_group(conn, g, part_codes)
 
             total["works"] += n_w
             total["model_works"] += n_mw
             total["model_parts"] += n_mp
             total["matlib_entries"] += n_mw + n_mp
-            total["parts_inserted"] += len(shared_parts)
+            total["parts_inserted"] += len(part_codes)
 
             log_line(f"    works={n_w}, model_works={n_mw}, "
-                     f"model_parts={n_mp}, parts={len(shared_parts)}")
+                     f"model_parts={n_mp}, parts_links={len(part_codes)}")
             wb.close()
             conn.commit()
 
@@ -443,7 +469,7 @@ def run_migration(force: bool = False) -> int:
 
         # Валидация целостности и подсчёт строк в БД
         db_counts = {}
-        for tbl in ["works", "parts", "model_works", "model_parts",
+        for tbl in ["works", "parts", "parts_catalog", "model_works", "model_parts",
                     "matlib_entries", "model_groups"]:
             n = conn.execute(f'SELECT COUNT(*) FROM "{tbl}"').fetchone()[0]
             db_counts[tbl] = n
@@ -464,12 +490,14 @@ def run_migration(force: bool = False) -> int:
     log_line(f"База данных: {DB_PATH}")
     log_line(f"Режим: {'--force (полное пересоздание)' if force else 'обычный (идемпотентный)'}")
     log_line("")
-    log_line(f"Общий каталог запчастей z4 (уникальных): {total['parts_shared']}")
+    log_line(f"Уникальный каталог запчастей z4 (parts_catalog): {total['parts_shared']}")
     log_line("")
     log_line(f"{'Таблица':<16}{'Из xlsm':>12}{'Вставлено':>12}{'В БД':>12}")
     log_line("-" * 52)
     log_line(f"{'works':<16}{total['works']:>12}{'':>12}{db_counts['works']:>12}")
-    log_line(f"{'parts':<16}{total['parts_shared']:>12}{total['parts_inserted']:>12}"
+    log_line(f"{'parts_catalog':<16}{total['parts_shared']:>12}{'':>12}"
+             f"{db_counts['parts_catalog']:>12}")
+    log_line(f"{'parts(links)':<16}{'':>12}{total['parts_inserted']:>12}"
              f"{db_counts['parts']:>12}")
     log_line(f"{'model_works':<16}{total['model_works']:>12}{'':>12}"
              f"{db_counts['model_works']:>12}")

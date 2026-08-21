@@ -8,7 +8,8 @@
 -- Таблицы:
 --   aggregates     — справочник агрегатов (16 кодов AGG_*)
 --   model_groups   — группы моделей (UAZ, GAZ, 4x4, 2170, 2180, 2190, ...)
---   parts          — каталог запчастей группы (лист z4)
+--   parts_catalog  — уникальный каталог запчастей (общий лист z4)
+--   parts          — принадлежность запчастей группам (лист z4)
 --   works          — каталог работ группы (лист {GroupName})
 --   model_works    — модельные работы + тождества работ (лист {GroupName}w)
 --   model_parts    — модельные запчасти + тождества запчастей (лист {GroupName}z4)
@@ -29,20 +30,32 @@ CREATE TABLE IF NOT EXISTS model_groups (
     note TEXT
 );
 
--- Каталог запчастей (лист z4 файла группы; код уникален в пределах группы)
-CREATE TABLE IF NOT EXISTS parts (
-    group_name TEXT NOT NULL,
-    code TEXT NOT NULL,                  -- A: Code
+-- Уникальный каталог запчастей (лист z4 — ОБЩИЙ для всех групп; код уникален глобально).
+-- Нормализация v1.0.6: ранее parts хранил копию каталога для КАЖДОЙ группы (~6x дублирование).
+-- Теперь единый parts_catalog + таблица привязок parts (принадлежность к группе).
+CREATE TABLE IF NOT EXISTS parts_catalog (
+    code TEXT PRIMARY KEY,               -- A: Code (артикул)
     name TEXT NOT NULL,                  -- B: Name
     unit TEXT,                           -- C: Unit
     price REAL,                          -- D: Price
-    note TEXT,                           -- E: Note
-    PRIMARY KEY (group_name, code),
-    FOREIGN KEY (group_name) REFERENCES model_groups(group_name)
+    note TEXT                            -- E: Note
 );
 
--- Каталог работ (лист {GroupName}; код уникален в пределах группы)
+-- Принадлежность запчасти к группе (только связки; сами данные — в parts_catalog).
+CREATE TABLE IF NOT EXISTS parts (
+    group_name TEXT NOT NULL,
+    part_code TEXT NOT NULL,
+    PRIMARY KEY (group_name, part_code),
+    FOREIGN KEY (group_name) REFERENCES model_groups(group_name),
+    FOREIGN KEY (part_code) REFERENCES parts_catalog(code)
+);
+
+-- Каталог работ (лист {GroupName}). v1.0.6: суррогатный PK id (AUTOINCREMENT),
+-- чтобы сохранить ВСЕ дубли наименований при одинаковом артикуле, включая полные
+-- копии (code+name), которые в исходниках встречаются несколько раз
+-- (ранее 10290 -> 8090 строк из-за схлопывания по композитному PK).
 CREATE TABLE IF NOT EXISTS works (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     group_name TEXT NOT NULL,
     code TEXT NOT NULL,                  -- A: Code
     name TEXT NOT NULL,                  -- B: Name
@@ -50,7 +63,6 @@ CREATE TABLE IF NOT EXISTS works (
     norm_hours REAL,                     -- D: NormHours
     price REAL,                          -- E: Price
     note TEXT,                           -- F: Note
-    PRIMARY KEY (group_name, code),
     FOREIGN KEY (group_name) REFERENCES model_groups(group_name)
 );
 

@@ -9,8 +9,8 @@
 
 Совместимость:
 - Версия схемы: 1 (PRAGMA user_version = 1).
-- Таблицы: aggregates, model_groups, parts, works, model_works,
-  model_parts, matlib_entries.
+- Таблицы: aggregates, model_groups, parts_catalog, parts, works,
+  model_works, model_parts, matlib_entries.
 """
 from __future__ import annotations
 
@@ -66,19 +66,26 @@ SCHEMA_STATEMENTS = [
     );
     """,
     """
-    CREATE TABLE IF NOT EXISTS parts (
-        group_name TEXT NOT NULL,
-        code TEXT NOT NULL,                  -- A: Code
+    CREATE TABLE IF NOT EXISTS parts_catalog (
+        code TEXT PRIMARY KEY,               -- A: Code (артикул; уникальный каталог)
         name TEXT NOT NULL,                  -- B: Name
         unit TEXT,                           -- C: Unit
         price REAL,                          -- D: Price
-        note TEXT,                           -- E: Note
-        PRIMARY KEY (group_name, code),
-        FOREIGN KEY (group_name) REFERENCES model_groups(group_name)
+        note TEXT                            -- E: Note
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS parts (
+        group_name TEXT NOT NULL,
+        part_code TEXT NOT NULL,
+        PRIMARY KEY (group_name, part_code),
+        FOREIGN KEY (group_name) REFERENCES model_groups(group_name),
+        FOREIGN KEY (part_code) REFERENCES parts_catalog(code)
     );
     """,
     """
     CREATE TABLE IF NOT EXISTS works (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         group_name TEXT NOT NULL,
         code TEXT NOT NULL,                  -- A: Code
         name TEXT NOT NULL,                  -- B: Name
@@ -86,7 +93,6 @@ SCHEMA_STATEMENTS = [
         norm_hours REAL,                     -- D: NormHours
         price REAL,                          -- E: Price
         note TEXT,                           -- F: Note
-        PRIMARY KEY (group_name, code),
         FOREIGN KEY (group_name) REFERENCES model_groups(group_name)
     );
     """,
@@ -194,6 +200,7 @@ def init_db(db_path, *, drop_tables: bool = False, conn: sqlite3.Connection | No
             "model_parts",
             "works",
             "parts",
+            "parts_catalog",
             "model_groups",
             "aggregates",
         ]

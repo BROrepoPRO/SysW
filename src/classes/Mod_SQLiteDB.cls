@@ -280,6 +280,8 @@ End Function
 
 ' --------------------------------------------------------------------------
 ' GetParts — возвращает Collection массивов [code,name,unit,price,note]
+' v1.0.6: данные запчастей вынесены в parts_catalog, parts хранит только
+' привязки (group_name, part_code). Чтение — через JOIN для каждой группы.
 ' --------------------------------------------------------------------------
 Private Function IModelDataProvider_GetParts(ByVal groupName As String, _
                                              ByRef filters As Variant) As Collection
@@ -289,7 +291,9 @@ Private Function IModelDataProvider_GetParts(ByVal groupName As String, _
 
     Dim rs As Object
     Set rs = ExecuteQuery( _
-        "SELECT code, name, unit, price, note FROM parts WHERE group_name = ?", _
+        "SELECT c.code, c.name, c.unit, c.price, c.note " & _
+        "FROM parts p JOIN parts_catalog c ON c.code = p.part_code " & _
+        "WHERE p.group_name = ?", _
         Array(groupName))
 
     Do While Not rs.EOF
