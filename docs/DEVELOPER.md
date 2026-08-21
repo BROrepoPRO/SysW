@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v1.0.2)
+# Техническая документация разработчика — SysW (v1.0.3)
 
 ## 1. Архитектура проекта
 
@@ -22,8 +22,6 @@
 - **Объект детали** ([`PartIdentity.cls`](../src/classes/PartIdentity.cls)) — класс-объект детали
 - **Объект работы** ([`WorkIdentity.cls`](../src/classes/WorkIdentity.cls)) — класс-объект работы
 - **Лист main** ([`Лист2_main.cls`](../src/sheets/Лист2_main.cls)) — обработчик событий листа
-- **Лист work** ([`Sheet_work.cls.bak`](../src/sheets/Sheet_work.cls.bak)) — обработчик событий листа work (архивный)
-- **Лист z4** ([`Sheet_z4.cls.bak`](../src/sheets/Sheet_z4.cls.bak)) — обработчик событий листа z4 (архивный)
 
 ### 1.2 Схема взаимодействия модулей
 
@@ -328,7 +326,7 @@ python scripts/run_tests.py
 
 | Константа | Значение | Описание |
 |-----------|----------|----------|
-| `MODELDB_BASE_PATH` | `L:\PROject\SysW\base\models\` | Каталог с файлами групп |
+| `MODELDB_BASE_PATH` | `base\models\` | Каталог с файлами групп |
 
 **Типы данных:**
 
@@ -442,7 +440,7 @@ python scripts/run_tests.py
 | `InitLibName()` | Заполняет лист libname начальными данными реестра имён |
 | `AddWorkEntry()` | Добавляет запись для work.xlsm в конец списка на листе libname |
 
-> **Примечание:** Ранее функциональность реестра имён находилась в отдельном модуле `Mod_LibName.bas` (удалён в v1.0.0), который был объединён с `Mod_Constants.bas` для централизованного управления константами.
+> **Примечание:** Ранее функциональность реестра имён находилась в отдельном модуле `Mod_LibName.bas` (удалён в версии 1.0.0), который был объединён с `Mod_Constants.bas` для централизованного управления константами.
 
 ### 2.15 Лист2_main.cls — Основной лист
 
@@ -456,37 +454,19 @@ python scripts/run_tests.py
 3. Очистка диапазона B5:B17
 4. Вызов `Mod_OrderHeader.FillHeaderFromOrder(CStr(b4Value))`
 
-### 2.16 Sheet_work.cls.bak — Лист work (архивный)
-
-**Файл:** [`Sheet_work.cls.bak`](../src/sheets/Sheet_work.cls.bak)
-
-**Назначение:** Класс листа work. Обрабатывает события, специфичные для листа work. Файл переименован в `.bak` и не является активным модулем.
-
-**Обработчики:**
-- `Worksheet_Activate` — закрепление первых двух строк при активации листа
-
-### 2.17 Sheet_z4.cls.bak — Лист z4 (архивный)
-
-**Файл:** [`Sheet_z4.cls.bak`](../src/sheets/Sheet_z4.cls.bak)
-
-**Назначение:** Класс листа z4. Обрабатывает события, специфичные для листа z4. Файл переименован в `.bak` и не является активным модулем.
-
-**Обработчики:**
-- `Worksheet_Activate` — закрепление первых двух строк при активации листа
-
-### 2.18 PartIdentity.cls — Объект детали
+### 2.16 PartIdentity.cls — Объект детали
 
 **Файл:** [`PartIdentity.cls`](../src/classes/PartIdentity.cls)
 
 **Назначение:** Класс-объект, представляющий деталь (запчасть). Используется для идентификации и передачи данных о детали между модулями.
 
-### 2.19 WorkIdentity.cls — Объект работы
+### 2.17 WorkIdentity.cls — Объект работы
 
 **Файл:** [`WorkIdentity.cls`](../src/classes/WorkIdentity.cls)
 
 **Назначение:** Класс-объект, представляющий работу. Используется для идентификации и передачи данных о работе между модулями.
 
-### 2.20 Структура листов work и z4
+### 2.18 Структура листов work и z4
 
 #### Лист work (работы)
 
@@ -594,8 +574,6 @@ python scripts/impVBA.py
 | `PartIdentity` | `src/classes/PartIdentity.cls` | Класс |
 | `WorkIdentity` | `src/classes/WorkIdentity.cls` | Класс |
 | `Лист2` | `src/sheets/Лист2_main.cls` | Класс листа |
-| `Sheet_work` | `src/sheets/Sheet_work.cls.bak` | Класс листа (архивный) |
-| `Sheet_z4` | `src/sheets/Sheet_z4.cls.bak` | Класс листа (архивный) |
 
 **Использование:**
 ```bash
@@ -626,7 +604,7 @@ python scripts/impVBA.py      # Импорт всех модулей
 
 ### 5.1 VS Code
 
-1. Открыть `L:\PROject\SysW` как корневую директорию проекта
+1. Открыть корневую директорию проекта (репозиторий SysW)
 2. Установить расширение **VBA Language Server** (рекомендуется для подсветки синтаксиса)
 3. Настройки в [`.vscode/settings.json`](../.vscode/settings.json):
    - `files.encoding: "utf8"` — кодировка UTF-8 для всех файлов
@@ -798,7 +776,7 @@ python scripts/run_tests.py
 
 | Шаг | Что проверяет | Действие при неудаче |
 |-----|--------------|---------------------|
-| 1. Check VBA files exist | Наличие всех 18 VBA-файлов (13 `.bas` + 2 класса + 3 класса листов) | Fail |
+| 1. Check VBA files exist | Наличие всех 16 VBA-файлов (13 `.bas` + 2 класса + 1 класс листа) | Fail |
 | 2. Check UTF-8 encoding | Валидная UTF-8 кодировка каждого файла | Fail |
 | 3. Check VBA syntax (basic) | Отсутствие недопустимых символов (коды < 32, кроме \n\r\t) | Fail |
 | 4. Check CHANGELOG updated | Наличие записи за сегодняшнюю дату | Warning (non-blocking) |
@@ -853,9 +831,6 @@ git push
   └── Mod_OrderHeader.FillHeaderFromOrder()
         └── Mod_Utils (GetSheetByName, FileExists, FormatDateSQL)
 
-Sheet_work.cls.bak ─── Mod_SheetButtons
-Sheet_z4.cls.bak   ─── Mod_SheetButtons
-
 Mod_ButtonDispatcher
   ├── Mod_SheetOps (ClearMainSheet_UI, ClearHeader_UI)
   ├── Mod_Import (ImportSheet_UI, ImportByInput_UI, RenameSheets_UI, ImportDataToMain_UI, ImportFromB2_UI)
@@ -905,8 +880,6 @@ Mod_Utils
 | `PartIdentity` | `src/classes/PartIdentity.cls` | Класс |
 | `WorkIdentity` | `src/classes/WorkIdentity.cls` | Класс |
 | `Лист2` | `src/sheets/Лист2_main.cls` | Класс листа |
-| `Sheet_work` | `src/sheets/Sheet_work.cls.bak` | Класс листа (архивный) |
-| `Sheet_z4` | `src/sheets/Sheet_z4.cls.bak` | Класс листа (архивный) |
 
 ## Приложение C: Скрипты автоматизации
 

@@ -26,7 +26,7 @@
 
 ## Конфигурация SourceCraft (`.sourcecraft`)
 
-Начиная с версии v1.0.0, проект использует корневой файл [`.sourcecraft`](../.sourcecraft) для централизованной конфигурации SourceCraft Code Assistant.
+Проект использует корневой файл [`.sourcecraft`](../.sourcecraft) для централизованной конфигурации SourceCraft Code Assistant.
 
 ### Структура `.sourcecraft`
 
@@ -64,7 +64,7 @@
 
 ### Перенос с `.vscode/mcp.json`
 
-Ранее конфигурация MCP-серверов хранилась в [`.vscode/mcp.json`](../.vscode/mcp.json). Начиная с v1.0.0, этот файл удалён, а его функциональность полностью перенесена в `.sourcecraft` с заменой абсолютных путей на `${workspaceFolder}`.
+Ранее конфигурация MCP-серверов хранилась в [`.codeassistant/mcp.json`](../.codeassistant/mcp.json) и [`.vscode/mcp.json`](../.vscode/mcp.json). В настоящее время основной конфигурацией является `.sourcecraft`, где пути заменены на относительные `${workspaceFolder}`.
 
 ---
 
@@ -99,7 +99,7 @@ VBA-файлы (`.bas`, `.cls`) используют двухфазную мод
 
 ### Начало сессии
 
-1. Открыть VS Code в `L:\PROject\SysW`
+1. Открыть VS Code в корневой директории проекта (репозиторий SysW)
 2. Терминал SourceCraft (PowerShell с UTF-8 и `.venv`) настраивается автоматически через `.vscode/settings.json`
 3. Убедиться, что активировано виртуальное окружение: `.venv\Scripts\Activate.ps1`
 
@@ -125,7 +125,7 @@ VBA-файлы (`.bas`, `.cls`) используют двухфазную мод
 ## Структура проекта
 
 ```
-L:\PROject\SysW\
+SysW\
 ├── .github/              # CI/CD (GitHub Actions)
 │   └── workflows/
 │       └── vba-check.yml
@@ -168,12 +168,12 @@ L:\PROject\SysW\
 │   ├── classes/               # 2 .cls класса
 │   │   ├── PartIdentity.cls
 │   │   └── WorkIdentity.cls
-│   └── sheets/               # 3 .cls листа
-│       ├── Лист2_main.cls
-│       ├── Sheet_work.cls.bak
-│       └── Sheet_z4.cls.bak
+│   └── sheets/               # 1 .cls лист
+│       └── Лист2_main.cls
 ├── .gitattributes        # Настройки Git для нормализации кодировок
 ├── .sourcecraft          # Конфигурация SourceCraft (MCP-серверы, правила, инструкции)
+├── .codeassistant/       # Резервная конфигурация MCP (mcp.json)
+│   └── mcp.json
 ├── .ycarules             # Правила для SourceCraft Code Assistant
 ├── CHANGELOG.md          # История изменений проекта
 ├── README.md             # Основное описание проекта
@@ -230,6 +230,8 @@ L:\PROject\SysW\
 
 | Версия | Дата | Изменения |
 |--------|------|-----------|
+| 1.0.3 | 2026-08-21 | Архивация планов, создание объединённого плана `integration_1.0.3.md`, актуализация документации (16 VBA-файлов, 1 лист `Лист2_main`) |
+| 1.0.2 | 2026-08-06 | Актуализация документации под 1.0.2, единый источник версии, интеграция MCP-серверов File System и Git Tools |
 | 0.18.0 | 2026-08-06 | Актуализация документации: переименование `ARCHITECTURE_SQLITE.md` → `ARCHITECTURE.md`, добавление `Mod_ModelTypes.bas`, `PartIdentity.cls`, `WorkIdentity.cls`, инструмент проверки документации `check_docs.py` |
 | 0.17.0 | 2026-08-05 | Добавлены классы `PartIdentity.cls`, `WorkIdentity.cls`; модуль `Mod_ModelTypes.bas` |
 | 0.16.0 | 2026-08-03 | Добавлен `.sourcecraft` с MCP-серверами (относительные пути `${workspaceFolder}`), интеграция `.ycarules` через `customInstructions.file`, правила exclude/include/critical. Удалён `.vscode/mcp.json` |

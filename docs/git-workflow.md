@@ -73,7 +73,7 @@ git status
 
 Убедиться, что:
 - Нет случайных файлов (`.tmp`, `_temp_*`, `__pycache__`)
-- `work.xlsm` **НЕ** отображается в списке изменений (он в `.gitignore`)
+- `work.xlsm` **НЕ** отображается в списке изменений (он исключён из отслеживания)
 - Все нужные изменения проиндексированы
 
 ### 2. Синхронизировать VBA-модули (если работали в Excel)
@@ -85,9 +85,9 @@ git status
 python scripts/export_vba.py
 ```
 
-### 3. Обновить CHANGELOG.md
+### 3. Обновить CHANGELOG.md (`docs/CHANGELOG.md`)
 
-Добавить запись в `CHANGELOG.md` в формате [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/):
+Добавить запись в [`docs/CHANGELOG.md`](CHANGELOG.md) в формате [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/):
 
 ```markdown
 ## [версия] — YYYY-MM-DD
@@ -171,9 +171,10 @@ git checkout -b fix/some-bug  # создать и переключиться
 git restore <файл>
 ```
 
-## .gitignore
+## Игнорирование файлов
 
-Файл `.gitignore` уже настроен и игнорирует:
+Корневого файла `.gitignore` в репозитории **нет**. Правила игнорирования временных и служебных файлов определяются через `.codeassistantignore`, `.gitattributes` и настройки CI:
+
 - `work.xlsm` — Excel-файл с макросами (бинарный, не подлежит контролю версий)
 - `_temp_export/`, `_temp_import/` — временные директории скриптов
 - `__pycache__/`, `*.pyc`, `*.pyo` — кэш Python

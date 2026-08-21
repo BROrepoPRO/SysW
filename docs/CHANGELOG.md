@@ -5,6 +5,19 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.0.3] — 2026-08-21
+
+### Added
+- **Объединённый план невыполненных работ:** создан `plans/integration_1.0.3.md` (разделы A–G) — логгер, окружение, рефакторинг, CI, конфиги, документация, завершение. Будущие работы по логгеру, переносу `Dim`, проверке `UAZz4` зафиксированы для последующего выполнения.
+
+### Changed
+- **Версия проекта поднята до v1.0.3** — `scripts/config.py`, `scripts/config.ps1`, `src/modules/Mod_Constants.bas`, `README.md`, `docs/ARCHITECTURE.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`.
+- **Документация актуализирована до фактического состояния:** убраны `.bak`-листы (`Sheet_work.cls.bak`, `Sheet_z4.cls.bak`), «18 VBA-файлов» → «16», «3 класса листов» → «1» (`Лист2_main`), устаревшие абсолютные пути `L:\...` заменены на относительные/актуальные.
+- **`docs/git-workflow.md`** и упоминания `CHANGELOG`/`.gitignore` синхронизированы с фактической структурой (`docs/CHANGELOG.md`, отсутствие корневого `.gitignore`).
+
+### Archived
+- **Архивация планов:** в `plans/_archive/` перенесены `fix_architecture_matlib_plan.md`, `fix_consistency_discrepancies_plan.md`, `fix_deploy_path_plan.md`, `fix_tc23_compile_error_plan.md`, `integration_1.0.1.md`, `update_docs_plan.md`.
+
 ## [v1.0.2] — 2026-08-06
 
 ### Fixed

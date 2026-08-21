@@ -1,7 +1,7 @@
 # Архитектура выноса данных работ и запчастей из work.xlsm
 
 > Версия: 1.0
-> Проект: SysW v1.0.2
+> Проект: SysW v1.0.3
 > Статус: Частично реализовано
 >
 > **Актуальный статус:** Часть задач по миграции на SQLite уже реализована (модуль `Mod_ModelDB`, структуры данных в `Mod_ModelTypes`, классы `PartIdentity`/`WorkIdentity`). Оставшиеся задачи включены в единый ROADMAP проекта — см. [`docs/ROADMAP.md`](../docs/ROADMAP.md) (раздел 9, задачи R-S1..R-S8).
@@ -13,7 +13,7 @@
 ### 1.1. Целевая структура каталогов
 
 ```
-L:\PROject\SysW\
+SysW\
 ├── work.xlsm                    # Макросы + листы main, spisok (интерфейс)
 ├── report.xlsx                  # Входящие документы (не изменяется)
 │
@@ -232,10 +232,10 @@ flowchart TD
 
 ```vba
 ' Каталог с файлами групп
-Public Const MODELDB_BASE_PATH As String = "L:\PROject\SysW\base\models\"
+Public Const MODELDB_BASE_PATH As String = "base\models\"
 
 ' Каталог с глобальной базой запчастей (не используется — данные хранятся в файлах групп)
-' Public Const MODELDB_GLOBAL_Z4_PATH As String = "L:\PROject\SysW\base\z4_global.xlsx"
+' Public Const MODELDB_GLOBAL_Z4_PATH As String = "base\z4_global.xlsx"
 
 ' Имена листов (шаблоны)
 Public Const MODELDB_SHEET_Z4 As String = "z4"
