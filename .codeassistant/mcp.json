@@ -10,7 +10,7 @@
         "mcp<2",
         "mcp-server-git",
         "--repository",
-        "L:/PROject/SysW"
+        "${workspaceFolder}"
       ]
     },
     "filesystem": {
@@ -19,7 +19,7 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "L:/PROject/SysW"
+        "${workspaceFolder}"
       ]
     }
   }

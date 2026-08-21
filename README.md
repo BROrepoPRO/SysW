@@ -33,7 +33,7 @@
 ## Структура проекта
 
 ```
-L:\PROject\SysW\
+SysW (https://github.com/BROrepoPRO/SysW.git)
 ├── src/                       # Исходный код VBA
 │   ├── modules/               # 13 .bas модулей
 │   ├── classes/               # 2 .cls класса (PartIdentity, WorkIdentity)
@@ -61,13 +61,22 @@ L:\PROject\SysW\
 │   └── _archive/              # Архив выполненных планов
 ├── workOt/                    # Выходные данные
 ├── .github/workflows/         # CI/CD (GitHub Actions)
-│   └── vba-check.yml
+│   ├── vba-check.yml          # Проверка VBA-файлов
+│   └── docs-check.yml         # Проверка консистентности документации
 ├── .vscode/                   # Настройки VS Code
 ├── .ycarules                  # Правила SourceCraft
 ├── .gitattributes             # Нормализация Git
-├── CHANGELOG.md               # История изменений
 └── work.xlsm                  # Excel-файл с макросами (в .gitignore)
 ```
+
+## CI/CD
+
+Проект использует GitHub Actions для автоматических проверок при push и pull request на ветки `main`/`dev`. Workflow расположены в `.github/workflows/`:
+
+- [**vba-check.yml**](.github/workflows/vba-check.yml) — проверка наличия всех VBA-файлов (`src/modules/*.bas`, `src/classes/*.cls`, `src/sheets/*.cls`), их корректной UTF-8 кодировки и базового синтаксиса, а также актуальности `CHANGELOG.md`.
+- [**docs-check.yml**](.github/workflows/docs-check.yml) — проверка консистентности документации (`python scripts/check_docs.py --check`).
+
+> Документация по CHANGELOG хранится в [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
 
 ---
 
@@ -75,8 +84,8 @@ L:\PROject\SysW\
 
 1. **Клонировать репозиторий:**
    ```bash
-   git clone <url-репозитория>
-   cd L:\PROject\SysW
+   git clone https://github.com/BROrepoPRO/SysW.git
+   cd SysW
    ```
 
 2. **Открыть проект в VS Code:**

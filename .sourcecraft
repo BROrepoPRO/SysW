@@ -46,7 +46,7 @@
     ],
     "include": [
       "docs/DEVELOPER.md",
-      "docs/ARCHITECTURE_SQLITE.md",
+      "docs/ARCHITECTURE.md",
       "src/modules/Mod_Constants.bas"
     ],
     "critical": [
