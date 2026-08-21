@@ -8,7 +8,7 @@
 from pathlib import Path
 
 # Версия приложения (единый источник для всей системы)
-APP_VERSION = "1.0.3"
+APP_VERSION = "1.0.4"
 
 # Корень проекта — родительская директория scripts/
 PROJECT_DIR = Path(__file__).resolve().parent.parent
@@ -28,3 +28,22 @@ LOGS_DIR = PROJECT_DIR / "logs"
 
 # Файл лога тестов (в директории logs/)
 TEST_LOG_FILE = LOGS_DIR / "test_results.log"
+
+# ============================================================
+# Единая база данных SQLite (миграция на SysW.db)
+# ============================================================
+
+# Версия схемы БД (должна совпадать с PRAGMA user_version в db/schema.sql)
+DB_SCHEMA_VERSION = 1
+
+# Путь к единой базе данных SysW.db (корневой уровень проекта)
+DB_PATH = PROJECT_DIR / "SysW.db"
+
+# Путь к файлу DDL-схемы
+DB_SCHEMA_PATH = PROJECT_DIR / "db" / "schema.sql"
+
+# Директория модельных файлов (легаси .xlsm)
+MODELS_DIR = PROJECT_DIR / "base" / "models"
+
+# Файл отчёта миграции (в директории logs/)
+MIGRATION_REPORT_FILE = LOGS_DIR / "migration_report.log"

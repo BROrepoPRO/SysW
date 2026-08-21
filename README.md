@@ -1,6 +1,6 @@
 ﻿# SysW — Система автоматизации обработки заказ-нарядов авторемонта
 
-**Версия:** v1.0.3
+**Версия:** v1.0.4
 
 **Назначение:** импорт, анализ и учёт данных заказ-нарядов из Excel.
 
@@ -39,6 +39,7 @@ SysW (https://github.com/BROrepoPRO/SysW.git)
 │   ├── classes/               # 2 .cls класса (PartIdentity, WorkIdentity)
 │   └── sheets/                # 1 .cls лист
 ├── base/                      # Шаблоны и образцы данных
+│   ├── templates/             # Шаблоны (work, work0, model, model0, report0)
 │   └── models/                # Модели данных (Excel-файлы)
 ├── scripts/                   # Python + PowerShell скрипты
 │   ├── config.py              # Общая конфигурация путей (Python)
@@ -46,6 +47,8 @@ SysW (https://github.com/BROrepoPRO/SysW.git)
 │   ├── export_vba.py          # Выгрузка VBA из Excel
 │   ├── impVBA.py              # Загрузка VBA в Excel
 │   ├── run_tests.py           # Запуск тестов
+│   ├── build_templates.py     # Создание шаблонов base/templates/
+│   ├── apply_protection_templates.py  # Защита листов шаблонов
 │   └── Set-ExcelTrust.ps1     # Настройка доверия Excel к VBA
 ├── logs/                      # Логи и результаты тестов
 │   ├── log.txt                # Основной лог VBA-модулей
@@ -59,7 +62,6 @@ SysW (https://github.com/BROrepoPRO/SysW.git)
 │   └── table.md               # Справочник таблиц
 ├── plans/                     # Планы изменений и архитектурные решения
 │   └── _archive/              # Архив выполненных планов
-├── workOt/                    # Выходные данные
 ├── .github/workflows/         # CI/CD (GitHub Actions)
 │   ├── vba-check.yml          # Проверка VBA-файлов
 │   └── docs-check.yml         # Проверка консистентности документации

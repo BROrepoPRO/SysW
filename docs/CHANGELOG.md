@@ -5,6 +5,22 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.0.4] — 2026-08-21
+
+### Added
+- **Каталог шаблонов `base/templates/`:** созданы шаблоны `work.xlsm`, `work0.xlsm`, `model.xlsm`, `model0.xlsm`, `report0.xlsx`.
+- **Защита листов шаблонов:** применены `Protect` + `AllowEditRanges` + `FreezePanes A4` — реализовано на уровне файлов-шаблонов **без изменения VBA-кода**.
+- **SQLite-инфраструктура (стадия проектирования):** добавлены `db/schema.sql`, `scripts/sqlite_schema.py`, константы `DB_*` в `scripts/config.py`, план `plans/migration_sqlite_plan.md`.
+- **Новые скрипты:** `build_templates.py`, `apply_protection_templates.py`, `template_protection.py`, `fix_vbom_and_venv.ps1`; в `check_docs.py` добавлен вызов `check_expected_modules`.
+- **Планы:** `plans/integration_1.0.4.md`, `plans/debug_hang_templates_v104.md`.
+
+### Changed
+- **Версия проекта поднята до v1.0.4** — `scripts/config.py`, `scripts/config.ps1`, `src/modules/Mod_Constants.bas`, `README.md`, `docs/ARCHITECTURE.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`.
+- **Документация актуализирована:** `docs/table.md` расширена разделом «Рабочая панель для шаблонов»; в `docs/DEVELOPER.md` добавлен раздел «Шаблоны `base/templates/`»; в `docs/ARCHITECTURE.md` добавлены `base/templates/` в структуру и подраздел «Защита листов шаблонов (v1.0.4)».
+
+### Removed
+- **Каталог `workOt/`** удалён.
+
 ## [v1.0.3] — 2026-08-21
 
 ### Added

@@ -26,7 +26,7 @@
 
 ## Конфигурация SourceCraft (`.sourcecraft`)
 
-Проект использует корневой файл [`.sourcecraft`](../.sourcecraft) для централизованной конфигурации SourceCraft Code Assistant.
+Актуально с v1.0.4, проект использует корневой файл [`.sourcecraft`](../.sourcecraft) для централизованной конфигурации SourceCraft Code Assistant.
 
 ### Структура `.sourcecraft`
 
@@ -64,7 +64,7 @@
 
 ### Перенос с `.vscode/mcp.json`
 
-Ранее конфигурация MCP-серверов хранилась в [`.codeassistant/mcp.json`](../.codeassistant/mcp.json) и [`.vscode/mcp.json`](../.vscode/mcp.json). В настоящее время основной конфигурацией является `.sourcecraft`, где пути заменены на относительные `${workspaceFolder}`.
+Ранее конфигурация MCP-серверов хранилась в [`.codeassistant/mcp.json`](../.codeassistant/mcp.json) и [`.vscode/mcp.json`](../.vscode/mcp.json). Начиная с v1.0.4 основной конфигурацией является `.sourcecraft`, где абсолютные пути заменены на относительные `${workspaceFolder}`.
 
 ---
 

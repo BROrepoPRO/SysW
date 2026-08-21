@@ -16,6 +16,7 @@ Sheet handling:
 """
 import os
 import sys
+import gc
 import shutil
 import re
 import win32com.client
@@ -221,18 +222,38 @@ def main():
     TEMP_DIR.mkdir(parents=True)
 
     print("Creating Excel COM object...")
+    # Use DispatchEx so that a NEW dedicated Excel instance is created instead of
+    # attaching to a hidden/hung EXCEL.EXE that Dispatch/EnsureDispatch would reuse.
+    # A reused "zombie" instance in a bad state raises DISP_E_EXCEPTION on Visible.
+    excel = None
     try:
-        excel = win32com.client.gencache.EnsureDispatch("Excel.Application")
-    except AttributeError:
-        # Fallback if gencache fails (e.g. Python 3.14+ with stale cache)
-        print("    gencache failed, using direct Dispatch...")
-        # Clear and regenerate cache
-        cache_dir = os.path.join(os.environ.get('LOCALAPPDATA', ''),
-                                  'Temp', 'gen_py')
-        if os.path.exists(cache_dir):
-            shutil.rmtree(cache_dir, ignore_errors=True)
-            print("    Cleared gen_py cache")
-        excel = win32com.client.Dispatch("Excel.Application")
+        excel = win32com.client.DispatchEx("Excel.Application")
+        print("    DispatchEx OK (new dedicated instance)")
+    except Exception:
+        # Fallback: direct Dispatch, then gencache, then dynamic
+        print("    DispatchEx failed, falling back to Dispatch...")
+        try:
+            excel = win32com.client.Dispatch("Excel.Application")
+            print("    Dispatch OK")
+        except Exception:
+            try:
+                excel = win32com.client.gencache.EnsureDispatch("Excel.Application")
+                print("    EnsureDispatch OK")
+            except AttributeError:
+                print("    gencache failed, using dynamic Dispatch...")
+                cache_dir = os.path.join(os.environ.get('LOCALAPPDATA', ''),
+                                          'Temp', 'gen_py')
+                if os.path.exists(cache_dir):
+                    shutil.rmtree(cache_dir, ignore_errors=True)
+                    print("    Cleared gen_py cache")
+                excel = win32com.client.dynamic.Dispatch("Excel.Application")
+
+    # Configure automation BEFORE opening any workbook.
+    # AutomationSecurity=msoAutomationSecurityForceDisable(3) disables macros in opened books.
+    try:
+        excel.AutomationSecurity = 3
+    except Exception:
+        pass
     excel.Visible = False
     excel.DisplayAlerts = False
 
@@ -424,8 +445,14 @@ def main():
             except Exception:
                 print("    (workbook already closed or COM error)")
 
-        print("Closing Excel...")
-        excel.Quit()
+        if excel is not None:
+            try:
+                print("Closing Excel...")
+                excel.Quit()
+            except Exception:
+                print("    (Excel already closed or COM error)")
+            excel = None
+            gc.collect()
 
     if success:
         print("")

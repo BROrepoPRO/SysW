@@ -211,6 +211,9 @@ def check_versions(files, issues):
                     f"[{path.relative_to(PROJECT_DIR)}] "
                     f"устаревшая версия '{version}' (актуальная {CURRENT_VERSION})"
                 )
+            # Проверяем только первое упоминание версии (заголовок/блок).
+            # Исторические упоминания в тексте (примечания, changelog) — норм.
+            break
 
 
 def fix_cross_references(files, fixed):
