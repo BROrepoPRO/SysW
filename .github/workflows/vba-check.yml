@@ -40,16 +40,16 @@ jobs:
           echo "=== Checking UTF-8 encoding ==="
           for f in src/modules/Mod_AutoMatch.bas src/modules/Mod_ButtonDispatcher.bas src/modules/Mod_Constants.bas src/modules/Mod_FullTestRunner.bas src/modules/Mod_Import.bas src/modules/Mod_Logger.bas src/modules/Mod_ModelDB.bas src/modules/Mod_ModelTypes.bas src/modules/Mod_OrderHeader.bas src/modules/Mod_PickWork.bas src/modules/Mod_SheetButtons.bas src/modules/Mod_SheetOps.bas src/modules/Mod_Utils.bas src/classes/PartIdentity.cls src/classes/WorkIdentity.cls src/sheets/Лист2_main.cls; do
             if python3 -c "
-import codecs
-with open('$f', 'rb') as f:
-    raw = f.read()
-try:
-    raw.decode('utf-8')
-    print(f'  [OK] $f is valid UTF-8')
-except UnicodeDecodeError:
-    print(f'  [FAIL] $f is NOT valid UTF-8')
-    exit(1)
-"; then
+            import codecs
+            with open('$f', 'rb') as f:
+                raw = f.read()
+            try:
+                raw.decode('utf-8')
+                print(f'  [OK] $f is valid UTF-8')
+            except UnicodeDecodeError:
+                print(f'  [FAIL] $f is NOT valid UTF-8')
+                exit(1)
+            "; then
               :
             else
               exit 1
@@ -63,15 +63,15 @@ except UnicodeDecodeError:
             if [ ! -f "$f" ]; then continue; fi
             echo "--- Checking $f ---"
             if python3 -c "
-with open('$f', 'rb') as f:
-    raw = f.read()
-text = raw.decode('utf-8')
-for i, ch in enumerate(text):
-    if ord(ch) < 32 and ch not in '\n\r\t':
-        print(f'  [FAIL] Non-printable char U+{ord(ch):04X} at line {text[:i].count(chr(10))+1}')
-        exit(1)
-print(f'  [OK] No binary characters found')
-"; then
+            with open('$f', 'rb') as f:
+                raw = f.read()
+            text = raw.decode('utf-8')
+            for i, ch in enumerate(text):
+                if ord(ch) < 32 and ch not in '\n\r\t':
+                    print(f'  [FAIL] Non-printable char U+{ord(ch):04X} at line {text[:i].count(chr(10))+1}')
+                    exit(1)
+            print(f'  [OK] No binary characters found')
+            "; then
               :
             else
               exit 1
