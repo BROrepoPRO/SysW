@@ -14,7 +14,7 @@
         "hexdump_result.txt": true,
         "check_hex.ps1": true
     },
-    "terminal.integrated.cwd": "L:\\PROject\\SysW",
+    "terminal.integrated.cwd": "${workspaceFolder}",
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
     "python.analysis.autoSearchPaths": false,
     "python.terminal.activateEnvironment": true,
@@ -42,7 +42,7 @@
     },
     "vba.enable": true,
     "vba.languageServer.enable": true,
-    "vba.excel.path": "L:\\PROject\\SysW\\work.xlsm",
+    "vba.excel.path": "${workspaceFolder}\\work.xlsm",
     "vba.exportOnSave": true,
     "[bas]": {
         "files.encoding": "utf8"
