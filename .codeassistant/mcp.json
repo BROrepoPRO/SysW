@@ -12,7 +12,8 @@
 			"disabledTools": [],
 			"alwaysAllow": [
 				"git_status",
-				"git_add"
+				"git_add",
+				"git_commit"
 			]
 		},
 		"filesystem": {
