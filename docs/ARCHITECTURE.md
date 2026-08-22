@@ -1,7 +1,7 @@
 # Архитектура выноса данных работ и запчастей из work.xlsm
 
 > Версия: 1.0
-> Проект: SysW v1.0.7
+> Проект: SysW v1.0.8
 > Статус: Реализовано (SQLite-хранилище внедрено в v1.0.7)
 >
 > **Актуальный статус:** Миграция на SQLite реализована — единая база `SysW.db` (корень проекта), DDL в `db/schema.sql`, провайдеры `Mod_SQLiteDB.cls` / `Mod_ModelDBProvider.cls` / `IModelDataProvider.cls`, пересборка скриптом `scripts/migrate_models_to_sqlite.py` и контроль целостности в составе конвейера `scripts/build_all.py`.
@@ -766,11 +766,38 @@ CREATE INDEX idx_works_group ON works(group_name);
 CREATE INDEX idx_group_parts_group ON group_parts(group_name);
 ```
 
-### 5.5. Единый конвейер и глубокая подстановка (v1.0.7)
+### 5.5. Единый конвейер и глубокая подстановка (v1.0.8)
 
 Полная пересборка проекта выполняется единым конвейером `scripts/build_all.py`:
-бэкап (`work.xlsm`, `SysW.db`) → `impVBA.py` → `build_templates.py` →
-`migrate_models_to_sqlite.py` → контроль целостности БД → `run_tests.py`.
+бэкап (`work.xlsm`, `SysW.db`) → `impVBA.py` → **ранний контроль компиляции VBA
+(`check_vba_syntax.py`)** → `build_templates.py` → `migrate_models_to_sqlite.py` →
+контроль целостности БД → `run_tests.py`.
+
+#### 5.5.1. Устойчивость COM-этапов к зависаниям (v1.0.8)
+
+- Во всех COM-скриптах (`impVBA.py`, `build_templates.py`, `run_tests.py`) открытие
+  книги выполняется обёрткой `open_workbook_with_retry`: до **5 попыток** с паузой
+  **3 сек**, обработка `None`/`COMError -2147352567`, явные параметры `Workbooks.Open`
+  (`ReadOnly=False`, `UpdateLinks=0`, `ConfirmConversion=False`), `DisplayAlerts=False`.
+- В `build_templates.py` установлен `AutomationSecurity = 3` (макросы не выполняются);
+  в `impVBA.py` — сохранён `ForceDisable`; в `run_tests.py` — НЕ выставляется
+  (скрипт выполняет макросы).
+- В `build_all.py` каждому этапу задан таймаут (`STEP_TIMEOUT`); при зависании
+  процесса `EXCEL.EXE` он принудительно завершается командой `taskkill /F /PID`
+  по PID из `logs/excel_pid_<stage>.txt` (завершаются только «свои» процессы,
+  интерактивные сессии пользователя не затрагиваются).
+
+#### 5.5.2. Ранний контроль компиляции VBA (v1.0.8)
+
+Новый этап `check_vba_syntax.py` выполняется сразу после `impVBA`, **до**
+`build_templates`/`run_tests`. Статический анализ исходников `src/` без запуска
+Excel ловит типовые ошибки (недопустимая inline-инициализация модульных переменных,
+несбалансированные блоки, отсутствие `Attribute VB_Name`, дубликаты процедур,
+нечитаемые/пустые модули). Exit code: `0` — ошибок нет, `1` — найдены ошибки;
+этапу соответствует код конвейера `vbacompile` = 22. Это защищает от рецидивов
+ошибки компиляции вида `Public ... As Boolean = True` из v1.0.7.
+
+#### 5.5.3. Глубокая подстановка модельных кодов (v1.0.7)
 
 При импорте действует бизнес-правило глубокой подстановки модельных кодов
 (флаг `Mod_Constants.ApplyMatLibSubstitution = True`):
@@ -778,6 +805,14 @@ CREATE INDEX idx_group_parts_group ON group_parts(group_name);
 - работы — по наименованию **L(12)** → **O(15)**.
 
 В `GetMatLibEntries` используется детерминированный `ORDER BY target_type, target_code`.
+
+#### 5.5.4. Поиск/фильтрация на листах запчастей (v1.0.8)
+
+В `Mod_SheetButtons.bas` добавлены `ExecutePartsSearch`, `Btn_Parts_SearchByArticle`
+(столбец B), `Btn_Parts_SearchByName` (столбец C), `Btn_Parts_ClearFilter` (сброс +
+очистка C1). В `Mod_ButtonDispatcher.bas` — диспетчеры `Btn_Parts_Article_Click`,
+`Btn_Parts_Name_Click`, `Btn_Parts_Clear_Click`. Работают на листах `z4` и
+`{Группа}z4` (whitelist), лист `spisok` не затрагивается.
 
 ---
 

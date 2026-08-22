@@ -5,6 +5,15 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.0.8] — 2026-08-22
+
+### Added
+- **Устойчивость COM-конвейера к зависаниям Excel (задача 1):** во всех COM-этапах (`impVBA.py`, `build_templates.py`, `run_tests.py`) введена обёртка открытия книги `open_workbook_with_retry` — до 5 попыток с паузой 3 сек, обработка `None`/`COMError -2147352567` из `Workbooks.Open`, явные параметры `Open` (`ReadOnly=False`, `UpdateLinks=0`, `ConfirmConversion=False`), `DisplayAlerts=False`; в `build_templates.py` дополнительно выставлен `AutomationSecurity = 3` (макросы не выполняются). В `build_all.py` каждому этапу задан таймаут (`STEP_TIMEOUT`), а зависшие процессы `EXCEL.EXE` принудительно завершаются по PID через `taskkill /F /PID` с безопасным чтением `logs/excel_pid_<stage>.txt` (чужие сессии Excel не затрагиваются). В `impVBA.py` ошибка одного компонента больше не прерывает импорт остальных; итоговый статус FAIL, если хотя бы один обязательный модуль `src/modules/*.bas` не импортирован.
+- **Ранний контроль компиляции VBA (задача 2):** новый самодостаточный скрипт `scripts/check_vba_syntax.py` выполняет статический анализ исходников `src/` (запрещённая inline-инициализация вида `Public ... As Boolean = True`, несбалансированные `Sub/Function/If/For/With`, отсутствие/несовпадение `Attribute VB_Name`, дубликаты имён процедур, нечитаемые/пустые модули) и включается отдельным этапом в `build_all.py` сразу после `impVBA` — до прогона тестов; exit code `0` — ошибок нет, `1` — найдены ошибки, этапу соответствует код конвейера `vbacompile` = 22.
+- **Восстановление теста TC-29 (задача 3):** временная заглушка в `RunImportDataTests` заменена на реальную проверку переноса данных `ImportDataToMain` (работы L→M→N, запчасти X/Y→Z/AA; границы «Итого» не переносятся; пустой № кат. X при непустом наименовании Y обрабатывается — перенос не блокируется). Служебные колонки **O(15)**/AB(28) не входят в критерий PASS/FAIL.
+- **Поиск/фильтрация на листах запчастей (задача 4):** новые макросы `ExecutePartsSearch`, `Btn_Parts_SearchByArticle`, `Btn_Parts_SearchByName`, `Btn_Parts_ClearFilter` в `Mod_SheetButtons.bas` (по образцу UAZ-поиска) и диспетчеры `Btn_Parts_Article_Click`/`Btn_Parts_Name_Click`/`Btn_Parts_Clear_Click` в `Mod_ButtonDispatcher.bas`; поиск «содержит» по столбцу B/C, поле ввода C1, данные с 4-й строки, whitelist листов `z4`/`{Группа}z4`. Лист `spisok` поиском не затрагивается.
+- **Перенос проблем TC-28/TC-48/TC-49 и ошибок тестовой части в промт 12 (вне объёма v1.0.8).**
+
 ## [v1.0.7] — 2026-08-22
 
 ### Added

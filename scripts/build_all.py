@@ -11,11 +11,17 @@
     1. Резервное копирование — копии work.xlsm и SysW.db в _backup/
        с меткой времени (work_YYYYmmdd_HHMMSS.xlsm, SysW_YYYYmmdd_HHMMSS.db).
     2. impVBA.py                — импорт исходников VBA из src/ в work.xlsm.
-    3. build_templates.py       — пересборка шаблонов base/templates/.
-    4. migrate_models_to_sqlite.py — пересборка SysW.db из base/models/*.
-    5. Контроль целостности БД — PRAGMA integrity_check ("ok") и контрольные
+    3. check_vba_syntax.py      — ранний статический контроль компиляции VBA
+                                  (inline-инициализация модульных переменных).
+    4. build_templates.py       — пересборка шаблонов base/templates/.
+    5. migrate_models_to_sqlite.py — пересборка SysW.db из base/models/*.
+    6. Контроль целостности БД — PRAGMA integrity_check ("ok") и контрольные
        количества по таблицам works, parts_catalog, parts, matlib_entries.
-    6. run_tests.py             — прогон тестов (после успешных этапов 2-5).
+    7. run_tests.py             — прогон тестов (после успешных этапов 2-6).
+
+Каждый COM-этап ограничен таймаутом (STEP_TIMEOUTS); при превышении либо
+ненулевом коде «зависший» EXCEL.EXE, созданный именно конвейером, безопасно
+завершается по PID из logs/excel_pid_<stage>.txt (см. terminate_stale_excel).
 
 Логирование:
     Прогресс каждого этапа (старт/успех/ошибка) пишется в logs/build.log
@@ -25,10 +31,11 @@ Exit code скрипта (схема кодов, отражает конкрет
     0 - полный успех всех этапов;
     1 - этап 1 (резервное копирование) провален;
     2 - этап 2 (impVBA.py) провален;
-    3 - этап 3 (build_templates.py) провален;
-    4 - этап 4 (migrate_models_to_sqlite.py) провален;
-    5 - этап 5 (контроль целостности БД) провален;
-    6 - этап 6 (run_tests.py) провален;
+    22 - этап 3 (check_vba_syntax.py) провален;
+    3 - этап 4 (build_templates.py) провален;
+    4 - этап 5 (migrate_models_to_sqlite.py) провален;
+    5 - этап 6 (контроль целостности БД) провален;
+    6 - этап 7 (run_tests.py) провален;
     70+ - внутренняя ошибка самого конвейера (сеть, отсутствие файла и т.п.).
 
 Поведение при ошибке:
@@ -94,6 +101,18 @@ EXIT_CODES = {
     "migrate": 4,
     "integrity": 5,
     "tests": 6,
+    # Новые этапы v1.0.8 (диапазон 20+):
+    "vbacompile": 22,  # статическая проверка синтаксиса VBA (check_vba_syntax.py)
+}
+
+# Таймауты (сек) на каждый этап конвейера. Защита от «зависания» этапа:
+# если подпроцесс не уложился в лимит — он принудительно завершается.
+STEP_TIMEOUTS = {
+    "impvba": 300,
+    "vbacompile": 60,
+    "templates": 600,
+    "migrate": 300,
+    "tests": 900,
 }
 
 # Таблицы и их описание для контрольной проверки целостности (этап 5).
@@ -130,18 +149,31 @@ def timestamp_label() -> str:
     return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
-def run_step_script(name: str, script_name: str) -> bool:
-    """Запускает существующий скрипт проекта подпроцессом и возвращает успех.
+def run_step_script(
+    name: str,
+    script_name: str,
+    timeout: int = 300,
+    pid_stage: str | None = None,
+) -> bool:
+    """Запускает скрипт проекта подпроцессом и возвращает успех.
 
-    Вызывается `python scripts/<script_name>` из корня проекта. stdout/stderr
-    подпроцесса транслируются в консоль, чтобы пользователь видел живой вывод.
+    Параметры:
+        name       — имя этапа (для логов).
+        script_name— имя скрипта в scripts/.
+        timeout    — лимит времени на этап (сек); при превышении этап
+                     принудительно завершается через taskkill зависшего Excel.
+        pid_stage  — имя этапа для лог-файла PID (logs/excel_pid_<stage>.txt);
+                     используется для безопасного завершения «своего» EXCEL.EXE.
+
+    stdout/stderr подпроцесса транслируются в консоль, чтобы пользователь
+    видел живой вывод.
     """
     script_path = PROJECT_DIR / "scripts" / script_name
     if not script_path.is_file():
         log_line(f"[ОШИБКА] Не найден скрипт: {script_path}")
         return False
 
-    log_line(f"[СТАРТ] Этап '{name}': python scripts/{script_name}")
+    log_line(f"[СТАРТ] Этап '{name}': python scripts/{script_name} (таймаут {timeout}с)")
     try:
         proc = subprocess.run(
             [sys.executable, str(script_path)],
@@ -149,19 +181,100 @@ def run_step_script(name: str, script_name: str) -> bool:
             text=True,
             encoding="utf-8",
             errors="replace",
+            timeout=timeout,
         )
+    except subprocess.TimeoutExpired:
+        log_line(f"[ТАЙМАУТ] Этап '{name}' превысил лимит {timeout}с")
+        if pid_stage:
+            terminate_stale_excel(pid_stage)
+        return False
     except OSError as exc:
         log_line(f"[ОШИБКА] Не удалось запустить этап '{name}': {exc}")
+        if pid_stage:
+            terminate_stale_excel(pid_stage)
         return False
 
     if proc.returncode == 0:
         log_line(f"[УСПЕХ] Этап '{name}' завершён (код 0)")
+        # Успешное завершение: Excel уже закрыт скриптом, просто убираем PID-файл.
+        _cleanup_pid_file(pid_stage)
         return True
 
-    log_line(
-        f"[ОШИБКА] Этап '{name}' завершился с кодом {proc.returncode}"
-    )
+    log_line(f"[ОШИБКА] Этап '{name}' завершился с кодом {proc.returncode}")
+    # Ненулевой код этапа: возможно, остался «зависший» Excel — завершаем свой PID.
+    if pid_stage:
+        terminate_stale_excel(pid_stage)
     return False
+
+
+def terminate_stale_excel(pid_stage: str | None) -> None:
+    """Безопасно завершает «свой» зависший процесс EXCEL.EXE по PID.
+
+    Критерии безопасности (критично!):
+      - Завершается ТОЛЬКО процесс, созданный самим конвейером: его PID
+        COM-скрипт записывает в logs/excel_pid_<stage>.txt сразу после создания
+        экземпляра Excel (см. write_excel_pid в impVBA.py / build_templates.py /
+        run_tests.py).
+      - Перед завершением проверяется, что процесс с этим PID существует и
+        является EXCEL.EXE (по выводу tasklist), чтобы случайно не завершить
+        чужие процессы.
+      - Интерактивные сессии Excel, открытые пользователем вручную, НЕ
+        затрагиваются — по ним PID-файлов конвейер не создаёт.
+    """
+    if not pid_stage:
+        return
+    pid_file = LOGS_DIR / f"excel_pid_{pid_stage}.txt"
+    if not pid_file.exists():
+        return
+    try:
+        pid = int(pid_file.read_text(encoding="utf-8").strip())
+    except (ValueError, OSError) as exc:
+        log_line(f"[ПРЕДУПРЕЖДЕНИЕ] Не удалось прочитать PID-файл {pid_file}: {exc}")
+        _cleanup_pid_file(pid_stage)
+        return
+
+    # Проверяем, что процесс с данным PID существует и является EXCEL.EXE.
+    info = subprocess.run(
+        ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    output = (info.stdout + info.stderr).upper()
+    if "EXCEL.EXE" not in output:
+        log_line(f"[ПРЕДУПРЕЖДЕНИЕ] PID {pid} не найден или не EXCEL.EXE, пропуск")
+        _cleanup_pid_file(pid_stage)
+        return
+
+    log_line(f"[taskkill] Завершение зависшего EXCEL.EXE (PID {pid}) ...")
+    kill = subprocess.run(
+        ["taskkill", "/F", "/PID", str(pid)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if kill.returncode == 0:
+        log_line(f"[taskkill] Процесс EXCEL.EXE (PID {pid}) завершён")
+    else:
+        log_line(
+            f"[taskkill] Не удалось завершить PID {pid}: "
+            f"{kill.stdout.strip()} {kill.stderr.strip()}"
+        )
+    _cleanup_pid_file(pid_stage)
+
+
+def _cleanup_pid_file(pid_stage: str | None) -> None:
+    """Удаляет лог-файл PID этапа, если он существует."""
+    if not pid_stage:
+        return
+    pid_file = LOGS_DIR / f"excel_pid_{pid_stage}.txt"
+    try:
+        if pid_file.exists():
+            pid_file.unlink()
+    except OSError:
+        pass
 
 
 def copy_with_backup(src: Path, dst: Path) -> bool:
@@ -285,15 +398,40 @@ def main() -> int:
         return EXIT_CODES["backup"]
 
     # --- Этап 2: импорт VBA (impVBA.py) -------------------------------
-    if not run_step_script("impVBA", "impVBA.py"):
+    if not run_step_script(
+        "impVBA",
+        "impVBA.py",
+        timeout=STEP_TIMEOUTS["impvba"],
+        pid_stage="impvba",
+    ):
         return EXIT_CODES["impvba"]
 
+    # --- Этап 2.5: ранний контроль компиляции VBA (check_vba_syntax.py)
+    # Статическая проверка синтаксиса исходников src/ сразу после импорта
+    # и ДО пересборки шаблонов: ловит запрещённую inline-инициализацию
+    # модульных переменных (Public/Dim ... As X = значение) и другие ошибки.
+    if not run_step_script(
+        "check_vba_syntax",
+        "check_vba_syntax.py",
+        timeout=STEP_TIMEOUTS["vbacompile"],
+    ):
+        return EXIT_CODES["vbacompile"]
+
     # --- Этап 3: пересборка шаблонов (build_templates.py) --------------
-    if not run_step_script("build_templates", "build_templates.py"):
+    if not run_step_script(
+        "build_templates",
+        "build_templates.py",
+        timeout=STEP_TIMEOUTS["templates"],
+        pid_stage="templates",
+    ):
         return EXIT_CODES["templates"]
 
     # --- Этап 4: пересборка БД (migrate_models_to_sqlite.py) -----------
-    if not run_step_script("migrate_models_to_sqlite", "migrate_models_to_sqlite.py"):
+    if not run_step_script(
+        "migrate_models_to_sqlite",
+        "migrate_models_to_sqlite.py",
+        timeout=STEP_TIMEOUTS["migrate"],
+    ):
         return EXIT_CODES["migrate"]
 
     # --- Этап 5: контроль целостности БД -------------------------------
@@ -303,7 +441,12 @@ def main() -> int:
     log_line("[УСПЕХ] Этап 'integrity' завершён")
 
     # --- Этап 6: прогон тестов (run_tests.py) --------------------------
-    if not run_step_script("run_tests", "run_tests.py"):
+    if not run_step_script(
+        "run_tests",
+        "run_tests.py",
+        timeout=STEP_TIMEOUTS["tests"],
+        pid_stage="tests",
+    ):
         return EXIT_CODES["tests"]
 
     log_line("=" * 70)

@@ -19,11 +19,13 @@ import sys
 import gc
 import shutil
 import re
+import time
 import win32com.client
+import win32process
 from win32com.client import gencache
 from pathlib import Path
 
-from config import WORKBOOK_PATH, SRC_DIR, TEMP_IMPORT_DIR
+from config import WORKBOOK_PATH, SRC_DIR, TEMP_IMPORT_DIR, LOGS_DIR
 EXCEL_PATH = str(WORKBOOK_PATH)
 MODULES_PATH = SRC_DIR
 TEMP_DIR = TEMP_IMPORT_DIR
@@ -64,6 +66,75 @@ SHEET_COMPONENTS = {
     )
     and f.is_file()
 }
+
+# Имя этапа для лог-файла PID (используется build_all.py для безопасного taskkill).
+STAGE_NAME = "impvba"
+
+# Константы ретраев открытия книги.
+OPEN_RETRIES = 5   # Максимальное число попыток открытия.
+OPEN_PAUSE = 3     # Пауза (сек) между попытками.
+
+
+def open_workbook_with_retry(excel, path, retries=OPEN_RETRIES, pause_sec=OPEN_PAUSE):
+    """Открывает книгу с ретраями при None/COM-ошибке -2147352567.
+
+    Workbooks.Open может вернуть None либо выбросить прерывистую COM-ошибку
+    (-2147352567) при модальных окнах/плохом состоянии экземпляра. Функция
+    повторяет открытие до retries раз с паузой pause_sec и сборкой мусора
+    между попытками. Если все попытки исчерпаны — возвращает None (основной
+    try/except скрипта обработает это как ошибку этапа).
+    """
+    for attempt in range(1, retries + 1):
+        wb = None
+        try:
+            # Явные параметры: ReadOnly=False (открываем на запись),
+            # UpdateLinks=0 (не обновлять связи), ConfirmConversion=False
+            # (не спрашивать про конвертацию формата) — защита от зависаний
+            # на модальных окнах.
+            wb = excel.Workbooks.Open(
+                str(path),
+                ReadOnly=False,
+                UpdateLinks=0,
+                ConfirmConversion=False,
+            )
+        except Exception as exc:
+            # Прерывистая COM-ошибка открытия: логируем и повторяем.
+            msg = str(exc)
+            print(f"    Попытка {attempt}/{retries}: ошибка открытия ({msg}); "
+                  f"пауза {pause_sec}с")
+            wb = None
+            time.sleep(pause_sec)
+            gc.collect()
+            continue
+
+        if wb is None:
+            print(f"    Попытка {attempt}/{retries}: Workbooks.Open вернул None; "
+                  f"пауза {pause_sec}с")
+            time.sleep(pause_sec)
+            gc.collect()
+            continue
+
+        return wb
+
+    return None
+
+
+def write_excel_pid(excel):
+    """Записывает PID созданного экземпляра Excel в лог-файл для build_all.py.
+
+    build_all.py после этапа читает logs/excel_pid_<stage>.txt и завершает
+    ТОЛЬКО этот процесс (по PID), не трогая чужие сессии Excel пользователя.
+    При сбое записи PID просто логируем предупреждение — не критично.
+    """
+    try:
+        hwnd = excel.Hwnd
+        _, pid = win32process.GetWindowThreadProcessId(hwnd)
+        pid_file = LOGS_DIR / f"excel_pid_{STAGE_NAME}.txt"
+        pid_file.parent.mkdir(parents=True, exist_ok=True)
+        pid_file.write_text(str(pid), encoding="utf-8")
+        print(f"    Записан PID Excel {pid} -> {pid_file}")
+    except Exception as exc:
+        print(f"    [!] Не удалось записать PID Excel: {exc}")
 
 
 def get_file_subdir(file_name):
@@ -257,12 +328,19 @@ def main():
     excel.Visible = False
     excel.DisplayAlerts = False
 
+    # Записываем PID созданного экземпляра Excel для безопасного завершения
+    # зависшего процесса конвейером build_all.py (только наш процесс).
+    write_excel_pid(excel)
+
     workbook = None
     success = False
 
     try:
         print(f"Opening workbook: {EXCEL_PATH}")
-        workbook = excel.Workbooks.Open(EXCEL_PATH)
+        workbook = open_workbook_with_retry(excel, EXCEL_PATH)
+        if workbook is None:
+            print("Не удалось открыть книгу после всех попыток.", file=sys.stderr)
+            raise RuntimeError("Workbooks.Open вернул None после всех ретраев")
 
         print("Accessing VBA project...")
         vb_project = workbook.VBProject
@@ -313,6 +391,13 @@ def main():
                         print(f"  Removed (fallback by stem): {stem} (from {file_name})")
                 except Exception:
                     print(f"  Not found: {vb_name} (from {file_name})")
+
+        # Множество обязательных модулей (.bas). Этап считается успешным только
+        # если импортированы ВСЕ обязательные модули (иначе ранняя проверка
+        # компиляции в конвейере теряет смысл).
+        mandatory_bas = {Path(f).stem for f in FILES if f.lower().endswith('.bas')}
+        imported_ok = set()
+        failed_imports = []
 
         # Second pass: import/update all components
         print("")
@@ -399,7 +484,7 @@ def main():
                     else:
                         print(f"    [+] Successfully imported: {file_name}")
             else:
-                # For standard modules (.bas):
+                # For standard modules (.bas) and class modules (.cls):
                 # Use VBComponents.Import() as before
                 temp_file = TEMP_DIR / file_name
                 try:
@@ -407,14 +492,24 @@ def main():
                         f.write(text)
                 except Exception as e:
                     print(f"    [!] Failed to write temp file: {e}")
+                    failed_imports.append(file_name)
                     continue
                 print(f"    Converted encoding: UTF-8 -> Windows-1251")
                 print(f"    Calling Import on: {temp_file}")
-                imported = vb_project.VBComponents.Import(str(temp_file))
+                try:
+                    imported = vb_project.VBComponents.Import(str(temp_file))
+                except Exception as e:
+                    # Ошибка одного компонента не прерывает остальные импорты.
+                    print(f"    [!] Ошибка импорта {file_name}: {e}")
+                    failed_imports.append(file_name)
+                    continue
                 if imported is None:
                     print(f"    [!] Import returned None!")
+                    failed_imports.append(file_name)
                 else:
                     print(f"    [+] Successfully imported: {file_name}")
+                    if file_name.lower().endswith('.bas'):
+                        imported_ok.add(Path(file_name).stem)
 
         print("")
         print("Saving workbook...")
@@ -423,7 +518,20 @@ def main():
             print("Workbook saved.")
         except Exception as e:
             print(f"    Save warning (modules already imported): {e}")
-        success = True
+
+        # Этап успешен, только если импортированы ВСЕ обязательные модули (.bas).
+        missing = mandatory_bas - imported_ok
+        if missing:
+            print(
+                f"    [!] НЕ импортированы обязательные модули: {sorted(missing)}",
+                file=sys.stderr,
+            )
+        if failed_imports:
+            print(
+                f"    [!] Ошибки импорта компонентов: {failed_imports}",
+                file=sys.stderr,
+            )
+        success = not missing
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)

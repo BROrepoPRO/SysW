@@ -1666,14 +1666,88 @@ Private Sub RunImportDataTests()
             AddResult "TC-29", "ImportDataToMain перенос данных", False, "Ошибка: " & Err.Description
             Err.Clear
         Else
-            ' ВРЕМЕННАЯ ЗАГЛУШКА TC-29 (по указанию юзера):
-            ' Прямая проверка X4=№ кат. некорректна: входящие запчасти могут иметь
-            ' ПУСТОЙ артикул (№ кат.), но не пустое наименование. Подбор ЗЧ идёт
-            ' сначала по артикулу, затем по наименованию; подбор работ — только
-            ' по входящему наименованию. Корректная проверка будет восстановлена
-            ' после согласования бизнес-логики.
-            AddResult "TC-29", "ImportDataToMain перенос данных", True, "", True, _
-                      "Временная заглушка: проверка прямого переноса запчастей отложена"
+            ' =========================================================
+            ' TC-29: реальная проверка переноса данных ImportDataToMain.
+            ' Проверяем фактическое поведение кода Mod_Import.bas ([Z6]):
+            '   работы:   D(4)→L(12), I(9)→M(13), M(13)→N(14);
+            '   запчасти: B(2)→X(24), C(3)→Y(25), D(4)→Z(26), G(7)→AA(27).
+            ' Служебные строки «Итого работ»/«Итого» не должны попадать как данные.
+            ' Служебные колонки подстановки O(15)/AB(28) НЕ входят в критерий
+            ' PASS/FAIL: в тестовых работах/запчастях нет гарантированных
+            ' совпадений MOD_WORK/MOD_PART в matlib_entries (см. план v1.0.8 §5.4).
+            Dim tc29Ok As Boolean
+            Dim tc29Reason As String
+            tc29Ok = True
+            tc29Reason = ""
+
+            ' --- Работы: строки main 4..5 ---
+            If Trim(CStr(wsMain.Cells(4, 12).Value)) <> "Тестовая работа 1" Then
+                tc29Ok = False
+                tc29Reason = "L4 (работа 1) = '" & CStr(wsMain.Cells(4, 12).Value) & "'"
+            ElseIf Val(CStr(wsMain.Cells(4, 13).Value)) <> 100 Then
+                tc29Ok = False
+                tc29Reason = "M4 (Всего работа 1) = '" & CStr(wsMain.Cells(4, 13).Value) & "'"
+            ElseIf Val(CStr(wsMain.Cells(4, 14).Value)) <> 20 Then
+                tc29Ok = False
+                tc29Reason = "N4 (в т.ч. НДС работа 1) = '" & CStr(wsMain.Cells(4, 14).Value) & "'"
+            ElseIf Trim(CStr(wsMain.Cells(5, 12).Value)) <> "Тестовая работа 2" Then
+                tc29Ok = False
+                tc29Reason = "L5 (работа 2) = '" & CStr(wsMain.Cells(5, 12).Value) & "'"
+            ElseIf Val(CStr(wsMain.Cells(5, 13).Value)) <> 200 Then
+                tc29Ok = False
+                tc29Reason = "M5 (Всего работа 2) = '" & CStr(wsMain.Cells(5, 13).Value) & "'"
+            ElseIf Val(CStr(wsMain.Cells(5, 14).Value)) <> 40 Then
+                tc29Ok = False
+                tc29Reason = "N5 (в т.ч. НДС работа 2) = '" & CStr(wsMain.Cells(5, 14).Value) & "'"
+            ElseIf Trim(CStr(wsMain.Cells(6, 12).Value)) = "Итого работ" Then
+                ' Служебная строка «Итого работ» не должна попасть как работа
+                tc29Ok = False
+                tc29Reason = "L6 содержит служебную строку 'Итого работ'"
+            End If
+
+            ' --- Запчасти: строки main 4..5 ---
+            If tc29Ok Then
+                If Trim(CStr(wsMain.Cells(4, 24).Value)) <> "ТК-001" Then
+                    tc29Ok = False
+                    tc29Reason = "X4 (№ кат. запчасти 1) = '" & CStr(wsMain.Cells(4, 24).Value) & "'"
+                ElseIf Trim(CStr(wsMain.Cells(4, 25).Value)) <> "Тестовая запчасть 1" Then
+                    tc29Ok = False
+                    tc29Reason = "Y4 (наим. запчасти 1) = '" & CStr(wsMain.Cells(4, 25).Value) & "'"
+                ElseIf Val(CStr(wsMain.Cells(4, 26).Value)) <> 2 Then
+                    tc29Ok = False
+                    tc29Reason = "Z4 (Кол-во запчасти 1) = '" & CStr(wsMain.Cells(4, 26).Value) & "'"
+                ElseIf Val(CStr(wsMain.Cells(4, 27).Value)) <> 50 Then
+                    tc29Ok = False
+                    tc29Reason = "AA4 (Всего запчасти 1) = '" & CStr(wsMain.Cells(4, 27).Value) & "'"
+                ElseIf Trim(CStr(wsMain.Cells(5, 24).Value)) <> "ТК-002" Then
+                    tc29Ok = False
+                    tc29Reason = "X5 (№ кат. запчасти 2) = '" & CStr(wsMain.Cells(5, 24).Value) & "'"
+                ElseIf Trim(CStr(wsMain.Cells(5, 25).Value)) <> "Тестовая запчасть 2" Then
+                    tc29Ok = False
+                    tc29Reason = "Y5 (наим. запчасти 2) = '" & CStr(wsMain.Cells(5, 25).Value) & "'"
+                ElseIf Val(CStr(wsMain.Cells(5, 26).Value)) <> 3 Then
+                    tc29Ok = False
+                    tc29Reason = "Z5 (Кол-во запчасти 2) = '" & CStr(wsMain.Cells(5, 26).Value) & "'"
+                ElseIf Val(CStr(wsMain.Cells(5, 27).Value)) <> 60 Then
+                    tc29Ok = False
+                    tc29Reason = "AA5 (Всего запчасти 2) = '" & CStr(wsMain.Cells(5, 27).Value) & "'"
+                ElseIf Trim(CStr(wsMain.Cells(6, 24).Value)) = "Итого" Then
+                    ' Служебная строка «Итого» материалов не должна попасть как запчасть
+                    tc29Ok = False
+                    tc29Reason = "X6 содержит служебную строку 'Итого'"
+                End If
+            End If
+
+            ' Служебные колонки подстановки O(15)/AB(28) намеренно НЕ проверяются
+            ' на непустоту: при отсутствии точных совпадений MOD_WORK/MOD_PART
+            ' в matlib_entries они остаются пустыми, что является допустимым
+            ' поведением и не входит в критерий PASS/FAIL TC-29 (план v1.0.8 §5.4).
+
+            If tc29Ok Then
+                AddResult "TC-29", "ImportDataToMain перенос данных", True, ""
+            Else
+                AddResult "TC-29", "ImportDataToMain перенос данных", False, tc29Reason
+            End If
         End If
         On Error GoTo 0
 

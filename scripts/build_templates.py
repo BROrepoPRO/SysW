@@ -28,7 +28,10 @@
 """
 import re
 import shutil
+import time
+import gc
 import win32com.client
+import win32process
 from pathlib import Path
 from win32com.client import gencache
 
@@ -49,6 +52,13 @@ MODELS = PROJECT_DIR / "base" / "models"
 
 # Группы модельных файлов (порядок объединения)
 GROUPS = ["4x4", "2170", "2180", "2190", "GAZ", "UAZ"]
+
+# Имя этапа для лог-файла PID (используется build_all.py для безопасного taskkill).
+STAGE_NAME = "templates"
+
+# Константы ретраев открытия книги.
+OPEN_RETRIES = 5   # Максимальное число попыток открытия.
+OPEN_PAUSE = 3     # Пауза (сек) между попытками.
 
 
 def sheet_excluded(name):
@@ -83,7 +93,75 @@ def get_excel():
         excel = win32com.client.Dispatch("Excel.Application")
     excel.Visible = False
     excel.DisplayAlerts = False
+    # Автоматизация безопасности: скрипт НЕ выполняет макросы (только
+    # открывает/копирует/сохраняет книги), поэтому макросы можно принудительно
+    # отключить (msoAutomationSecurityForceDisable = 3) — как в impVBA.py.
+    # Обёрнуто в try/except: при сбое установки это не критично.
+    try:
+        excel.AutomationSecurity = 3
+    except Exception as exc:
+        print(f"    [!] Не удалось установить AutomationSecurity=3: {exc}")
     return excel
+
+
+def open_workbook_with_retry(excel, path, retries=OPEN_RETRIES, pause_sec=OPEN_PAUSE):
+    """Открывает книгу с ретраями при None/COM-ошибке -2147352567.
+
+    Workbooks.Open может вернуть None либо выбросить прерывистую COM-ошибку
+    при модальных окнах/плохом состоянии экземпляра. Повторяет открытие до
+    retries раз с паузой pause_sec и сборкой мусора между попытками. Если все
+    попытки исчерпаны — возвращает None (вызывающий код обработает это как
+    ошибку этапа).
+    """
+    for attempt in range(1, retries + 1):
+        wb = None
+        try:
+            # Явные параметры: ReadOnly=False (на запись), UpdateLinks=0
+            # (не обновлять связи), ConfirmConversion=False (не спрашивать
+            # про конвертацию формата) — защита от зависаний на модальных окнах.
+            wb = excel.Workbooks.Open(
+                str(path),
+                ReadOnly=False,
+                UpdateLinks=0,
+                ConfirmConversion=False,
+            )
+        except Exception as exc:
+            msg = str(exc)
+            print(f"    Попытка {attempt}/{retries}: ошибка открытия ({msg}); "
+                  f"пауза {pause_sec}с")
+            wb = None
+            time.sleep(pause_sec)
+            gc.collect()
+            continue
+
+        if wb is None:
+            print(f"    Попытка {attempt}/{retries}: Workbooks.Open вернул None; "
+                  f"пауза {pause_sec}с")
+            time.sleep(pause_sec)
+            gc.collect()
+            continue
+
+        return wb
+
+    return None
+
+
+def write_excel_pid(excel):
+    """Записывает PID созданного экземпляра Excel в лог-файл для build_all.py.
+
+    build_all.py после этапа читает logs/excel_pid_<stage>.txt и завершает
+    ТОЛЬКО этот процесс (по PID), не трогая чужие сессии Excel пользователя.
+    При сбое записи PID просто логируем предупреждение — не критично.
+    """
+    try:
+        hwnd = excel.Hwnd
+        _, pid = win32process.GetWindowThreadProcessId(hwnd)
+        pid_file = PROJECT_DIR / "logs" / f"excel_pid_{STAGE_NAME}.txt"
+        pid_file.parent.mkdir(parents=True, exist_ok=True)
+        pid_file.write_text(str(pid), encoding="utf-8")
+        print(f"    Записан PID Excel {pid} -> {pid_file}")
+    except Exception as exc:
+        print(f"    [!] Не удалось записать PID Excel: {exc}")
 
 
 def copy_sheets(src_wb, dst_wb, include_names):
@@ -148,13 +226,17 @@ def build_work_templates(excel):
     # --- work.xlsm: копия корневого work.xlsm (уже содержит VBA после impVBA.py).
     dst_path = TEMPLATES / "work.xlsm"
     shutil.copyfile(str(WORKBOOK), str(dst_path))
-    wb = excel.Workbooks.Open(str(dst_path))
+    wb = open_workbook_with_retry(excel, str(dst_path))
+    if wb is None:
+        raise RuntimeError(f"Не удалось открыть книгу: {dst_path}")
     _reduce_to_include(wb, include)
     wb.Save()
     wb.Close()
 
     # --- work0.xlsm: копия без VBA-кода ---
-    wb0 = excel.Workbooks.Open(str(dst_path))
+    wb0 = open_workbook_with_retry(excel, str(dst_path))
+    if wb0 is None:
+        raise RuntimeError(f"Не удалось открыть книгу: {dst_path}")
     _remove_vba(wb0)
     wb0.SaveAs(str(TEMPLATES / "work0.xlsm"), FileFormat=52)
     wb0.Close()
@@ -165,7 +247,9 @@ def build_model_templates(excel):
     """Создаёт model.xlsm и model0.xlsm (общая структура листов)."""
     # Плейсхолдер группы. За основу структуры берём GAZ как эталон.
     group = "GAZ"
-    src = excel.Workbooks.Open(str(MODELS / f"{group}.xlsm"))
+    src = open_workbook_with_retry(excel, str(MODELS / f"{group}.xlsm"))
+    if src is None:
+        raise RuntimeError(f"Не удалось открыть модель {group}.xlsm")
     dst = excel.Workbooks.Add()
 
     # Копируем 4 основных листа группы GAZ (первый использует Sheet1)
@@ -208,7 +292,9 @@ def build_model_templates(excel):
     dst.Close()
 
     # model0.xlsm: без VBA-кода
-    wb = excel.Workbooks.Open(str(TEMPLATES / "model.xlsm"))
+    wb = open_workbook_with_retry(excel, str(TEMPLATES / "model.xlsm"))
+    if wb is None:
+        raise RuntimeError("Не удалось открыть model.xlsm")
     _remove_vba(wb)
     wb.SaveAs(str(TEMPLATES / "model0.xlsm"), FileFormat=52)
     wb.Close()
@@ -220,7 +306,9 @@ def build_model_templates(excel):
 def build_report_template(excel):
     """Создаёт report0.xlsx (пустой, без данных, без кода)."""
     include = ["report", "spisok"]
-    src = excel.Workbooks.Open(str(REPORT))
+    src = open_workbook_with_retry(excel, str(REPORT))
+    if src is None:
+        raise RuntimeError(f"Не удалось открыть отчёт: {REPORT}")
     dst = excel.Workbooks.Add()
     copy_sheets(src, dst, include)
     _reduce_to_include(dst, include)
@@ -239,7 +327,9 @@ def apply_all_protection(excel):
     openpyxl — максимальное сохранение исходного формата.
     """
     # work.xlsm
-    wb = excel.Workbooks.Open(str(TEMPLATES / "work.xlsm"))
+    wb = open_workbook_with_retry(excel, str(TEMPLATES / "work.xlsm"))
+    if wb is None:
+        raise RuntimeError("Не удалось открыть шаблон work.xlsm")
     for ws in wb.Sheets:
         apply_protection(ws, ws.Name, is_main=(ws.Name == "main"))
     wb.Save()
@@ -247,7 +337,9 @@ def apply_all_protection(excel):
     apply_protection_xml(TEMPLATES / "work.xlsm", build_zone_map("work"))
 
     # work0.xlsm — пустой: только FreezePanes A4, без Protect/AllowEditRanges
-    wb0 = excel.Workbooks.Open(str(TEMPLATES / "work0.xlsm"))
+    wb0 = open_workbook_with_retry(excel, str(TEMPLATES / "work0.xlsm"))
+    if wb0 is None:
+        raise RuntimeError("Не удалось открыть шаблон work0.xlsm")
     for ws in wb0.Sheets:
         apply_freeze_only(ws)
     wb0.Save()
@@ -255,7 +347,9 @@ def apply_all_protection(excel):
     apply_freeze_panes_xml(TEMPLATES / "work0.xlsm")
 
     # model.xlsm
-    wb = excel.Workbooks.Open(str(TEMPLATES / "model.xlsm"))
+    wb = open_workbook_with_retry(excel, str(TEMPLATES / "model.xlsm"))
+    if wb is None:
+        raise RuntimeError("Не удалось открыть шаблон model.xlsm")
     for ws in wb.Sheets:
         apply_protection(ws, ws.Name, is_model=True)
     wb.Save()
@@ -263,7 +357,9 @@ def apply_all_protection(excel):
     apply_protection_xml(TEMPLATES / "model.xlsm", build_zone_map("model"))
 
     # model0.xlsm — пустой: только FreezePanes A4, без Protect/AllowEditRanges
-    wb0 = excel.Workbooks.Open(str(TEMPLATES / "model0.xlsm"))
+    wb0 = open_workbook_with_retry(excel, str(TEMPLATES / "model0.xlsm"))
+    if wb0 is None:
+        raise RuntimeError("Не удалось открыть шаблон model0.xlsm")
     for ws in wb0.Sheets:
         apply_freeze_only(ws)
     wb0.Save()
@@ -271,7 +367,9 @@ def apply_all_protection(excel):
     apply_freeze_panes_xml(TEMPLATES / "model0.xlsm")
 
     # report0.xlsx
-    wb = excel.Workbooks.Open(str(TEMPLATES / "report0.xlsx"))
+    wb = open_workbook_with_retry(excel, str(TEMPLATES / "report0.xlsx"))
+    if wb is None:
+        raise RuntimeError("Не удалось открыть шаблон report0.xlsx")
     for ws in wb.Sheets:
         apply_protection(ws, ws.Name, is_report=True)
     wb.Save()
@@ -282,6 +380,9 @@ def apply_all_protection(excel):
 def main():
     TEMPLATES.mkdir(parents=True, exist_ok=True)
     excel = get_excel()
+    # Записываем PID созданного экземпляра Excel для безопасного завершения
+    # зависшего процесса конвейером build_all.py (только наш процесс).
+    write_excel_pid(excel)
     try:
         print("Создание шаблонов (задача B)...")
         build_work_templates(excel)
