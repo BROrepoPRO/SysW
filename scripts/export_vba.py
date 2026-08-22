@@ -27,7 +27,10 @@ TEMP_DIR = TEMP_EXPORT_DIR
 
 # Mapping: VBA component name -> output filename
 # .bas = standard module, .cls = class module
+# Mapping: VBA component name -> output filename
+# .bas = standard module, .cls = class module / worksheet document
 COMPONENTS = {
+    # --- Standard modules (src/modules/) ---
     "Mod_AutoMatch": "modules/Mod_AutoMatch.bas",
     "Mod_ButtonDispatcher": "modules/Mod_ButtonDispatcher.bas",
     "Mod_Constants": "modules/Mod_Constants.bas",
@@ -35,14 +38,21 @@ COMPONENTS = {
     "Mod_Import": "modules/Mod_Import.bas",
     "Mod_Logger": "modules/Mod_Logger.bas",
     "Mod_ModelDB": "modules/Mod_ModelDB.bas",
+    "Mod_ModelTypes": "modules/Mod_ModelTypes.bas",
     "Mod_OrderHeader": "modules/Mod_OrderHeader.bas",
     "Mod_PickWork": "modules/Mod_PickWork.bas",
     "Mod_SheetButtons": "modules/Mod_SheetButtons.bas",
     "Mod_SheetOps": "modules/Mod_SheetOps.bas",
     "Mod_Utils": "modules/Mod_Utils.bas",
-    "Лист2_main": "sheets/Лист2_main.cls",
-    "Sheet_work": "sheets/Sheet_work.cls",
-    "Sheet_z4": "sheets/Sheet_z4.cls",
+    # --- Worksheet documents (src/sheets/) ---
+    "Лист2": "sheets/Лист2.cls",
+    # --- Class modules (src/classes/) ---
+    "IModelDataProvider": "classes/IModelDataProvider.cls",
+    "Mod_ModelDBProvider": "classes/Mod_ModelDBProvider.cls",
+    "Mod_SQLiteDB": "classes/Mod_SQLiteDB.cls",
+    "PartIdentity": "classes/PartIdentity.cls",
+    "WorkEntry": "classes/WorkEntry.cls",
+    "WorkIdentity": "classes/WorkIdentity.cls",
 }
 
 
