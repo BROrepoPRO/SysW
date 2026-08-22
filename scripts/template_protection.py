@@ -272,3 +272,170 @@ def list_allowed_edits(path):
         sqrefs = re.findall(r'sqref="([^"]+)"', aem.group(1)) if aem else []
         out.append(f"{name}: {sqrefs}")
     return out
+
+
+# ---------------------------------------------------------------------------
+# ВАРИАНТ D: защита на уровне XML (точечная правка sheet*.xml в zip-архиве,
+# без пересохранения книги через openpyxl). Максимально сохраняет исходный
+# формат: изменяются только узлы <pane>, <sheetProtection>, <allowEditRanges>,
+# остальные записи архива переносятся без изменений.
+#
+# Применяется ПОСЛЕ сохранения книги Excel COM (Locked-флаги ячеек уже
+# выставлены COM-ом, формат сохранён Excel-ом). Здесь добавляется то, что
+# COM не смог надёжно записать: allowEditRanges (ошибка -2147352567 из-за
+# предварительно разблокированных зон) и FreezePanes A4 (pane).
+# ---------------------------------------------------------------------------
+import xml.etree.ElementTree as _ET  # локальный импорт (только stdlib)
+import shutil as _shutil
+
+# FreezePanes A4: закреплены строки 1-3 (ySplit=3), столбцы не отрываются
+_SHEET_PANE_FROZEN_A4 = ('<pane xSplit="0" ySplit="3" topLeftCell="A4" '
+                         'activePane="bottomLeft" state="frozen"/>')
+_SHEET_SELECTION_BL = ('<selection pane="bottomLeft" activeCell="A4" '
+                       'sqref="A4"/>')
+# Защита листа: запрет изменений содержимого/объектов/сценариев,
+# НО разрешён автофильтр (enableAutoFilter) — нужен макросам поиска/фильтрации.
+_SHEET_PROTECTION = ('<sheetProtection sheet="1" objects="1" scenarios="1" '
+                     'autoFilter="1" '
+                     'selectLockedCells="1" selectUnlockedCells="1"/>')
+_EDIT_RANGE_NAME = "Ввод"
+
+
+def _sheet_name_map(path):
+    """Возвращает {путь в архиве 'xl/worksheets/sheetN.xml': имя листа}."""
+    mapping = {}
+    try:
+        with zipfile.ZipFile(str(path)) as zf:
+            wb = zf.read('xl/workbook.xml').decode('utf-8')
+            rels = zf.read('xl/_rels/workbook.xml.rels').decode('utf-8')
+        # rId -> Target (worksheets/sheetN.xml) — атрибуты в любом порядке,
+        # допускается префикс '../' или абсолютный '/xl/...'
+        rid2tgt = {}
+        for rel in re.finditer(r'<Relationship\b[^>]*/?>', rels):
+            el = rel.group(0)
+            if 'worksheets/sheet' not in el:
+                continue
+            mid = re.search(r'Id="(rId\d+)"', el)
+            mtgt = re.search(r'Target="([^"]*worksheets/sheet\d+\.xml)"', el)
+            if mid and mtgt:
+                tgt = mtgt.group(1).replace('../', '').lstrip('/')
+                if not tgt.startswith('xl/'):
+                    tgt = 'xl/' + tgt
+                rid2tgt[mid.group(1)] = tgt
+        # sheet -> rId (атрибуты в любом порядке)
+        for s in re.finditer(r'<sheet\b[^>]*/?>', wb):
+            el = s.group(0)
+            mname = re.search(r'name="([^"]+)"', el)
+            mrid = re.search(r'r:id="(rId\d+)"', el)
+            if mname and mrid:
+                tgt = rid2tgt.get(mrid.group(1))
+                if tgt:
+                    mapping[tgt] = mname.group(1)
+    except Exception:
+        pass
+    return mapping
+
+
+def _inject_sheet_xml(xml_text, sheet_name, zones):
+    """Встраивает pane/защиту/allowEditRanges в текст sheet*.xml.
+
+    zones — список диапазонов (str) для allowEditRanges либо None (не создавать).
+    """
+    # 1) FreezePanes A4 в первый <sheetView>
+    if '<pane' in xml_text:
+        # Заменяем первый pane на frozen A4 (count=1)
+        xml_text = re.sub(r'<pane[^>]*/>', _SHEET_PANE_FROZEN_A4,
+                          xml_text, count=1)
+    else:
+        mv = re.search(r'(<sheetView\b[^>]*>)(.*?)(</sheetView>)',
+                       xml_text, re.S)
+        if mv and '<pane' not in mv.group(2):
+            inner = _SHEET_PANE_FROZEN_A4 + _SHEET_SELECTION_BL + mv.group(2)
+            xml_text = (xml_text[:mv.start()] + mv.group(1) + inner +
+                        mv.group(3) + xml_text[mv.end():])
+
+    # 2) sheetProtection (удаляем дубль, вставляем перед sheetData)
+    xml_text = re.sub(r'<sheetProtection[^>]*/>', '', xml_text)
+    xml_text = re.sub(r'(<sheetData\b)', _SHEET_PROTECTION + r'\1',
+                      xml_text, count=1)
+
+    # 3) allowEditRanges (удаляем старый блок, добавляем после sheetProtection)
+    xml_text = re.sub(r'<allowEditRanges>.*?</allowEditRanges>', '',
+                      xml_text, flags=re.S)
+    if zones:
+        sqref = ' '.join(zones)
+        aer = ('<allowEditRanges><rangeEdit name="%s" sqref="%s"/>'
+               '</allowEditRanges>' % (_EDIT_RANGE_NAME, sqref))
+        xml_text = re.sub(r'(<sheetProtection[^>]*/>)', r'\1' + aer,
+                          xml_text, count=1)
+    return xml_text
+
+
+def apply_protection_xml(path, zone_map):
+    """Применяет защиту на уровне XML к книге.
+
+    zone_map: {имя листа: [диапазоны для allowEditRanges] | None}.
+    Переписывает zip: правит только sheet*.xml, остальное без изменений.
+    """
+    tmp = str(path) + '.prot.tmp'
+    name_map = _sheet_name_map(path)
+    with zipfile.ZipFile(str(path), 'r') as zin, \
+            zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if _SHEET_XML_RE.match(item.filename):
+                sheet_name = name_map.get(item.filename)
+                if sheet_name is not None:
+                    zones = zone_map.get(sheet_name)
+                    if zones is None and '__default__' in zone_map:
+                        zones = zone_map['__default__']
+                    text = data.decode('utf-8')
+                    text = _inject_sheet_xml(text, sheet_name, zones)
+                    data = text.encode('utf-8')
+            zout.writestr(item, data)
+    _shutil.move(tmp, str(path))
+
+
+def build_zone_map(template_type):
+    """Возвращает zone_map для apply_protection_xml по типу шаблона."""
+    z = {}
+    if template_type == 'work':
+        z['main'] = [*WORK_MAIN_EDIT, WORK_MAIN_DATA]          # B4,B5:B17,C1,Z1,D4:AB2000
+        z['spisok'] = [WORK_LIST_EDIT]                          # A2:J5000
+        z['libname'] = [WORK_LIST_EDIT]                         # A2:J5000
+        z['models'] = [WORK_MODELS_EDIT]                        # A3:F5000
+        # прочие листы (например, _SETTINGS) — широкая зона
+        z['_SETTINGS'] = ["A4:AB2000"]
+    elif template_type == 'model':
+        for nm in ("{GroupName}", "z4"):
+            z[nm] = MODEL_EDIT_EXTRA + [MODEL_DATA]            # C1 + A4:U2000
+        z.setdefault('__default__', [MODEL_DATA])               # прочие листы
+    elif template_type == 'report':
+        z['__default__'] = [REPORT_EDIT]                        # A2:Z5000
+    return z
+
+
+def apply_freeze_panes_xml(path):
+    """Только FreezePanes A4 на XML-уровне (без защиты) — для пустых шаблонов
+    work0/model0. Правит только <pane> в sheet*.xml, остальное не меняет."""
+    tmp = str(path) + '.fr.tmp'
+    with zipfile.ZipFile(str(path), 'r') as zin, \
+            zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if _SHEET_XML_RE.match(item.filename):
+                text = data.decode('utf-8')
+                if '<pane' in text:
+                    text = re.sub(r'<pane[^>]*/>', _SHEET_PANE_FROZEN_A4,
+                                  text, count=1)
+                else:
+                    mv = re.search(r'(<sheetView\b[^>]*>)(.*?)(</sheetView>)',
+                                   text, re.S)
+                    if mv and '<pane' not in mv.group(2):
+                        inner = (_SHEET_PANE_FROZEN_A4 + _SHEET_SELECTION_BL +
+                                 mv.group(2))
+                        text = (text[:mv.start()] + mv.group(1) + inner +
+                                mv.group(3) + text[mv.end():])
+                data = text.encode('utf-8')
+            zout.writestr(item, data)
+    _shutil.move(tmp, str(path))

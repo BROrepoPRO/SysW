@@ -36,6 +36,9 @@ from template_protection import (
     apply_protection,
     apply_freeze_only,
     ensure_freeze_panes_after_save,
+    apply_protection_xml,
+    apply_freeze_panes_xml,
+    build_zone_map,
 )
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
@@ -228,14 +231,20 @@ def build_report_template(excel):
 
 
 def apply_all_protection(excel):
-    """Применяет защиту + FreezePanes к листам шаблонов (единая логика)."""
+    """Применяет защиту + FreezePanes к листам шаблонов (единая логика).
+
+    Вариант D (v1.0.7): COM задаёт Locked-флаги ячеек (формат сохраняет Excel),
+    а sheetProtection/allowEditRanges/pane доставляются на XML-уровне
+    (apply_protection_xml / apply_freeze_panes_xml) без пересохранения через
+    openpyxl — максимальное сохранение исходного формата.
+    """
     # work.xlsm
     wb = excel.Workbooks.Open(str(TEMPLATES / "work.xlsm"))
     for ws in wb.Sheets:
         apply_protection(ws, ws.Name, is_main=(ws.Name == "main"))
     wb.Save()
     wb.Close()
-    ensure_freeze_panes_after_save(TEMPLATES / "work.xlsm")
+    apply_protection_xml(TEMPLATES / "work.xlsm", build_zone_map("work"))
 
     # work0.xlsm — пустой: только FreezePanes A4, без Protect/AllowEditRanges
     wb0 = excel.Workbooks.Open(str(TEMPLATES / "work0.xlsm"))
@@ -243,7 +252,7 @@ def apply_all_protection(excel):
         apply_freeze_only(ws)
     wb0.Save()
     wb0.Close()
-    ensure_freeze_panes_after_save(TEMPLATES / "work0.xlsm")
+    apply_freeze_panes_xml(TEMPLATES / "work0.xlsm")
 
     # model.xlsm
     wb = excel.Workbooks.Open(str(TEMPLATES / "model.xlsm"))
@@ -251,7 +260,7 @@ def apply_all_protection(excel):
         apply_protection(ws, ws.Name, is_model=True)
     wb.Save()
     wb.Close()
-    ensure_freeze_panes_after_save(TEMPLATES / "model.xlsm")
+    apply_protection_xml(TEMPLATES / "model.xlsm", build_zone_map("model"))
 
     # model0.xlsm — пустой: только FreezePanes A4, без Protect/AllowEditRanges
     wb0 = excel.Workbooks.Open(str(TEMPLATES / "model0.xlsm"))
@@ -259,7 +268,7 @@ def apply_all_protection(excel):
         apply_freeze_only(ws)
     wb0.Save()
     wb0.Close()
-    ensure_freeze_panes_after_save(TEMPLATES / "model0.xlsm")
+    apply_freeze_panes_xml(TEMPLATES / "model0.xlsm")
 
     # report0.xlsx
     wb = excel.Workbooks.Open(str(TEMPLATES / "report0.xlsx"))
@@ -267,7 +276,7 @@ def apply_all_protection(excel):
         apply_protection(ws, ws.Name, is_report=True)
     wb.Save()
     wb.Close()
-    ensure_freeze_panes_after_save(TEMPLATES / "report0.xlsx")
+    apply_protection_xml(TEMPLATES / "report0.xlsx", build_zone_map("report"))
 
 
 def main():
