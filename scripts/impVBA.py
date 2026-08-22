@@ -88,14 +88,16 @@ def open_workbook_with_retry(excel, path, retries=OPEN_RETRIES, pause_sec=OPEN_P
         wb = None
         try:
             # Явные параметры: ReadOnly=False (открываем на запись),
-            # UpdateLinks=0 (не обновлять связи), ConfirmConversion=False
-            # (не спрашивать про конвертацию формата) — защита от зависаний
-            # на модальных окнах.
+            # UpdateLinks=0 (не обновлять связи) — защита от зависаний
+            # на модальных окнах обновления связей/переключения в режим
+            # только для чтения.
+            # ВАЖНО: параметр ConfirmConversions НЕ используется — он был удалён
+            # из сигнатуры Workbooks.Open в современных версиях Excel (pywin32
+            # отклоняет его как неизвестный именованный аргумент).
             wb = excel.Workbooks.Open(
                 str(path),
                 ReadOnly=False,
                 UpdateLinks=0,
-                ConfirmConversion=False,
             )
         except Exception as exc:
             # Прерывистая COM-ошибка открытия: логируем и повторяем.
@@ -573,6 +575,11 @@ def main():
         print("IMPORT FAILED")
         print("=" * 40)
 
+    # Честный exit-код: возвращаем 1 при неуспехе (в т.ч. если книга не была
+    # открыта / импорт не выполнен), чтобы конвейер build_all.py корректно
+    # остановился, а не замаскировал сбой под «успех» кодом 0.
+    return 0 if success else 1
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

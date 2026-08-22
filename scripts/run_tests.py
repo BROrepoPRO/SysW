@@ -52,13 +52,15 @@ def open_workbook_with_retry(excel, path, retries=OPEN_RETRIES, pause_sec=OPEN_P
         wb = None
         try:
             # Явные параметры: ReadOnly=False (на запись), UpdateLinks=0
-            # (не обновлять связи), ConfirmConversion=False (не спрашивать
-            # про конвертацию формата) — защита от зависаний на модальных окнах.
+            # (не обновлять связи) — защита от зависаний на модальных окнах
+            # обновления связей/переключения в режим только для чтения.
+            # ВАЖНО: параметр ConfirmConversions НЕ используется — он был удалён
+            # из сигнатуры Workbooks.Open в современных версиях Excel (pywin32
+            # отклоняет его как неизвестный именованный аргумент).
             wb = excel.Workbooks.Open(
                 str(path),
                 ReadOnly=False,
                 UpdateLinks=0,
-                ConfirmConversion=False,
             )
         except Exception as exc:
             msg = str(exc)
