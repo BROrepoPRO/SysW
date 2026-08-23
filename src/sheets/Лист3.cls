@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-Attribute VB_Description = "Лист spisok (список автомобилей)"
+Attribute VB_Description = "Лист libname (реестр имён)"
 
 Option Explicit
 
 Private Sub Worksheet_Activate()
-    ' Закрепление строк 1-3 (FreezePanes A4) при активации листа spisok
+    ' Закрепление строк 1-3 (FreezePanes A4) при активации листа libname
     Call Mod_SheetOps.ApplyFreezePanes(Me)
 End Sub

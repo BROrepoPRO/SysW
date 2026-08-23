@@ -2,7 +2,7 @@
 	"mcpServers": {
 		"git": {
 			"type": "stdio",
-			"command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+			"command": "C:\\Users\\root\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
 			"args": [
 				"-m",
 				"mcp_server_git",
@@ -22,7 +22,7 @@
 		},
 		"filesystem": {
 			"type": "stdio",
-			"command": "F:\\MiTyA\\Programs\\nodejs\\npx.cmd",
+			"command": "K:\\Programs\\Nodejs\\npx.cmd",
 			"args": [
 				"-y",
 				"@modelcontextprotocol/server-filesystem",
