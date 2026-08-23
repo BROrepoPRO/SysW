@@ -229,6 +229,36 @@ def ensure_freeze_panes_after_save(path):
     return changed
 
 
+def apply_freeze_panes_to_models(models_dir):
+    """Устанавливает FreezePanes A4 (закреплены строки 1-3) всем листам
+    модельных файлов base/models/*.xlsm через openpyxl (keep_vba=True).
+
+    v1.0.9: модельные листы (z4, {GroupName}, {GroupName}w, {GroupName}z4)
+    уже соответствуют структуре «заголовки стр.3, данные с 4-й» и требуют
+    только закрепления. Свойство задаётся напрямую на уровне XML, без
+    добавления VBA-классов в критически важные модельные файлы ([E3]).
+
+    Функция идемпотентна: повторный вызов не изменяет уже закреплённые листы.
+    """
+    changed_any = False
+    for path in sorted(models_dir.glob("*.xlsm")):
+        try:
+            wb = load_workbook(str(path), keep_vba=True)
+        except Exception as exc:
+            print(f"  [!] Не удалось открыть модельный файл {path.name}: {exc}")
+            continue
+        changed = False
+        for ws in wb.worksheets:
+            if ws.freeze_panes != "A4":
+                ws.freeze_panes = "A4"
+                changed = True
+        if changed:
+            wb.save(str(path))
+            changed_any = True
+            print(f"  FreezePanes A4 применён к {path.name}")
+    return changed_any
+
+
 def verify_sheet_protection(path):
     """Проверяет XML книги: <sheetProtection>, <allowEditRanges>, <pane> frozen A4.
 

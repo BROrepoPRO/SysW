@@ -15,7 +15,16 @@ Option Private Module
 ' ============================================================
 ' Версия приложения (единый источник для всей системы)
 ' ============================================================
-Public Const APP_VERSION As String = "1.0.8"
+Public Const APP_VERSION As String = "1.0.9"
+
+' ============================================================
+' Единый стандарт структуры листов v1.0.9
+' Строки 1-2 — технические; строка 3 — заголовки столбцов;
+' данные начинаются с 4-й строки; FreezePanes A4 (строки 1-3).
+' ============================================================
+Public Const HEADER_ROW As Long = 3              ' строка заголовков стандартизированных листов
+Public Const DATA_START_ROW As Long = 4          ' строка начала данных
+Public Const FREEZE_START_CELL As String = "A4"  ' точка фиксации FreezePanes (закреплены строки 1-3)
 
 ' ============================================================
 ' Константы столбцов листа spisok
@@ -92,10 +101,26 @@ Public Const AGG_BODY As String = "BODY"     ' Кузов (Body)
 Public Const AGG_OTHERS As String = "OTHERS" ' Прочие работы (Others)
 
 ' ============================================================
-' Константы строк листа main
+' Константы строк стандартизированных листов v1.0.9
+' Единый стандарт: заголовки — строка 3, данные — с 4-й.
 ' ============================================================
-Public Const MAIN_HEADER_START_ROW As Long = 4   ' B4 — номер заказа (ввод пользователя)
-Public Const MAIN_DATA_START_ROW As Long = 4      ' Строка, с которой начинаются таблицы работ/материалов
+
+' --- Лист main ---
+Public Const MAIN_HEADER_ROW As Long = HEADER_ROW          ' заголовки main (строка 3)
+Public Const MAIN_DATA_START_ROW As Long = DATA_START_ROW  ' данные main (с 4-й строки)
+Public Const MAIN_INPUT_CELL As String = "B4"              ' ввод № заказа на main
+
+' --- Лист spisok ---
+Public Const SPISOK_HEADER_ROW As Long = HEADER_ROW        ' заголовки spisok (строка 3)
+Public Const SPISOK_DATA_START_ROW As Long = DATA_START_ROW ' данные spisok (с 4-й строки)
+
+' --- Лист models ---
+Public Const MODELS_HEADER_ROW As Long = HEADER_ROW        ' заголовки models (строка 3)
+Public Const MODELS_DATA_START_ROW As Long = DATA_START_ROW ' данные models (с 4-й строки)
+
+' --- Лист libname ---
+Public Const LIBNAME_HEADER_ROW As Long = HEADER_ROW       ' заголовки libname (строка 3)
+Public Const LIBNAME_DATA_START_ROW As Long = DATA_START_ROW ' данные libname (с 4-й строки)
 
 ' ============================================================
 ' Константы имён листов
@@ -165,8 +190,8 @@ Public Sub InitLibName()
         Exit Sub
     End If
 
-    ' 2. Проверка, не заполнен ли уже лист (строка 2 непуста)
-    If Not IsEmpty(wsLib.Cells(2, 1).Value) Then
+    ' 2. Проверка, не заполнен ли уже лист (первая строка данных непуста)
+    If Not IsEmpty(wsLib.Cells(LIBNAME_DATA_START_ROW, 1).Value) Then
         Call Mod_Logger.WriteLog("Mod_Constants", "InitLibName: Лист libname уже содержит данные, пропуск")
         Exit Sub
     End If
@@ -174,11 +199,11 @@ Public Sub InitLibName()
     ' 3. Получение массива записей
     entries = BuildEntryArray()
 
-    ' 4. Запись данных построчно
+    ' 4. Запись данных построчно (начиная со строки LIBNAME_DATA_START_ROW)
     For i = LBound(entries, 1) To UBound(entries, 1)
-        wsLib.Cells(i + 2, 1).Value = entries(i, 0)
-        wsLib.Cells(i + 2, 2).Value = entries(i, 1)
-        wsLib.Cells(i + 2, 3).Value = entries(i, 2)
+        wsLib.Cells(i + 3, 1).Value = entries(i, 0)
+        wsLib.Cells(i + 3, 2).Value = entries(i, 1)
+        wsLib.Cells(i + 3, 3).Value = entries(i, 2)
     Next i
 
     ' 5. Автоширина столбцов
@@ -391,7 +416,7 @@ Public Sub AddWorkEntry()
     lastRow = wsLib.Cells(wsLib.Rows.Count, 1).End(xlUp).Row
 
     ' Проверка, что запись work.xlsm ещё не добавлена
-    If lastRow >= 2 Then
+    If lastRow >= LIBNAME_DATA_START_ROW Then
         Dim checkVal As String
         checkVal = Trim(CStr(wsLib.Cells(lastRow, 1).Value))
         If checkVal = "work.xlsm" Then

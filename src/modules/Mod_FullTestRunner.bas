@@ -490,10 +490,11 @@ Private Sub RunLibNameTests()
         AddResult "TC-13", "InitLibName заполнение libname", False, "Лист 'libname' не найден"
     Else
         ' Очищаем лист перед тестом, чтобы InitLibName гарантированно заполнил его
-        wsLib.Rows("2:" & wsLib.Rows.Count).ClearContents
+        ' (заголовки в строке LIBNAME_HEADER_ROW сохраняются, чистим данные с 4-й строки)
+        wsLib.Rows(Mod_Constants.LIBNAME_DATA_START_ROW & ":" & wsLib.Rows.Count).ClearContents
 
-        ' Проверяем, что лист libname содержит данные (непустая строка 2)
-        If IsEmpty(wsLib.Cells(2, 1).Value) Then
+        ' Проверяем, что лист libname содержит данные (первая строка данных непуста)
+        If IsEmpty(wsLib.Cells(Mod_Constants.LIBNAME_DATA_START_ROW, 1).Value) Then
             ' Лист пуст — вызываем InitLibName для заполнения
             Call Mod_Constants.InitLibName
         End If
@@ -519,8 +520,8 @@ Private Sub RunLibNameTests()
             ' Ищем последнюю заполненную строку
             entryCount = wsLib.Cells(wsLib.Rows.Count, 1).End(xlUp).Row
 
-            ' Проверяем наличие ключевых записей
-            For i = 2 To entryCount
+            ' Проверяем наличие ключевых записей (данные начинаются с LIBNAME_DATA_START_ROW)
+            For i = Mod_Constants.LIBNAME_DATA_START_ROW To entryCount
                 Dim key As String
                 key = Trim(CStr(wsLib.Cells(i, 1).Value))
                 If key = "spisok_col_model" Then hasSpisokColModel = True
@@ -1418,9 +1419,10 @@ Private Sub RunOrderHeaderTests()
         Exit Sub
     End If
 
-    ' Получаем реальный номер заказа: первый непустой номер из столбца A spisok
+    ' Получаем реальный номер заказа: первый непустой номер из столбца A spisok.
+    ' Обход начинается с SPISOK_DATA_START_ROW, чтобы в orderNum не попал заголовок «№ п/п».
     orderNum = Empty
-    For i = 2 To wsSpisok.Cells(wsSpisok.Rows.Count, 1).End(xlUp).Row
+    For i = Mod_Constants.SPISOK_DATA_START_ROW To wsSpisok.Cells(wsSpisok.Rows.Count, 1).End(xlUp).Row
         If Not IsEmpty(wsSpisok.Cells(i, 1).Value) Then
             orderNum = wsSpisok.Cells(i, 1).Value
             Exit For
@@ -1824,13 +1826,16 @@ Private Sub RunConstantsTests()
         lastRowAfter = wsLib.Cells(wsLib.Rows.Count, 1).End(xlUp).Row
         addedRow = lastRowAfter
 
-        ' Проверяем, что запись work.xlsm присутствует в последней строке
+        ' Проверяем, что запись work.xlsm присутствует в последней строке,
+        ' а стартовая граница записи >= LIBNAME_DATA_START_ROW (данные с 4-й строки)
         Dim tc46Ok As Boolean
         Dim tc46Reason As String
-        tc46Ok = (Trim(CStr(wsLib.Cells(addedRow, 1).Value)) = "work.xlsm")
+        tc46Ok = (Trim(CStr(wsLib.Cells(addedRow, 1).Value)) = "work.xlsm") _
+             And (addedRow >= Mod_Constants.LIBNAME_DATA_START_ROW)
         If Not tc46Ok Then
-            tc46Reason = "Последняя строка не содержит work.xlsm: '" & _
-                         CStr(wsLib.Cells(addedRow, 1).Value) & "'"
+            tc46Reason = "Последняя строка не содержит work.xlsm или строка < " & _
+                         CStr(Mod_Constants.LIBNAME_DATA_START_ROW) & ": '" & _
+                         CStr(wsLib.Cells(addedRow, 1).Value) & "' (строка " & CStr(addedRow) & ")"
         End If
 
         ' Проверяем идемпотентность: повторный вызов не должен добавить дубликат

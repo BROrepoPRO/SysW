@@ -106,7 +106,8 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
         Dim cell As Range
         Dim found As Boolean
         found = False
-        For Each cell In wsModel.Range("A3:A" & lastModelRow)
+        For Each cell In wsModel.Range("A" & Mod_Constants.MODELS_DATA_START_ROW & _
+                                     ":A" & lastModelRow)
             If Trim(Replace(cell.Value, Chr(160), " ")) = ModelCode Then
                 Set ModelRow = cell
                 found = True
@@ -114,7 +115,7 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
             End If
         Next cell
 
-        If found And ModelRow.Row >= 3 Then
+        If found And ModelRow.Row >= Mod_Constants.MODELS_DATA_START_ROW Then
             ' Модель найдена — заполняем цену н/ч и группу
             wsMain.Cells(13, 2).Value = ModelRow.Cells(1, Mod_Constants.MODELS_COL_PRICE).Value  ' B13 = цена н/ч
             wsMain.Cells(14, 2).Value = ModelRow.Cells(1, Mod_Constants.MODELS_COL_GROUP).Value  ' B14 = группа
@@ -132,9 +133,9 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
         Else
             ' Модель не найдена — автодобавление новой записи в models
             Dim newRow As Long
-            ' Ищем первую пустую ячейку в столбце A, начиная с A3
-            If lastModelRow < 3 Then
-                newRow = 3
+            ' Ищем первую пустую ячейку в столбце A, начиная со строки данных models
+            If lastModelRow < Mod_Constants.MODELS_DATA_START_ROW Then
+                newRow = Mod_Constants.MODELS_DATA_START_ROW
             Else
                 newRow = lastModelRow + 1
             End If

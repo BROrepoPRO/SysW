@@ -159,6 +159,25 @@ ErrHandler:
     Call Mod_Logger.WriteLog("Mod_SheetOps", "RenameSheetsByGRZ: " & Err.Description)
 End Sub
 
+' --------------------------------------------------------------------------
+' ApplyFreezePanes
+' Закрепляет строки 1-3 на листе ws (FreezePanes A4) согласно единому
+' стандарту структуры листов v1.0.9. Используется в событиях Worksheet_Activate
+' классов листов main/spisok/models/libname.
+' --------------------------------------------------------------------------
+Public Sub ApplyFreezePanes(ByVal ws As Worksheet)
+    If ws Is Nothing Then Exit Sub
+    On Error GoTo ErrHandler
+    ws.Activate
+    ' Точка фиксации A4 — закрепляем строки 1-3 (столбцы не закрепляются)
+    ws.Range(Mod_Constants.FREEZE_START_CELL).Select
+    ActiveWindow.FreezePanes = True
+    Exit Sub
+
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_SheetOps", "ApplyFreezePanes: " & Err.Description)
+End Sub
+
 ' ============================================================
 ' _UI-ПРОЦЕДУРЫ (обёртки с пользовательским вводом/выводом)
 ' ============================================================

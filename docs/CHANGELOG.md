@@ -5,6 +5,19 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.0.9] — 2026-08-23
+
+### Added
+- **Унификация структуры листов `work.xlsm`:** единый стандарт для листов `main`, `spisok`, `models`, `libname` и модельных листов — строки 1–2 технические (служебные), строка 3 заголовки столбцов, данные начинаются с 4-й строки, первые три строки закрепляются (`FreezePanes A4`).
+  - `spisok` и `libname`: сдвиг данных на +2 строки (заголовки → строка 3, данные → с 4-й).
+  - `models`: двухрядная шапка сведена к единой строке заголовков 3 (русские названия), ключи (`model`, `group`, `hrpr`) остаются только в константах `MODELS_COL_*_NAME`; данные — с 4-й строки.
+  - `main`: маппинг не изменялся (ввод № заказа `B4`, шапка `B5:B17`, заголовки стр.3, данные с 4-й).
+- **Единые константы структуры листов в `Mod_Constants.bas`:** `HEADER_ROW=3`, `DATA_START_ROW=4`, `FREEZE_START_CELL="A4"`; по листам `MAIN_/SPISOK_/MODELS_/LIBNAME_{HEADER_ROW,DATA_START_ROW}`; `MAIN_INPUT_CELL="B4"`. Удалена ошибочная `MAIN_HEADER_START_ROW` (заменена на `MAIN_HEADER_ROW=3`).
+- **Правки VBA под новый сдвиг:** `InitLibName`/`AddWorkEntry` (границы `LIBNAME_DATA_START_ROW`), `Mod_OrderHeader` (поиск/автодобавление моделей со строки `MODELS_DATA_START_ROW`), `Mod_SheetButtons` (заголовок стр.3, подсчёт видимых со стр.4 для z4/UAZ), `Mod_SheetOps.ApplyFreezePanes`.
+- **Закрепление строк (FreezePanes A4):** через события `Worksheet_Activate` классов листов `Лист2`..`Лист5` (main/spisok/models/libname); для модельных файлов `base/models/*.xlsm` — через openpyxl (`apply_freeze_panes_to_models`) без добавления VBA-классов.
+- **Актуализация тестов `Mod_FullTestRunner.bas`:** TC-13 (libname), TC-25..TC-28 (spisok), TC-46 (граница записи ≥4) переведены на константы `*_DATA_START_ROW`.
+- **Версия поднята до v1.0.9** — `Mod_Constants.bas`, `config.py`, `config.ps1`, `README.md`, `docs/ARCHITECTURE.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`, `docs/CHANGELOG.md`, `docs/table.md`.
+
 ## [v1.0.8] — 2026-08-22
 
 ### Added

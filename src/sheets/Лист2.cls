@@ -11,6 +11,11 @@ Attribute VB_Description = "Лист main для ввода заказ-наря�
 
 Option Explicit
 
+Private Sub Worksheet_Activate()
+    ' Закрепление строк 1-3 (FreezePanes A4) при активации листа main
+    Call Mod_SheetOps.ApplyFreezePanes(Me)
+End Sub
+
 Private Sub Worksheet_Change(ByVal Target As Range)
     ' обработка изменений
     On Error GoTo ErrHandler

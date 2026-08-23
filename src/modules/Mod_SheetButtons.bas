@@ -64,16 +64,17 @@ Private Function ExecuteUAZSearch(ByVal searchColumn As Integer) As Boolean
         Exit Function
     End If
 
-    ' Находим последний столбец с данными в 4-й строке (строка заголовков)
-    lastCol = ws.Cells(4, ws.Columns.Count).End(xlToLeft).Column
+    ' Находим последний столбец с данными в строке заголовков (MODELS_HEADER_ROW = 3)
+    lastCol = ws.Cells(Mod_Constants.MODELS_HEADER_ROW, ws.Columns.Count).End(xlToLeft).Column
 
     ' Сбрасываем предыдущий фильтр
     On Error Resume Next
     ws.ShowAllData
     On Error GoTo 0
 
-    ' Определяем диапазон для фильтрации (все данные с 4 строки)
-    Set dataRange = ws.Range(ws.Cells(4, 1), ws.Cells(lastRow, lastCol))
+    ' Определяем диапазон для фильтрации (заголовки + данные со строки MODELS_DATA_START_ROW)
+    Set dataRange = ws.Range(ws.Cells(Mod_Constants.MODELS_HEADER_ROW, 1), _
+                             ws.Cells(lastRow, lastCol))
 
     ' Применяем фильтр "содержит" к указанному столбцу
     dataRange.AutoFilter _
@@ -81,9 +82,10 @@ Private Function ExecuteUAZSearch(ByVal searchColumn As Integer) As Boolean
         Criteria1:="*" & searchValue & "*", _
         Operator:=xlFilterValues
 
-    ' Считаем количество видимых строк (начиная с 5-й строки)
+    ' Считаем количество видимых строк (начиная с первой строки данных — MODELS_DATA_START_ROW)
     On Error Resume Next
-    countVisible = ws.Range(ws.Cells(5, searchColumn), ws.Cells(lastRow, searchColumn)) _
+    countVisible = ws.Range(ws.Cells(Mod_Constants.MODELS_DATA_START_ROW, searchColumn), _
+                            ws.Cells(lastRow, searchColumn)) _
         .SpecialCells(xlCellTypeVisible).Count
     On Error GoTo 0
 
@@ -222,16 +224,17 @@ Private Function ExecutePartsSearch(ByVal searchColumn As Integer) As Boolean
         Exit Function
     End If
 
-    ' Находим последний столбец с данными в 4-й строке (строка заголовков)
-    lastCol = ws.Cells(4, ws.Columns.Count).End(xlToLeft).Column
+    ' Находим последний столбец с данными в строке заголовков (MODELS_HEADER_ROW = 3)
+    lastCol = ws.Cells(Mod_Constants.MODELS_HEADER_ROW, ws.Columns.Count).End(xlToLeft).Column
 
     ' Сбрасываем предыдущий фильтр
     On Error Resume Next
     ws.ShowAllData
     On Error GoTo 0
 
-    ' Определяем диапазон для фильтрации (все данные с 4 строки)
-    Set dataRange = ws.Range(ws.Cells(4, 1), ws.Cells(lastRow, lastCol))
+    ' Определяем диапазон для фильтрации (заголовки + данные со строки MODELS_DATA_START_ROW)
+    Set dataRange = ws.Range(ws.Cells(Mod_Constants.MODELS_HEADER_ROW, 1), _
+                             ws.Cells(lastRow, lastCol))
 
     ' Применяем фильтр «содержит» к указанному столбцу
     dataRange.AutoFilter _
@@ -239,9 +242,10 @@ Private Function ExecutePartsSearch(ByVal searchColumn As Integer) As Boolean
         Criteria1:="*" & searchValue & "*", _
         Operator:=xlFilterValues
 
-    ' Считаем количество видимых строк (начиная с 5-й строки)
+    ' Считаем количество видимых строк (начиная с первой строки данных — MODELS_DATA_START_ROW)
     On Error Resume Next
-    countVisible = ws.Range(ws.Cells(5, searchColumn), ws.Cells(lastRow, searchColumn)) _
+    countVisible = ws.Range(ws.Cells(Mod_Constants.MODELS_DATA_START_ROW, searchColumn), _
+                            ws.Cells(lastRow, searchColumn)) _
         .SpecialCells(xlCellTypeVisible).Count
     On Error GoTo 0
 

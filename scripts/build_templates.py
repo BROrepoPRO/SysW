@@ -42,6 +42,7 @@ from template_protection import (
     apply_protection_xml,
     apply_freeze_panes_xml,
     build_zone_map,
+    apply_freeze_panes_to_models,
 )
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
@@ -393,6 +394,12 @@ def main():
         print("")
         print("Применение защиты листов (задача C)...")
         apply_all_protection(excel)
+
+        # v1.0.9: FreezePanes A4 для модельных файлов base/models/*.xlsm (openpyxl).
+        # Модельные листы уже соответствуют структуре (заголовки стр.3, данные с 4-й),
+        # требуется только закрепление строк 1-3 — без добавления VBA-классов в файлы.
+        print("FreezePanes A4 для base/models/*.xlsm ...")
+        apply_freeze_panes_to_models(MODELS)
         print("Готово.")
     finally:
         excel.Quit()

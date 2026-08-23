@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v1.0.8)
+# Техническая документация разработчика — SysW (v1.0.9)
 
 ## 1. Архитектура проекта
 
@@ -26,6 +26,33 @@
 - **Провайдер доступа к БД** ([`Mod_ModelDBProvider.cls`](../src/classes/Mod_ModelDBProvider.cls)) — фабрика/провайдер данных
 - **SQLite-провайдер** ([`Mod_SQLiteDB.cls`](../src/classes/Mod_SQLiteDB.cls)) — доступ к данным из единой базы `SysW.db`
 - **Лист main** ([`Лист2_main.cls`](../src/sheets/Лист2_main.cls)) — обработчик событий листа
+- **Листы spisok/models/libname** ([`Лист3.cls`](../src/sheets/Лист3.cls), [`Лист4.cls`](../src/sheets/Лист4.cls), [`Лист5.cls`](../src/sheets/Лист5.cls)) — классы листов с событием `Worksheet_Activate` → `ApplyFreezePanes`
+
+### 1.2 Единый стандарт структуры листов (v1.0.9)
+
+Рабочие листы `work.xlsm` (`main`, `spisok`, `models`, `libname`) и модельные листы
+приведены к единому стандарту: строки 1–2 технические, строка 3 — заголовки,
+данные с 4-й строки, закрепление первых трёх строк (`FreezePanes A4`).
+
+Маппинг:
+- `main` — **без сдвига** (ввод № заказа `B4`, шапка `B5:B17`); маппинг не изменялся.
+- `spisok`, `libname` — заголовки стр.1→3, данные со 2-й→4-й (сдвиг +2).
+- `models` — двухрядная шапка сведена к строке 3 (русские названия); ключи остаются
+  только в константах `MODELS_COL_MODEL_NAME`/`MODELS_COL_GROUP_NAME`/`MODELS_COL_PRICE_NAME`;
+  данные с 4-й строки.
+- Модельные листы (`z4`, `{GroupName}*`) — без сдвига; только FreezePanes A4
+  (через openpyxl `apply_freeze_panes_to_models`, без VBA-классов).
+
+Единые константы в [`Mod_Constants.bas`](../src/modules/Mod_Constants.bas):
+`HEADER_ROW=3`, `DATA_START_ROW=4`, `FREEZE_START_CELL="A4"`; по листам
+`MAIN_/SPISOK_/MODELS_/LIBNAME_{HEADER_ROW,DATA_START_ROW}`; `MAIN_INPUT_CELL="B4"`.
+`MAIN_HEADER_START_ROW` (ошибочная, =4) удалена и заменена на `MAIN_HEADER_ROW=3`.
+
+Закрепление выполняется в `Mod_SheetOps.ApplyFreezePanes` (точка `FREEZE_START_CELL`
+→ `ActiveWindow.FreezePanes = True`) и вызывается из `Worksheet_Activate` классов
+листов `Лист2`..`Лист5`. При добавлении/переименовании листов обновляйте список
+`COMPONENTS` в [`scripts/export_vba.py`](../scripts/export_vba.py) (схема импорта
+`impVBA.py` обнаруживает классы листов по префиксу `Лист`/`Sheet` автоматически).
 
 ### 1.2 Схема взаимодействия модулей
 
