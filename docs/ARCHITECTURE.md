@@ -33,9 +33,11 @@
 `HEADER_ROW=3`, `DATA_START_ROW=4`, `FREEZE_START_CELL="A4"`; по листам
 `MAIN_/SPISOK_/MODELS_/LIBNAME_{HEADER_ROW,DATA_START_ROW}`; `MAIN_INPUT_CELL="B4"`.
 Закрепление реализовано через `Mod_SheetOps.ApplyFreezePanes` и события
-`Worksheet_Activate` классов листов `Лист2`..`Лист5`; для модельных файлов
-`base/models/*.xlsm` — через openpyxl (`apply_freeze_panes_to_models`) без добавления
-VBA-классов.
+`Worksheet_Activate` классов листов `Лист2`..`Лист5`. Для модельных файлов
+`base/models/*.xlsm` применён **Вариант C — XML-инъекция элемента `<pane>`**
+(`apply_freeze_panes_to_models`): точечная правка `sheet*.xml` внутри zip-архива книги
+без пересохранения через openpyxl, поскольку `keep_vba=True` повреждал структуру
+модельных `.xlsm`; VBA-классы не добавляются.
 
 ---
 

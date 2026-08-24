@@ -41,7 +41,8 @@
   только в константах `MODELS_COL_MODEL_NAME`/`MODELS_COL_GROUP_NAME`/`MODELS_COL_PRICE_NAME`;
   данные с 4-й строки.
 - Модельные листы (`z4`, `{GroupName}*`) — без сдвига; только FreezePanes A4
-  (через openpyxl `apply_freeze_panes_to_models`, без VBA-классов).
+  (через `apply_freeze_panes_to_models` — **Вариант C, XML-инъекция `<pane>`** в
+  `sheet*.xml`, без пересохранения через openpyxl/`keep_vba` и без VBA-классов).
 
 Единые константы в [`Mod_Constants.bas`](../src/modules/Mod_Constants.bas):
 `HEADER_ROW=3`, `DATA_START_ROW=4`, `FREEZE_START_CELL="A4"`; по листам

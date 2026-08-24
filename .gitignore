@@ -31,3 +31,13 @@ venv/
 logs/*.log
 logs/*.txt
 !logs/.gitkeep
+
+# Резервные копии (сборка/перенос/пре-релиз) — НЕ коммитить
+_backup/
+_backup/**
+
+# Резервные и временные БД/артефакты вне стандартных путей
+SysW_*.db
+work_*.xlsm
+models_pre_*
+work_pre_*
