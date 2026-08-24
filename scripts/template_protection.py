@@ -229,33 +229,54 @@ def ensure_freeze_panes_after_save(path):
     return changed
 
 
+def _all_sheets_frozen_a4(path):
+    """True, если ВСЕ листы книги уже имеют FreezePanes A4 (frozen ySplit=3).
+
+    Анализ ведётся напрямую по zip-архиву (без openpyxl): проверяется, что
+    в каждом xl/worksheets/sheetN.xml присутствует узел <pane> с xSplit="0"
+    и ySplit="3". Используется для идемпотентности: если файл уже корректен,
+    повторная правка не выполняется (не переписываем архив без необходимости).
+    """
+    with zipfile.ZipFile(str(path)) as zf:
+        sheet_files = [n for n in zf.namelist() if _SHEET_XML_RE.match(n)]
+        if not sheet_files:
+            return False
+        for n in sheet_files:
+            xml_text = zf.read(n).decode("utf-8")
+            pm = re.search(_PANE_RE, xml_text)
+            if not pm or int(pm.group(1)) != 3:
+                return False
+    return True
+
+
 def apply_freeze_panes_to_models(models_dir):
     """Устанавливает FreezePanes A4 (закреплены строки 1-3) всем листам
-    модельных файлов base/models/*.xlsm через openpyxl (keep_vba=True).
+    модельных файлов base/models/*.xlsm НА XML-УРОВНЕ (ВАРИАНТ C, v1.0.9).
 
-    v1.0.9: модельные листы (z4, {GroupName}, {GroupName}w, {GroupName}z4)
-    уже соответствуют структуре «заголовки стр.3, данные с 4-й» и требуют
-    только закрепления. Свойство задаётся напрямую на уровне XML, без
-    добавления VBA-классов в критически важные модельные файлы ([E3]).
+    ИСПРАВЛЕНИЕ v1.0.9: прежний метод через openpyxl (keep_vba=True) признан
+    опасным — валидация показала, что пересохранение модельных .xlsm через
+    openpyxl делает файлы нечитаемыми для Excel COM (после сохранения
+    Workbooks.Open возвращает ошибку -2147352567). Поэтому применяется
+    точечная правка ТОЛЬКО узла <pane> внутри zip-архива (apply_freeze_panes_xml):
+    остальные записи (включая sheet*.xml и vbaProject.bin, если он есть)
+    переносятся байт-в-байт без изменений. Модельные файлы не содержат
+    VBA-проекта (vbaProject.bin отсутствует), но принцип максимального
+    сохранения исходного формата и целостности критических файлов ([E3])
+    соблюдён полностью.
 
-    Функция идемпотентна: повторный вызов не изменяет уже закреплённые листы.
+    Функция идемпотентна: если во всех листах уже frozen A4 — файл не трогается.
     """
     changed_any = False
     for path in sorted(models_dir.glob("*.xlsm")):
         try:
-            wb = load_workbook(str(path), keep_vba=True)
+            if _all_sheets_frozen_a4(path):
+                continue
         except Exception as exc:
-            print(f"  [!] Не удалось открыть модельный файл {path.name}: {exc}")
+            print(f"  [!] Не удалось прочитать pane модели {path.name}: {exc}")
             continue
-        changed = False
-        for ws in wb.worksheets:
-            if ws.freeze_panes != "A4":
-                ws.freeze_panes = "A4"
-                changed = True
-        if changed:
-            wb.save(str(path))
-            changed_any = True
-            print(f"  FreezePanes A4 применён к {path.name}")
+        apply_freeze_panes_xml(path)
+        changed_any = True
+        print(f"  FreezePanes A4 применён к {path.name} (XML-уровень)")
     return changed_any
 
 
