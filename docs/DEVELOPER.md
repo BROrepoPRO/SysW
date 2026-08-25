@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v1.0.9)
+# Техническая документация разработчика — SysW (v1.0.10)
 
 ## 1. Архитектура проекта
 
@@ -25,8 +25,11 @@
 - **Интерфейс провайдера данных** ([`IModelDataProvider.cls`](../src/classes/IModelDataProvider.cls)) — контракт доступа к данным моделей
 - **Провайдер доступа к БД** ([`Mod_ModelDBProvider.cls`](../src/classes/Mod_ModelDBProvider.cls)) — фабрика/провайдер данных
 - **SQLite-провайдер** ([`Mod_SQLiteDB.cls`](../src/classes/Mod_SQLiteDB.cls)) — доступ к данным из единой базы `SysW.db`
-- **Лист main** ([`Лист2_main.cls`](../src/sheets/Лист2_main.cls)) — обработчик событий листа
-- **Листы spisok/models/libname** ([`Лист3.cls`](../src/sheets/Лист3.cls), [`Лист4.cls`](../src/sheets/Лист4.cls), [`Лист5.cls`](../src/sheets/Лист5.cls)) — классы листов с событием `Worksheet_Activate` → `ApplyFreezePanes`
+- **Лист main** ([`Лист2.cls`](../src/sheets/Лист2.cls)) — обработчик событий листа (`Worksheet_Change` для B4, `Worksheet_Activate` → FreezePanes A4)
+- **Листы libname/models/spisok** ([`Лист3.cls`](../src/sheets/Лист3.cls), [`Лист5.cls`](../src/sheets/Лист5.cls), [`Лист9.cls`](../src/sheets/Лист9.cls)) — классы листов с событием `Worksheet_Activate` → `ApplyFreezePanes`
+
+> Фактический состав `src/sheets/`: **`Лист2.cls`, `Лист3.cls`, `Лист5.cls`, `Лист9.cls`**.
+> Устаревшие упоминания `Лист2_main.cls` и `Лист4.cls` в старой документации фактическому составу не соответствуют.
 
 ### 1.2 Единый стандарт структуры листов (v1.0.9)
 
@@ -58,7 +61,7 @@
 ### 1.2 Схема взаимодействия модулей
 
 ```
-Лист2_main.cls (Worksheet_Change)
+Лист2.cls (Worksheet_Change)
        │
        └── Mod_OrderHeader.FillHeaderFromOrder()
               │
@@ -215,7 +218,7 @@ Mod_FullTestRunner.RunAllTests()
 
 **Файл:** [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas) (577 строк)
 
-**Назначение:** Автоматическое тестирование VBA-модулей. Содержит 30 тестовых сценариев (TC-01..TC-30) в коде модуля; полный реестр насчитывает 44 сценария (TC-01..TC-44) с учётом тестов, запускаемых через Python-скрипт.
+**Назначение:** Автоматическое тестирование VBA-модулей. Набор сценариев **TC-01..TC-50** + **TC-S1..TC-S3** (полный перечень — см. [`docs/reestr.md`](reestr.md), раздел 3).
 
 **Группы тестов:**
 
@@ -226,15 +229,22 @@ Mod_FullTestRunner.RunAllTests()
 | `RunUtilsEdgeTests()` | TC-12 | Mod_Utils (граничные случаи) |
 | `RunLibNameTests()` | TC-13 | Mod_Constants |
 | `RunImportVHTests()` | TC-14 | Mod_Import (ImportFromB2_UI) |
+| `RunSheetOpsTests()` | TC-15..TC-18, TC-45 | Mod_SheetOps |
+| `RunAggregateNameTests()` | TC-19..TC-21 | Mod_Constants |
+| `RunModelDBReadTests()` | TC-22..TC-24 | Mod_ModelDB / провайдер |
+| `RunOrderHeaderTests()` | TC-25..TC-28 | Mod_OrderHeader |
+| `RunImportDataTests()` | TC-29, TC-30 | Mod_Import |
 | `RunModelDBTests()` | TC-31..TC-35 | Mod_ModelDB |
 | `RunPickWorkTests()` | TC-36..TC-38 | Mod_PickWork |
 | `RunAutoMatchTests()` | TC-39..TC-44 | Mod_AutoMatch |
+| `RunConstantsTests()` | TC-46 | Mod_Constants |
+| `RunSQLiteTests()` | TC-S1..TC-S3, TC-47..TC-50 | Mod_SQLiteDB / провайдер |
 
 **Механизмы:**
 - **SKIP** — тесты, зависящие от отсутствующих данных, пропускаются
 - **Сохранение/восстановление** состояния листов до и после тестов
 - **Статистика** — подсчёт Total, Passed, Failed, Skipped
-- **GetTestResults()** — функция для программного сбора результатов из Python
+- **GetTestResults()** — **Public Sub**: записывает отчёт в ячейку `Z1` листа main для чтения из Python (не функция)
 - **Silent mode** — параметр `silent` в `ClearMainSheet_UI` для автоматических тестов без MsgBox
 
 **Запуск:**
@@ -331,22 +341,31 @@ python scripts/run_tests.py
 | `ModelWorkEntry` | `Work As WorkEntry` | Работа модели |
 | | `Model As String` | Модель |
 
-### 2.10 Mod_SheetButtons.bas — Кнопки листов z4/work
+### 2.10 Mod_SheetButtons.bas — Кнопки листов UAZ и запчастей
 
 **Файл:** [`Mod_SheetButtons.bas`](../src/modules/Mod_SheetButtons.bas)
 
-**Назначение:** Обработчики кнопок, расположенных на листах z4 и work. Содержит бизнес-логику, специфичную для этих листов.
+**Назначение:** Обработчики кнопок поиска/фильтрации на листах UAZ (UAZ, UAZw, z4, UAZz4) и листах запчастей (z4, `{GroupName}z4`). Модуль содержит **только** поисковые обработчики и приватные помощники. Заявленные в старой документации заглушки `Btn_z4_Action*`/`Btn_work_Action*` в коде **отсутствуют**.
 
-**Обработчики:**
+**Публичные обработчики:**
 
 | Процедура | Описание |
 |----------|----------|
-| `Btn_z4_Action1()` | Заглушка: действие 1 для запчастей — в разработке |
-| `Btn_z4_Action2()` | Заглушка: действие 2 для запчастей — в разработке |
-| `Btn_z4_Action3()` | Заглушка: действие 3 для запчастей — в разработке |
-| `Btn_work_Action1()` | Заглушка: действие 1 для работ — в разработке |
-| `Btn_work_Action2()` | Заглушка: действие 2 для работ — в разработке |
-| `Btn_work_Action3()` | Заглушка: действие 3 для работ — в разработке |
+| `Btn_UAZ_SearchByArticle()` | Поиск «содержит» по столбцу B (артикул) на активном листе UAZ |
+| `Btn_UAZ_SearchByName()` | Поиск «содержит» по столбцу C (наименование) на активном листе UAZ |
+| `Btn_UAZ_ClearFilter()` | Сброс фильтра и очистка поля ввода C1 |
+| `Btn_Parts_SearchByArticle()` | Поиск по столбцу B на листе запчастей (z4 / `{GroupName}z4`) |
+| `Btn_Parts_SearchByName()` | Поиск по столбцу C на листе запчастей |
+| `Btn_Parts_ClearFilter()` | Сброс фильтра на листе запчастей |
+
+**Приватные помощники:**
+
+| Процедура | Описание |
+|----------|----------|
+| `ExecuteUAZSearch(searchColumn)` | Общий алгоритм поиска «содержит» для листов UAZ |
+| `ExecutePartsSearch(searchColumn)` | Общий алгоритм поиска «содержит» для листов запчастей |
+| `IsSearchableSheet(ws)` | Проверка, что лист подходит для поиска (данные с 4-й строки) |
+| `IsPartsSheet(ws)` | Проверка, что лист является листом запчастей (z4 / `{GroupName}z4`) |
 
 ### 2.11 Mod_ModelDB.bas — Доступ к файлам модельных групп
 
@@ -354,11 +373,11 @@ python scripts/run_tests.py
 
 **Назначение:** Базовый слой абстракции для работы с файлами модельных групп в `base/models/`. Обеспечивает открытие файлов групп и чтение данных работ/запчастей.
 
-**Константы:**
+**Путь к каталогу моделей:**
 
-| Константа | Значение | Описание |
-|-----------|----------|----------|
-| `MODELDB_BASE_PATH` | `base\models\` | Каталог с файлами групп |
+| Функция | Описание |
+|---------|----------|
+| `GetModelDBBasePath()` | Возвращает каталог файлов групп `base\models\`. Константы `MODELDB_BASE_PATH` в коде нет — она заменена функцией |
 
 **Типы данных:**
 
@@ -379,6 +398,8 @@ python scripts/run_tests.py
 | `ModelGroupFileExists(groupName)` | Проверяет существование файла группы через `Dir()` |
 | `OpenModelGroupFile(groupName)` | Открывает файл группы (если ещё не открыт), возвращает `Workbook` или `Nothing` |
 | `GetWorks(groupName, filters)` | Возвращает коллекцию `WorkEntry` из листа `{groupName}` файла группы |
+| `GetModelDataProvider(ByRef provider)` | Фабрика провайдера данных (SQLite при наличии SysW.db, иначе Excel-fallback) |
+| `GetParts/GetModelWorks/GetModelParts/GetMatLibEntries/GetWorkIdentities/GetPartIdentities/GetAllModelGroups/CreateModelGroupFile/FindModelGroupByModel` | Делегаты чтения/создания данных через выбранный провайдер |
 
 ### 2.12 Mod_PickWork.bas — Ручной подбор работ
 
@@ -414,7 +435,8 @@ python scripts/run_tests.py
 
 | Функция | Описание |
 |---------|----------|
-| `AutoMatch_UI()` | Главная точка входа: запускает автоматический подбор с UI-обратной связью |
+| `AutoMatchWorks()` | Автоподбор работ (L→E:I + формула J). Точка входа кнопки «АВТО РАБ» |
+| `AutoMatchParts()` | Автоподбор запчастей (X→Q:U + формула V). Точка входа кнопки «АВТО ЗЧ» |
 
 ### 2.14 Mod_Constants.bas — Константы и реестр имён
 
@@ -474,13 +496,13 @@ python scripts/run_tests.py
 
 > **Примечание:** Ранее функциональность реестра имён находилась в отдельном модуле `Mod_LibName.bas` (удалён в версии 1.0.0), который был объединён с `Mod_Constants.bas` для централизованного управления константами.
 
-### 2.15 Лист2_main.cls — Основной лист
+### 2.15 Лист2.cls — Основной лист
 
-**Файл:** [`Лист2_main.cls`](../src/sheets/Лист2_main.cls) (48 строк)
+**Файл:** [`Лист2.cls`](../src/sheets/Лист2.cls) (48 строк)
 
-**Назначение:** Класс листа main. Обрабатывает событие `Worksheet_Change`.
+**Назначение:** Класс листа main. Обрабатывает события `Worksheet_Activate` (FreezePanes A4) и `Worksheet_Change`.
 
-**Логика обработчика:**
+**Логика обработчика `Worksheet_Change`:**
 1. Защита от рекурсии через `Static isProcessing As Boolean`
 2. Проверка, что изменение произошло в ячейке B4
 3. Очистка диапазона B5:B17
@@ -609,7 +631,7 @@ python scripts/impVBA.py
 | `PartIdentity` | `src/classes/PartIdentity.cls` | Класс |
 | `WorkEntry` | `src/classes/WorkEntry.cls` | Класс |
 | `WorkIdentity` | `src/classes/WorkIdentity.cls` | Класс |
-| `Лист2` | `src/sheets/Лист2_main.cls` | Класс листа |
+| `Лист2` | `src/sheets/Лист2.cls` | Класс листа |
 
 **Использование:**
 ```bash
@@ -674,74 +696,49 @@ python scripts/impVBA.py      # Импорт всех модулей
 
 ## 6. Тестирование
 
-### 6.1 Полный список тестов (TC-01..TC-44)
+### 6.1 Реестр тестов (TC-01..TC-50 + TC-S1..S3)
 
-| ID | Название | Модуль | Тип | Статус |
-|----|----------|--------|-----|--------|
-| TC-01 | FileExists с существующим файлом | Mod_Utils | Модульный | ✅ |
-| TC-02 | FileExists с несуществующим файлом | Mod_Utils | Модульный | ✅ |
-| TC-03 | FormatDateSQL с корректной датой | Mod_Utils | Модульный | ✅ |
-| TC-04 | FormatDateSQL с нулевой датой | Mod_Utils | Модульный | ✅ |
-| TC-05 | GetSheetByName существующий лист | Mod_Utils | Модульный | ✅ |
-| TC-06 | GetSheetByName несуществующий лист | Mod_Utils | Модульный | ✅ |
-| TC-07 | WriteLog запись в лог | Mod_Utils | Модульный | ✅ |
-| TC-08 | GetWorkbookPath / GetCurrentUser | Mod_Utils | Модульный | ✅ |
-| TC-09 | WriteLog запись в лог-файл | Mod_Logger | Модульный | ✅ |
-| TC-10 | RotateLogIfNeeded ротация лога | Mod_Logger | Модульный | ✅ |
-| TC-11 | ClearLog очистка лога | Mod_Logger | Модульный | ✅ |
-| TC-12 | FormatDateSQL граничные случаи | Mod_Utils | Модульный | ✅ |
-| TC-13 | InitLibName заполнение libname | Mod_Constants | Модульный | ✅ |
-| TC-14 | ImportFromB2_UI с пустым B2 | Mod_Import | Модульный | ✅ |
-| TC-15 | WriteLog запись в лог-файл (прямой вызов) | Mod_Logger | Модульный | ✅ |
-| TC-16 | RotateLogIfNeeded ротация лога (прямой вызов) | Mod_Logger | Модульный | ✅ |
-| TC-17 | ClearLog очистка лога (прямой вызов) | Mod_Logger | Модульный | ✅ |
-| TC-18 | ClearMainSheet_UI очистка листа main | Mod_SheetOps | Модульный | ✅ |
-| TC-19 | ClearHeader_UI очистка шапки заказа | Mod_SheetOps | Модульный | ✅ |
-| TC-20 | RenameSheetsByGRZ переименование листов | Mod_SheetOps | Модульный | ✅ |
-| TC-21 | ImportSheet импорт листа из report.xlsx | Mod_Import | Модульный | ✅ |
-| TC-22 | ImportDataToMain перенос данных в main | Mod_Import | Модульный | ✅ |
-| TC-23 | FormatDateSQL граничные случаи (расширенные) | Mod_Utils | Модульный | ✅ |
-| TC-24 | Btn_main_Clear_Click (silent mode) | Mod_ButtonDispatcher | Интеграционный | ✅ |
-| TC-25 | ExtractNumberFromGRZ — цифровая группа 3 цифры | Mod_SheetOps | Модульный | ✅ |
-| TC-26 | ExtractNumberFromGRZ — цифровая группа 4 цифры | Mod_SheetOps | Модульный | ✅ |
-| TC-27 | ExtractNumberFromGRZ — без цифр | Mod_SheetOps | Модульный | ✅ |
-| TC-28 | SearchSheetByGRZ — поиск существующего листа | Mod_SheetOps | Модульный | ✅ |
-| TC-29 | SearchSheetByGRZ — поиск несуществующего листа | Mod_SheetOps | Модульный | ✅ |
-| TC-30 | ImportFromB2_UI — полный цикл импорта | Mod_Import | Интеграционный | ✅ |
-| TC-31 | GetModelDBBasePath возвращает путь | Mod_ModelDB | Модульный | ✅ |
-| TC-32 | GetModelGroupFilePath формирует путь | Mod_ModelDB | Модульный | ✅ |
-| TC-33 | ModelGroupFileExists существующий файл | Mod_ModelDB | Модульный | ✅ |
-| TC-34 | ModelGroupFileExists несуществующий файл | Mod_ModelDB | Модульный | ✅ |
-| TC-35 | OpenModelGroupFile открытие файла | Mod_ModelDB | Модульный | ✅ |
-| TC-36 | GetGroupNameFromMain читает B14 | Mod_PickWork | Модульный | ✅ |
-| TC-37 | GetWorkSheetName возвращает имя листа | Mod_PickWork | Модульный | ✅ |
-| TC-38 | PickWork_UI открывает файл группы | Mod_PickWork | Модульный | ✅ |
-| TC-39 | AutoMatchWorks подбор работ | Mod_AutoMatch | Модульный | ✅ |
-| TC-40 | AutoMatchParts подбор запчастей | Mod_AutoMatch | Модульный | ✅ |
-| TC-41 | HighlightNotFound подсветка ненайденного | Mod_AutoMatch | Модульный | ⚠️ SKIP |
-| TC-42 | ClearHighlight очистка подсветки | Mod_AutoMatch | Модульный | ⚠️ SKIP |
-| TC-43 | IsAllFound проверка всех найденных | Mod_AutoMatch | Модульный | ⚠️ SKIP |
-| TC-44 | IsAllFound проверка с ненайденными | Mod_AutoMatch | Модульный | ⚠️ SKIP |
+Полный перечень тестов с группами, статусами, механизмом записи результатов и замечаниями
+приведён в [`docs/reestr.md`](reestr.md), раздел 3. Ниже — сводка по группам и модулям.
 
-**Легенда:**
-- ✅ — тест проходит (PASS)
-- ⚠️ — тест пропущен (SKIP) из-за отсутствия данных/окружения
-- ❌ — тест падает (FAIL)
+| Группа | Сценарии | Модуль | Зависимость от окружения |
+|--------|----------|--------|--------------------------|
+| `RunUtilsTests()` | TC-01..TC-08 | Mod_Utils | нет |
+| `RunLoggerTests()` | TC-09..TC-11 | Mod_Logger | нет |
+| `RunUtilsEdgeTests()` | TC-12 | Mod_Utils | нет |
+| `RunLibNameTests()` | TC-13 | Mod_Constants | лист libname |
+| `RunImportVHTests()` | TC-14 | Mod_Import | лист main |
+| `RunSheetOpsTests()` | TC-15..TC-18, TC-45 | Mod_SheetOps | нет |
+| `RunAggregateNameTests()` | TC-19..TC-21 | Mod_Constants | нет |
+| `RunModelDBReadTests()` | TC-22..TC-24 | Mod_ModelDB | SQLite-провайдер |
+| `RunOrderHeaderTests()` | TC-25..TC-28 | Mod_OrderHeader | листы main/spisok/models |
+| `RunImportDataTests()` | TC-29, TC-30 | Mod_Import | лист main |
+| `RunModelDBTests()` | TC-31..TC-35 | Mod_ModelDB | файлы групп/провайдер |
+| `RunPickWorkTests()` | TC-36..TC-38 | Mod_PickWork | нет |
+| `RunAutoMatchTests()` | TC-39..TC-44 | Mod_AutoMatch | нет (TC-41..44 — SKIP) |
+| `RunConstantsTests()` | TC-46 | Mod_Constants | лист libname |
+| `RunSQLiteTests()` | TC-S1..TC-S3, TC-47..TC-50 | Mod_SQLiteDB | SQLite-провайдер/SysW.db |
+
+**Легенда:** PASS — тест проходит; SKIP — пропущен (Private-процедура, небезопасность автотеста,
+отсутствие листа/данных/SQLite-провайдера); FAIL — падение теста (останавливает `run_tests.py` с кодом 1).
 
 ### 6.2 Таблица покрытия модулей
 
-| Модуль | Всего тестов | PASS | SKIP | FAIL | Покрытие |
-|--------|-------------|------|------|------|----------|
-| Mod_Utils | 8 | 8 | 0 | 0 | 100% |
-| Mod_Logger | 3 | 3 | 0 | 0 | 100% |
-| Mod_Constants | 1 | 1 | 0 | 0 | 100% |
-| Mod_Import | 3 | 3 | 0 | 0 | 100% |
-| Mod_SheetOps | 6 | 6 | 0 | 0 | 100% |
-| Mod_ButtonDispatcher | 1 | 1 | 0 | 0 | 100% |
-| Mod_ModelDB | 5 | 5 | 0 | 0 | 100% |
-| Mod_PickWork | 3 | 3 | 0 | 0 | 100% |
-| Mod_AutoMatch | 6 | 2 | 4 | 0 | 33% |
-| **Итого** | **38** | **34** | **4** | **0** | **89%** |
+| Модуль | Группы | Сценарии |
+|--------|--------|----------|
+| Mod_Utils | RunUtilsTests, RunUtilsEdgeTests | TC-01..08, TC-12 |
+| Mod_Logger | RunLoggerTests | TC-09..11 |
+| Mod_Constants | RunLibNameTests, RunAggregateNameTests, RunConstantsTests | TC-13, TC-19..21, TC-46 |
+| Mod_Import | RunImportVHTests, RunImportDataTests | TC-14, TC-29, TC-30 |
+| Mod_SheetOps | RunSheetOpsTests | TC-15..18, TC-45 |
+| Mod_OrderHeader | RunOrderHeaderTests | TC-25..28 |
+| Mod_AutoMatch | RunAutoMatchTests | TC-39..44 (TC-41..44 — SKIP) |
+| Mod_PickWork | RunPickWorkTests | TC-36..38 |
+| Mod_ModelDB | RunModelDBTests, RunModelDBReadTests | TC-22..24, TC-31..35 |
+| Mod_SQLiteDB | RunSQLiteTests | TC-S1..S3, TC-47..50 |
+
+> Точная статистика PASS/SKIP/FAIL зависит от окружения (наличие `SysW.db`, листов, данных)
+> и формируется по итогам прогона `python scripts/run_tests.py`.
 
 ### 6.3 Как добавить новый тест
 
@@ -780,7 +777,7 @@ python scripts/run_tests.py
 1. Создаёт COM-объект Excel (невидимый режим)
 2. Открывает `work.xlsm`
 3. Запускает макрос `RunAllTests`
-4. Собирает результаты через VBA-функцию `GetTestResults()`
+4. Собирает результаты через VBA-процедуру `GetTestResults()` (запись в ячейку `Z1` листа main)
 5. Парсит статистику (Total, Passed, Failed, Skipped)
 6. Возвращает exit code: `0` — все PASS, `1` — есть FAIL
 7. Сохраняет результаты в `logs/test_results.log`
@@ -957,6 +954,7 @@ Exit-коды: `0` — ошибок нет; `1` — найдены ошибки 
 ## Связанные документы
 
 - [`README.md`](../README.md) — общее описание проекта, быстрый старт
+- [`docs/reestr.md`](reestr.md) — реестр макросов, скриптов и тестов
 - [`docs/sourcecraft-guide.md`](sourcecraft-guide.md) — руководство по работе с SourceCraft Code Assistant
 - [`docs/git-workflow.md`](git-workflow.md) — Git-инструкции и веточная стратегия
 - [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) — архитектура выноса данных в SQLite
@@ -967,7 +965,7 @@ Exit-коды: `0` — ошибок нет; `1` — найдены ошибки 
 ## Приложение A: Схема зависимостей модулей
 
 ```
-Лист2_main.cls
+Лист2.cls
   └── Mod_OrderHeader.FillHeaderFromOrder()
         └── Mod_Utils (GetSheetByName, FileExists, FormatDateSQL)
 
@@ -1023,7 +1021,7 @@ Mod_Utils
 | `PartIdentity` | `src/classes/PartIdentity.cls` | Класс |
 | `WorkEntry` | `src/classes/WorkEntry.cls` | Класс |
 | `WorkIdentity` | `src/classes/WorkIdentity.cls` | Класс |
-| `Лист2` | `src/sheets/Лист2_main.cls` | Класс листа |
+| `Лист2` | `src/sheets/Лист2.cls` | Класс листа |
 
 ## Приложение C: Скрипты автоматизации
 

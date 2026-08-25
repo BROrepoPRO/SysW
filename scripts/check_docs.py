@@ -43,6 +43,7 @@ DOC_FILES = [
     "CHANGELOG.md",
     "DEVELOPER.md",
     "git-workflow.md",
+    "reestr.md",
     "ROADMAP.md",
     "sourcecraft-guide.md",
     "table.md",
@@ -61,12 +62,21 @@ RENAMED_DOCS = {
 
 # Список скриптов, которые должны вызываться с префиксом scripts/
 SCRIPTS = [
+    "apply_protection_templates.py",
+    "build_all.py",
+    "build_templates.py",
+    "check_docs.py",
+    "check_vba_syntax.py",
     "config.ps1",
     "config.py",
     "export_vba.py",
     "impVBA.py",
+    "migrate_models_to_sqlite.py",
     "run_tests.py",
     "Set-ExcelTrust.ps1",
+    "sqlite_schema.py",
+    "template_protection.py",
+    "update_version.py",
 ]
 
 

@@ -5,6 +5,14 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.0.10] — 2026-08-25
+
+### Added
+- **Реестр макросов, скриптов и тестов:** новый документ [`docs/reestr.md`](reestr.md) — таблицы макросов основной бизнес-логики (кнопки листа main, автоподбор/ручной подбор, поиск UAZ/запчастей, служебная логика по модулям, провайдеры данных, листовые события), реестр скриптов (Python/PowerShell/служебные), реестр тестов (TC-01..TC-50 + TC-S1..TC-S3) и раздел замечаний аудита (ошибки, расхождения, актуальность, рекомендации).
+- **Актуализация документации до фактического состояния:** `DEVELOPER.md` (§2.10 Mod_SheetButtons — только поисковые обработчики UAZ/Parts; §2.11 `GetModelDBBasePath` вместо константы `MODELDB_BASE_PATH` + фабрика `GetModelDataProvider`; §2.13 `AutoMatchWorks`/`AutoMatchParts` вместо несуществующей `AutoMatch_UI`; состав листов `src/sheets/` = `Лист2/Лист3/Лист5/Лист9`; `GetTestResults()` описан как Public Sub с записью в Z1; тестовое покрытие TC-01..TC-50 + TC-S1..S3), `ARCHITECTURE.md` (диапазон шапки B3:B15 → B5:B17), `sourcecraft-guide.md` (полный список скриптов и состав листов).
+- **Перекрёстные ссылки на реестр:** `README.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`, `docs/ARCHITECTURE.md`, `docs/sourcecraft-guide.md`, `docs/table.md` дополнены ссылками на `docs/reestr.md`.
+- **Версия поднята до v1.0.10** — `Mod_Constants.bas`, `config.py`, `config.ps1`, `README.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`, `docs/ARCHITECTURE.md`, `docs/CHANGELOG.md`.
+
 ## [v1.0.9] — 2026-08-23
 
 ### Added

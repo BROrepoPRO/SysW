@@ -26,7 +26,7 @@
 
 ## Конфигурация SourceCraft (`.sourcecraft`)
 
-Проект использует корневой файл [`.sourcecraft`](../.sourcecraft) для централизованной конфигурации SourceCraft Code Assistant (актуализировано в v1.0.9).
+Проект использует корневой файл [`.sourcecraft`](../.sourcecraft) для централизованной конфигурации SourceCraft Code Assistant (актуализировано в v1.0.10).
 
 ### Структура `.sourcecraft`
 
@@ -138,6 +138,7 @@ SysW\
 │   ├── DEVELOPER.md              # Техническая документация разработчика
 │   ├── ARCHITECTURE.md           # Архитектура выноса данных в SQLite
 │   ├── ROADMAP.md                # Единый план развития
+│   ├── reestr.md                 # Реестр макросов, скриптов и тестов
 │   └── table.md                  # Справочник таблиц
 ├── plans/                # Планы изменений, архитектурные решения, отчёты
     ├──_promts/             # Задания текущие и завершенные
@@ -149,7 +150,15 @@ SysW\
 │   ├── export_vba.py         # Выгрузка VBA-модулей из Excel (CP1251 → UTF-8)
 │   ├── impVBA.py             # Загрузка VBA-модулей в Excel (UTF-8 → CP1251)
 │   ├── run_tests.py          # Запуск тестов VBA
-│   └── Set-ExcelTrust.ps1    # Настройка доверия Excel
+│   ├── build_all.py          # Единый конвейер сборки
+│   ├── build_templates.py    # Пересборка шаблонов base/templates/
+│   ├── migrate_models_to_sqlite.py  # Пересборка SysW.db из base/models/
+│   ├── check_vba_syntax.py   # Статическая проверка синтаксиса VBA
+│   ├── update_version.py     # Автообновление версии SemVer
+│   ├── sqlite_schema.py      # DDL-схема SysW.db
+│   ├── template_protection.py# Библиотека защиты листов шаблонов
+│   ├── Set-ExcelTrust.ps1    # Настройка доверия Excel
+│   └── fix_vbom_and_venv.ps1 # Диагностика AccessVBOM и .venv
 ├── src/                  # Исходный код VBA
 │   ├── modules/              # 13 .bas модулей
 │   │   ├── Mod_AutoMatch.bas
@@ -172,8 +181,11 @@ SysW\
 │   │   ├── PartIdentity.cls
 │   │   ├── WorkEntry.cls
 │   │   └── WorkIdentity.cls
-│   └── sheets/               # 1 .cls лист
-│       └── Лист2_main.cls
+│   └── sheets/               # 4 класса листов
+│       ├── Лист2.cls
+│       ├── Лист3.cls
+│       ├── Лист5.cls
+│       └── Лист9.cls
 ├── .gitattributes        # Настройки Git для нормализации кодировок
 ├── .sourcecraft          # Конфигурация SourceCraft (MCP-серверы, правила, инструкции)
 ├── .codeassistant/       # Резервная конфигурация MCP (mcp.json)
@@ -219,6 +231,12 @@ SysW\
 | [`impVBA.py`](../scripts/impVBA.py) | Загрузка VBA-модулей с диска в Excel (UTF-8 → CP1251) | UTF-8 |
 | [`run_tests.py`](../scripts/run_tests.py) | Запуск тестов VBA | UTF-8 |
 | [`build_all.py`](../scripts/build_all.py) | Единый конвейер сборки: бэкап → импорт VBA → шаблоны → миграция БД → контроль целостности → тесты | UTF-8 |
+| [`build_templates.py`](../scripts/build_templates.py) | Пересборка шаблонов `base/templates/` + защита листов | UTF-8 |
+| [`migrate_models_to_sqlite.py`](../scripts/migrate_models_to_sqlite.py) | Пересборка `SysW.db` из `base/models/*` | UTF-8 |
+| [`check_vba_syntax.py`](../scripts/check_vba_syntax.py) | Статический контроль компиляции VBA (`src/`) | UTF-8 |
+| [`update_version.py`](../scripts/update_version.py) | Автообновление версии SemVer + CHANGELOG | UTF-8 |
+| [`sqlite_schema.py`](../scripts/sqlite_schema.py) | DDL-схема SysW.db, init_db/get/set_user_version | UTF-8 |
+| [`template_protection.py`](../scripts/template_protection.py) | Библиотека защиты листов (Protect/AllowEditRanges/FreezePanes) | UTF-8 |
 
 ### PowerShell-скрипты
 
@@ -226,6 +244,7 @@ SysW\
 |--------|-----------|
 | [`config.ps1`](../scripts/config.ps1) | Конфигурация окружения PowerShell |
 | [`Set-ExcelTrust.ps1`](../scripts/Set-ExcelTrust.ps1) | Настройка доверия Excel для работы VBA-макросов |
+| [`fix_vbom_and_venv.ps1`](../scripts/fix_vbom_and_venv.ps1) | Диагностика/исправление AccessVBOM и `.venv` |
 
 **Важно:** PowerShell-скрипты должны быть в кодировке UTF-8 with BOM (требование PowerShell для корректной обработки кириллицы).
 
@@ -235,6 +254,7 @@ SysW\
 
 | Версия | Дата | Изменения |
 |--------|------|-----------|
+| 1.0.10 | 2026-08-25 | Создан реестр макросов, скриптов и тестов `docs/reestr.md`; актуализация документации; список скриптов и состав листов приведены к фактическому состоянию |
 | 1.0.9 | 2026-08-23 | Унификация структуры листов `work.xlsm` (строки 1–2 технические, строка 3 заголовки, данные с 4-й, FreezePanes A4); единые константы `HEADER_ROW`/`DATA_START_ROW`; маппинг `spisok`/`models`/`libname` приведён к стандарту |
 | 1.0.8 | 2026-08-22 | Устойчивость COM-конвейера к зависаниям (ретраи/таймауты/taskkill по PID); ранний контроль компиляции VBA (`check_vba_syntax.py`, код 22); восстановлен тест TC-29; поиск/фильтрация на листах запчастей |
 | 1.0.7 | 2026-08-22 | Активация глубокой подстановки модельных кодов (`ApplyMatLibSubstitution=True`) с бизнес-правилом; новые тесты TC-47..TC-50; единый конвейер `build_all.py`; контроль целостности БД; суррогатный PK `works.id` |

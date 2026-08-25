@@ -1,10 +1,12 @@
 # Архитектура выноса данных работ и запчастей из work.xlsm
 
 > Версия: 1.0
-> Проект: SysW v1.0.9
+> Проект: SysW v1.0.10
 > Статус: Реализовано (SQLite-хранилище внедрено в v1.0.7)
 >
 > **Актуальный статус:** Миграция на SQLite реализована — единая база `SysW.db` (корень проекта), DDL в `db/schema.sql`, провайдеры `Mod_SQLiteDB.cls` / `Mod_ModelDBProvider.cls` / `IModelDataProvider.cls`, пересборка скриптом `scripts/migrate_models_to_sqlite.py` и контроль целостности в составе конвейера `scripts/build_all.py`.
+>
+> **Реестр макросов, скриптов и тестов:** актуальный состав процедур VBA и скриптов автоматизации приведён в [`docs/reestr.md`](reestr.md).
 
 ---
 
@@ -599,7 +601,7 @@ flowchart LR
 
 **Текущая логика:**
 1. `FillHeaderFromOrder(orderNum)` — читает данные из `spisok` и `model` (листы в `work.xlsm`)
-2. Заполняет B3:B15 на листе `main`
+2. Заполняет B5:B17 на листе `main`
 
 **Архитектурные изменения:**
 
@@ -608,7 +610,7 @@ flowchart LR
     A[FillHeaderFromOrder] -->|читает spisok| B[spisok]
     A -->|читает model| C[model]
     C -->|колонка B: группа| D[Mod_ModelDB.OpenModelGroupFile]
-    D -->|файл группы открыт| E[Заполнение B3:B15]
+    D -->|файл группы открыт| E[Заполнение B5:B17]
     E -->|НОВОЕ: ссылка на файл группы| F[main: ячейка с путём к файлу группы]
 ```
 
