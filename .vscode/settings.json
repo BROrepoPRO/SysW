@@ -56,5 +56,45 @@
     "sourcecraft-code-assist.debug": true,
     "sourcecraft-code-assist.vsCodeLmModelSelector": {
 
-    }
+    },
+    "todo-tree.general.tags": [
+        "[ ]",
+        "[x]",
+        "TODO",
+        "FIXME"
+    ],
+    "todo-tree.regex.regex": "(^\\s*[-*]\\s*\\[[ xX]\\])|($TAGS)",
+    "todo-tree.highlights.enabled": true,
+    "todo-tree.highlights.defaultHighlight": {
+        "type": "tag",
+        "icon": "check"
+    },
+    "todo-tree.highlights.customHighlight": {
+        "[ ]": {
+            "icon": "circle",
+            "type": "line",
+            "foreground": "#9e9e9e"
+        },
+        "[x]": {
+            "icon": "check",
+            "type": "line",
+            "foreground": "#4caf50"
+        },
+        "TODO": {
+            "icon": "pencil",
+            "type": "tag",
+            "foreground": "#ffcc00"
+        },
+        "FIXME": {
+            "icon": "bug",
+            "type": "tag",
+            "foreground": "#ff6b6b"
+        }
+    },
+    "todo-tree.filtering.excludeGlobs": [
+        "**/node_modules/**",
+        "**/.venv/**",
+        "**/logs/*.log"
+    ],
+    "todo-tree.tree.showScanModeButton": false
 }
