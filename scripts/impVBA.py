@@ -289,6 +289,18 @@ def extract_vb_name(text):
 
 
 def main():
+    # Параметризация целевой книги: --target <path> (по умолчанию корневой work.xlsm).
+    # Позволяет импортировать VBA-модули не только в work.xlsm, но и в
+    # base/templates/model.xlsm и base/models/*.xlsm.
+    global EXCEL_PATH
+    if "--target" in sys.argv:
+        idx = sys.argv.index("--target")
+        if idx + 1 < len(sys.argv):
+            EXCEL_PATH = os.path.abspath(sys.argv[idx + 1])
+            print(f"Target workbook (from --target): {EXCEL_PATH}")
+    else:
+        print(f"Target workbook (default): {EXCEL_PATH}")
+
     # Ensure temp dir
     if TEMP_DIR.exists():
         shutil.rmtree(TEMP_DIR)
@@ -461,9 +473,12 @@ def main():
 
             if is_sheet:
                 # For sheet components (existing worksheets):
-                # Do NOT use Import() — it creates duplicates.
-                # Instead, update the code of the existing component
-                # via CodeModule.AddFromString.
+                # Do NOT use Import() — it creates duplicates/extra sheets.
+                # Instead, update the code of the EXISTING component via
+                # CodeModule.AddFromString. Если целевой sheet-компонент
+                # отсутствует в книге (например, модельная книга, где листы
+                # названы по группе, а не Лист2/3/5/9), НЕ создаём новый лист —
+                # пропускаем, чтобы сохранить состав листов книги.
                 try:
                     existing = vb_project.VBComponents.Item(vb_name)
                     print(f"    Found existing component: {vb_name}")
@@ -474,17 +489,8 @@ def main():
                     code_module.AddFromString(text)
                     print(f"    [+] Updated code for: {file_name}")
                 except Exception as e:
-                    print(f"    [!] Component {vb_name} not found in workbook: {e}")
-                    print(f"    [!] Falling back to Import() for: {file_name}")
-                    # Fallback: import as new component
-                    temp_file = TEMP_DIR / file_name
-                    with open(temp_file, "w", encoding="cp1251", errors="replace") as f:
-                        f.write(text)
-                    imported = vb_project.VBComponents.Import(str(temp_file))
-                    if imported is None:
-                        print(f"    [!] Import returned None!")
-                    else:
-                        print(f"    [+] Successfully imported: {file_name}")
+                    print(f"    [!] Sheet component '{vb_name}' не найден — "
+                          f"пропуск (не добавляем лишний лист): {file_name}")
             else:
                 # For standard modules (.bas) and class modules (.cls):
                 # Use VBComponents.Import() as before

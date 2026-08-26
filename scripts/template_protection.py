@@ -405,20 +405,39 @@ def _inject_sheet_xml(xml_text, sheet_name, zones):
             xml_text = (xml_text[:mv.start()] + mv.group(1) + inner +
                         mv.group(3) + xml_text[mv.end():])
 
-    # 2) sheetProtection (удаляем дубль, вставляем перед sheetData)
+    # 2) Удаляем старые узлы sheetProtection и allowEditRanges (если были)
     xml_text = re.sub(r'<sheetProtection[^>]*/>', '', xml_text)
-    xml_text = re.sub(r'(<sheetData\b)', _SHEET_PROTECTION + r'\1',
-                      xml_text, count=1)
-
-    # 3) allowEditRanges (удаляем старый блок, добавляем после sheetProtection)
     xml_text = re.sub(r'<allowEditRanges>.*?</allowEditRanges>', '',
                       xml_text, flags=re.S)
+
+    # 3) Собираем блок защиты + AllowEditRanges (если заданы зоны)
+    # Порядок узлов по схеме CT_Worksheet:
+    #   sheetData -> sheetCalcPr -> sheetProtection -> protectedRanges
+    #   (protectedRanges ДОЛЖНЫ идти после sheetProtection и ДО autoFilter).
+    block = _SHEET_PROTECTION
     if zones:
         sqref = ' '.join(zones)
-        aer = ('<allowEditRanges><rangeEdit name="%s" sqref="%s"/>'
-               '</allowEditRanges>' % (_EDIT_RANGE_NAME, sqref))
-        xml_text = re.sub(r'(<sheetProtection[^>]*/>)', r'\1' + aer,
-                          xml_text, count=1)
+        block += ('<allowEditRanges><rangeEdit name="%s" sqref="%s"/>'
+                  '</allowEditRanges>' % (_EDIT_RANGE_NAME, sqref))
+
+    # Вставляем блок ПОСЛЕ закрывающего </sheetData> (это правильная позиция:
+    # вставка перед <sheetData> делала книгу нечитаемой для Excel — 0x800A03EC).
+    anchor = re.search(r'</sheetData>', xml_text)
+    if anchor is not None:
+        insert_at = anchor.end()
+        # Если сразу после sheetData следует sheetCalcPr — защита должна быть
+        # ПОСЛЕ него (sheetCalcPr предшествует sheetProtection по схеме).
+        mcalc = re.match(
+            r'\s*(?:<sheetCalcPr[^>]*/>|<sheetCalcPr\b.*?</sheetCalcPr>)',
+            xml_text[insert_at:], re.S)
+        if mcalc:
+            insert_at += mcalc.end()
+        xml_text = (xml_text[:insert_at] + block + xml_text[insert_at:])
+    else:
+        # Резерв: нет sheetData (аномальный лист) — перед закрытием </worksheet>
+        wend = xml_text.rfind('</worksheet>')
+        if wend != -1:
+            xml_text = xml_text[:wend] + block + xml_text[wend:]
     return xml_text
 
 

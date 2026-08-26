@@ -51,8 +51,17 @@ WORKBOOK = PROJECT_DIR / "work.xlsm"
 REPORT = PROJECT_DIR / "report.xlsx"
 MODELS = PROJECT_DIR / "base" / "models"
 
-# Группы модельных файлов (порядок объединения)
-GROUPS = ["4x4", "2170", "2180", "2190", "GAZ", "UAZ"]
+# Группы модельных файлов (порядок объединения).
+# Список групп параметризуется динамически из каталога base/models/
+# (имена *.xlsm без расширения), а не жёстко зашит в скрипте.
+GROUPS = sorted(
+    p.stem for p in MODELS.glob("*.xlsm")
+    if p.is_file() and not p.name.lower().startswith("~$")
+)
+if not GROUPS:
+    # Резервный список на случай пустого/недоступного каталога.
+    GROUPS = ["4x4", "2170", "2180", "2190", "GAZ", "UAZ"]
+print(f"GROUPS (из base/models/): {GROUPS}")
 
 # Имя этапа для лог-файла PID (используется build_all.py для безопасного taskkill).
 STAGE_NAME = "templates"
@@ -204,7 +213,18 @@ def _reduce_to_include(wb, include):
     to_delete = [s.Name for s in wb.Sheets if s.Name not in include and s.Name != "__guard__"]
     for name in to_delete:
         try:
-            wb.Sheets(name).Delete()
+            ws = wb.Sheets(name)
+            # Скрытые/защищённые листы (например, _SETTINGS) могут не давать
+            # Delete — снимаем защиту и делаем лист видимым перед удалением.
+            try:
+                ws.Unprotect()
+            except Exception:
+                pass
+            try:
+                ws.Visible = -1  # xlSheetVisible
+            except Exception:
+                pass
+            ws.Delete()
         except Exception as e:
             print(f"  [!] Не удалён лист '{name}': {e}")
     guard.Delete()
@@ -247,33 +267,22 @@ def build_work_templates(excel):
 
 
 def build_model_templates(excel):
-    """Создаёт model.xlsm и model0.xlsm (общая структура листов)."""
-    # Плейсхолдер группы. За основу структуры берём GAZ как эталон.
-    group = "GAZ"
-    src = open_workbook_with_retry(excel, str(MODELS / f"{group}.xlsm"))
-    if src is None:
-        raise RuntimeError(f"Не удалось открыть модель {group}.xlsm")
-    dst = excel.Workbooks.Add()
+    """Создаёт model.xlsm и model0.xlsm (общая структура листов).
 
-    # Копируем 4 основных листа группы GAZ (первый использует Sheet1)
-    first = True
-    for name in [group, f"{group}w", "z4", f"{group}z4"]:
-        try:
-            ws = src.Sheets(name)
-            if first:
-                target = dst.Sheets(1)
-                try:
-                    ws.Copy(Before=target)
-                    target.Delete()
-                    dst.Sheets(1).Name = name
-                except Exception:
-                    target.Name = name
-                first = False
-            else:
-                ws.Copy(None, dst.Sheets(dst.Sheets.Count))
-                dst.Sheets(dst.Sheets.Count).Name = name
-        except Exception as e:
-            print(f"  [!] Копирование листа {name}: {e}")
+    v1.0.12 (Debug-фикс): за основу берётся КОПИЯ base/models/GAZ.xlsm,
+    а не новая книга Workbooks.Add(). Причина: ws.Copy переносит только
+    классы листов, но НЕ стандартные модули Mod_* — прежняя схема оставляла
+    model.xlsm без VBA-модулей (нарушение требования «model.xlsm должен
+    содержать импортированные модули»). Копирование файла целиком сохраняет
+    весь VBA-проект модели; лишние листы (макеты {NN}M, temp*, архивы)
+    удаляются через _reduce_to_include.
+    """
+    group = "GAZ"
+    dst_path = TEMPLATES / "model.xlsm"
+    shutil.copyfile(str(MODELS / f"{group}.xlsm"), str(dst_path))
+    dst = open_workbook_with_retry(excel, str(dst_path))
+    if dst is None:
+        raise RuntimeError(f"Не удалось открыть model.xlsm (из копии {group}.xlsm)")
 
     # Переименование в плейсхолдер {GroupName}
     rename_map = {
@@ -291,18 +300,17 @@ def build_model_templates(excel):
     keep = ["{GroupName}", "{GroupName}w", "z4", "{GroupName}z4"]
     _reduce_to_include(dst, keep)
 
-    dst.SaveAs(str(TEMPLATES / "model.xlsm"), FileFormat=52)
+    dst.Save()
     dst.Close()
 
     # model0.xlsm: без VBA-кода
-    wb = open_workbook_with_retry(excel, str(TEMPLATES / "model.xlsm"))
+    wb = open_workbook_with_retry(excel, str(dst_path))
     if wb is None:
         raise RuntimeError("Не удалось открыть model.xlsm")
     _remove_vba(wb)
     wb.SaveAs(str(TEMPLATES / "model0.xlsm"), FileFormat=52)
     wb.Close()
 
-    src.Close()
     print("  Созданы model.xlsm и model0.xlsm")
 
 

@@ -5,6 +5,53 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.0.12] — 2026-08-26
+
+### Added
+- **Универсальный поиск листов (блок 1.3):** в `Mod_SheetButtons.bas` добавлены
+  `ClassifySheet` (enum `SheetKind`: `{Group}`/`{Group}w`/`z4`/`{Group}z4`),
+  `ResolveGroupName`, `GetGroupName`. Имя группы динамически читается из `main!$B$14`
+  с fallback по имени листа — поиск работает на листах работ и запчастей любой группы.
+- **Ручной подбор запчастей («РУЧ ЗЧ»):** `Mod_PickWork.PickParts_UI` — открывает лист
+  запчастей группы (`{Group}z4`, при отсутствии — общий `z4`) + хелпер `GetPartsSheetName`;
+  обработчик `Mod_ButtonDispatcher.Btn_main_PickParts_Click`.
+- **Новая группа тестов `RunSearchTests`:** TC-51 (ClassifySheet), TC-52/53/54
+  (ExecuteSearch/Btn_ClearFilter), TC-55 (PickParts_UI); шапка покрытия расширена до TC-58.
+  Итог прогона: Total=60, Passed=51, Failed=0, Skipped=9.
+
+### Removed
+- **Макросы:** `Btn_main_Import_Click`, `Btn_main_ImportByInput_Click`,
+  `Btn_main_RenameSheets_Click`, `Btn_main_ShowWorkbookPath_Click`,
+  `Btn_main_ShowCurrentUser_Click`, `Btn_main_ImportFromSheetM_Click`
+  (+ их `_UI`: `ImportSheet_UI`, `ImportByInput_UI`, `RenameSheets_UI`, `ImportFromSheetM_UI`).
+
+### Changed
+- **Переименованы в нейтральные имена (универсальный поиск листов):**
+  - `Mod_SheetButtons.bas`: `ExecuteUAZSearch` → `ExecuteSearch`;
+    `Btn_UAZ_SearchByArticle`/`Btn_Parts_SearchByArticle` → `Btn_Search_ByArticle`;
+    `Btn_UAZ_SearchByName`/`Btn_Parts_SearchByName` → `Btn_Search_ByName`;
+    `Btn_UAZ_ClearFilter`/`Btn_Parts_ClearFilter` → `Btn_ClearFilter`.
+  - `Mod_ButtonDispatcher.bas`: `Btn_UAZ_Article_Click`/`Btn_Parts_Article_Click` →
+    `Btn_Search_ByArticle_Click`; `Btn_UAZ_Name_Click`/`Btn_Parts_Name_Click` →
+    `Btn_Search_ByName_Click`; `Btn_UAZ_Clear_Click`/`Btn_Parts_Clear_Click` →
+    `Btn_Search_Clear_Click`.
+- `Mod_AutoMatch.bas`: комментарии «из тождеств UAZ/UAZw/UAZz4» → «из тождеств работ/запчастей»;
+  исправлен комментарий `ImportVH` (`{B2}M` → `{B4}M`).
+- **Скрипты и шаблоны:**
+  - `export_vba.py`: карта `COMPONENTS` — `Лист4` → `Лист9`.
+  - `impVBA.py`: добавлен CLI-аргумент `--target` (параметризация целевой книги);
+    sheet-компоненты при отсутствии в целевой книге пропускаются.
+  - `build_templates.py`: `GROUPS` читаются из `base/models/*.xlsm`;
+    `build_model_templates` строится из копии `GAZ.xlsm` (модель с модулями).
+  - `template_protection.py`: исправлен порядок XML-узлов защиты (после `</sheetData>`),
+    устранена ошибка `0x800A03EC`; `_reduce_to_include` снимает защиту перед удалением.
+  - Пересобраны шаблоны: `work.xlsm`, `work0.xlsm`, `model.xlsm` (с модулями),
+    `model0.xlsm` (без модулей), `report0.xlsx`.
+
+### Note
+- Версия синхронизирована до `v1.0.12` на этапе очистки (Этап 7): `scripts/config.py`,
+  `scripts/config.ps1`, `src/modules/Mod_Constants.bas`, `README.md`.
+
 ## [v1.0.11] — 2026-08-25
 
 ### Added

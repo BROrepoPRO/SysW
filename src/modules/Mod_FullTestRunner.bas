@@ -4,7 +4,7 @@ Option Explicit
 ' ============================================================
 ' Модуль: Mod_FullTestRunner
 ' Назначение: Набор технических тестов для проекта SysW
-' Покрытие: TC-01 .. TC-50 (автоматические тесты) + TC-S1..TC-S3
+' Покрытие: TC-01 .. TC-58 (автоматические тесты) + TC-S1..TC-S3
 ' ============================================================
 
 ' ---- Счётчики результатов ----
@@ -31,7 +31,7 @@ Public Sub RunAllTests()
     Mod_Constants.SilenceMsgBox = True
 
     Debug.Print "=============================================="
-    Debug.Print "  Запуск набора тестов (TC-01..TC-50)"
+    Debug.Print "  Запуск набора тестов (TC-01..TC-58)"
     Debug.Print "=============================================="
     Debug.Print ""
 
@@ -97,6 +97,10 @@ Public Sub RunAllTests()
     Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunConstantsTests START")
     RunConstantsTests
     Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunConstantsTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunSearchTests START")
+    RunSearchTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunSearchTests END")
 
     ' Финальный отчёт
     PrintFinalReport
@@ -1866,6 +1870,207 @@ Private Sub RunConstantsTests()
 End Sub
 
 ' ============================================================
+' Группа: тесты универсального поиска листов и ручного подбора
+' запчастей (TC-51..TC-58)
+' ============================================================
+Private Sub RunSearchTests()
+    Dim wsMain As Worksheet
+    Dim wsT As Worksheet
+    Dim oldB14 As String
+    Dim kind As SheetKind
+    Dim ok As Boolean
+    Dim reason As String
+    Dim i As Long
+
+    Debug.Print "--- Mod_SheetButtons / Mod_PickWork Tests ---"
+
+    Set wsMain = Nothing
+    On Error Resume Next
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
+    On Error GoTo 0
+    If wsMain Is Nothing Then
+        AddResult "TC-51", "ClassifySheet классификация", True, "", True, "Лист main не найден"
+        Debug.Print ""
+        Exit Sub
+    End If
+
+    ' Сохраняем исходное B14 и задаём уникальную тестовую группу
+    oldB14 = Trim(CStr(wsMain.Range("B14").Value))
+    wsMain.Range("B14").Value = "ZZZ"
+    Application.DisplayAlerts = False
+
+    ' --- TC-51: ClassifySheet классификация всех типов ---
+    ok = True
+    reason = ""
+
+    ' skWorks: {Group}
+    Set wsT = ThisWorkbook.Worksheets.Add(After:=wsMain)
+    On Error Resume Next
+    wsT.Name = "ZZZ"
+    If Err.Number <> 0 Then Err.Clear
+    On Error GoTo 0
+    kind = Mod_SheetButtons.ClassifySheet(wsT, "ZZZ")
+    If kind <> skWorks Then ok = False: reason = reason & "{Group}; "
+    wsT.Delete
+
+    ' skWorksModel: {Group}w
+    Set wsT = ThisWorkbook.Worksheets.Add(After:=wsMain)
+    wsT.Name = "ZZZw"
+    kind = Mod_SheetButtons.ClassifySheet(wsT, "ZZZ")
+    If kind <> skWorksModel Then ok = False: reason = reason & "{Group}w; "
+    wsT.Delete
+
+    ' skPartsModel: {Group}z4
+    Set wsT = ThisWorkbook.Worksheets.Add(After:=wsMain)
+    wsT.Name = "ZZZz4"
+    kind = Mod_SheetButtons.ClassifySheet(wsT, "ZZZ")
+    If kind <> skPartsModel Then ok = False: reason = reason & "{Group}z4; "
+    wsT.Delete
+
+    ' skUnknown: посторонний лист
+    Set wsT = ThisWorkbook.Worksheets.Add(After:=wsMain)
+    wsT.Name = "NoiseSheet"
+    kind = Mod_SheetButtons.ClassifySheet(wsT, "ZZZ")
+    If kind <> skUnknown Then ok = False: reason = reason & "прочее; "
+    wsT.Delete
+
+    ' skParts: z4 (общий лист запчастей). Ренейм может не удаться, если лист z4 уже есть.
+    Dim z4ok As Boolean
+    Dim z4Reason As String
+    z4ok = True
+    z4Reason = ""
+    Set wsT = ThisWorkbook.Worksheets.Add(After:=wsMain)
+    On Error Resume Next
+    wsT.Name = "z4"
+    If Err.Number <> 0 Then
+        Err.Clear
+        On Error GoTo 0
+        ' Лист z4 уже существует — используем его напрямую
+        Set wsT = Nothing
+        On Error Resume Next
+        Set wsT = ThisWorkbook.Sheets("z4")
+        On Error GoTo 0
+        If wsT Is Nothing Then
+            z4ok = False
+            z4Reason = "Не удалось создать/найти лист z4"
+        Else
+            kind = Mod_SheetButtons.ClassifySheet(wsT, "ZZZ")
+            If kind <> skParts Then
+                z4ok = False
+                z4Reason = "существующий z4 не классифицирован как skParts"
+            End If
+        End If
+    Else
+        On Error GoTo 0
+        kind = Mod_SheetButtons.ClassifySheet(wsT, "ZZZ")
+        If kind <> skParts Then
+            z4ok = False
+            z4Reason = "созданный z4 не классифицирован как skParts"
+        End If
+        wsT.Delete
+    End If
+
+    If z4ok Then
+        ' всё ок
+    Else
+        ok = False
+        reason = reason & z4Reason & "; "
+    End If
+
+    If ok Then
+        AddResult "TC-51", "ClassifySheet классификация", True, ""
+    Else
+        AddResult "TC-51", "ClassifySheet классификация", False, reason
+    End If
+
+    ' --- TC-52..TC-54: ExecuteSearch / Btn_ClearFilter на временном листе запчастей ---
+    Set wsT = ThisWorkbook.Worksheets.Add(After:=wsMain)
+    wsT.Name = "ZZZz4"
+    ' Заполняем структуру: заголовки на строке 3, данные с 4-й строки
+    wsT.Cells(3, 1).Value = "Код"
+    wsT.Cells(3, 2).Value = "Артикул"
+    wsT.Cells(3, 3).Value = "Наименование"
+    For i = 4 To 10
+        wsT.Cells(i, 1).Value = i - 3
+        wsT.Cells(i, 2).Value = "ART" & (i - 3)
+        wsT.Cells(i, 3).Value = "Деталь " & (i - 3)
+    Next i
+
+    ' TC-52: Btn_Search_ByArticle без ошибки
+    wsT.Activate
+    wsT.Range("C1").Value = "ART1"
+    On Error Resume Next
+    Call Mod_SheetButtons.Btn_Search_ByArticle
+    If Err.Number <> 0 Then
+        AddResult "TC-52", "Btn_Search_ByArticle без ошибки", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-52", "Btn_Search_ByArticle без ошибки", True, ""
+    End If
+    On Error GoTo 0
+    On Error Resume Next
+    wsT.ShowAllData
+    On Error GoTo 0
+
+    ' TC-53: Btn_Search_ByName без ошибки
+    wsT.Range("C1").Value = "Деталь"
+    On Error Resume Next
+    Call Mod_SheetButtons.Btn_Search_ByName
+    If Err.Number <> 0 Then
+        AddResult "TC-53", "Btn_Search_ByName без ошибки", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-53", "Btn_Search_ByName без ошибки", True, ""
+    End If
+    On Error GoTo 0
+    On Error Resume Next
+    wsT.ShowAllData
+    On Error GoTo 0
+
+    ' TC-54: Btn_ClearFilter без ошибки (сброс фильтра и очистка C1)
+    wsT.Range("C1").Value = "x"
+    On Error Resume Next
+    Call Mod_SheetButtons.Btn_ClearFilter
+    If Err.Number <> 0 Then
+        AddResult "TC-54", "Btn_ClearFilter без ошибки", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        Dim c1Empty As Boolean
+        c1Empty = (Trim(CStr(wsT.Range("C1").Value)) = "")
+        AddResult "TC-54", "Btn_ClearFilter без ошибки", c1Empty, _
+                  "Ожидалась очистка C1, получено '" & CStr(wsT.Range("C1").Value) & "'"
+    End If
+    On Error GoTo 0
+
+    ' Удаляем временный лист запчастей
+    wsT.Delete
+    Set wsT = Nothing
+
+    ' --- TC-55: PickParts_UI без ошибки (группа ZZZ отсутствует в base/models) ---
+    On Error Resume Next
+    Call Mod_PickWork.PickParts_UI
+    If Err.Number <> 0 Then
+        AddResult "TC-55", "PickParts_UI вызов без ошибки", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-55", "PickParts_UI вызов без ошибки", True, ""
+    End If
+    On Error GoTo 0
+
+    ' Восстанавливаем исходное значение B14
+    If Len(oldB14) > 0 Then
+        wsMain.Range("B14").Value = oldB14
+    Else
+        wsMain.Range("B14").ClearContents
+    End If
+    Set wsMain = Nothing
+
+    Application.DisplayAlerts = True
+
+    Debug.Print ""
+End Sub
+
+' ============================================================
 ' Вспомогательные функции
 ' ============================================================
 
@@ -1915,7 +2120,7 @@ End Sub
 
 ' --------------------------------------------------------------------------
 ' RunAllTests_UI
-' Запускает все тесты (TC-01..TC-46) и показывает результат
+' Запускает все тесты (TC-01..TC-58) и показывает результат
 ' --------------------------------------------------------------------------
 Public Sub RunAllTests_UI()
     On Error GoTo ErrHandler

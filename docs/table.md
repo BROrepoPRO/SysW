@@ -114,16 +114,18 @@
 
 > **ФАКТИЧЕСКАЯ кодовая база кнопок (из `src/modules/`):**
 > Кнопки листа `main` (обработчики `Mod_ButtonDispatcher.bas`):
-> `Btn_main_Clear_Click`, `Btn_main_Import_Click`, `Btn_main_FillHeader_Click`,
-> `Btn_main_ClearHeader_Click`, `Btn_main_ImportByInput_Click`, `Btn_main_RunTests_Click`,
-> `Btn_main_WriteLog_Click`, `Btn_main_RenameSheets_Click`, `Btn_main_ImportDataToMain_Click`,
-> `Btn_main_FindOrder_Click`, `Btn_main_ShowWorkbookPath_Click`, `Btn_main_ImportVH_Click`,
-> `Btn_main_ImportFromSheetM_Click`, `Btn_main_ShowCurrentUser_Click`, `Btn_main_CheckFileExists_Click`,
-> `Btn_main_AutoMatchWorks_Click`, `Btn_main_AutoMatchParts_Click`, `Btn_main_PickWork_Click`.
-> Кнопки поиска на листах UAZ/моделей (`Mod_SheetButtons.bas`): `Btn_UAZ_SearchByArticle`
-> (поиск по столбцу B), `Btn_UAZ_SearchByName` (по столбцу C), `Btn_UAZ_ClearFilter`
-> (сброс фильтра и очистка `C1`). Диспетчерские: `Btn_UAZ_Article_Click`,
-> `Btn_UAZ_Name_Click`, `Btn_UAZ_Clear_Click`.
+> `Btn_main_Clear_Click`, `Btn_main_FillHeader_Click`,
+> `Btn_main_ClearHeader_Click`, `Btn_main_RunTests_Click`,
+> `Btn_main_WriteLog_Click`, `Btn_main_ImportDataToMain_Click`,
+> `Btn_main_FindOrder_Click`, `Btn_main_ImportVH_Click`, `Btn_main_CheckFileExists_Click`,
+> `Btn_main_AutoMatchWorks_Click`, `Btn_main_AutoMatchParts_Click`, `Btn_main_PickWork_Click`,
+> `Btn_main_PickParts_Click`.
+> Кнопки поиска (`Mod_SheetButtons.bas`) — универсальный поиск на листах работ/запчастей
+> любой группы (имя группы из `main!$B$14`, классификация `{Group}/{Group}w/z4/{Group}z4`):
+> `Btn_Search_ByArticle` (поиск по столбцу B), `Btn_Search_ByName` (по столбцу C),
+> `Btn_ClearFilter` (сброс фильтра и очистка `C1`). Диспетчерские
+> (`Mod_ButtonDispatcher.bas`): `Btn_Search_ByArticle_Click`, `Btn_Search_ByName_Click`,
+> `Btn_Search_Clear_Click`.
 
 ---
 
@@ -349,7 +351,7 @@
 
 | Лист | Роль | Заголовки | Зоны ввода | Данные (с) | Кнопки (строки/обработчики) | Protect / AllowEditRanges | В шаблон |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `main` | рабочий (осн.) | строка 3 (`A3=Поле`, `B3=Значение`, `D3:J3`, `L3:N3`, `P3:V3`, `X3:AA3`) | `A4:A17` (подписи), `B4` (№ ЗН), `B5:B17` (значения), `C1`/`Z1` (резерв) | с 4-й строки, `D–N` (работы) + `P–AB` (запчасти) | строки 1–2: `Btn_main_*` (`Clear`, `Import`, `FillHeader`, `ClearHeader`, `ImportByInput`, `RunTests`, `WriteLog`, `RenameSheets`, `ImportDataToMain`, `FindOrder`, `ShowWorkbookPath`, `ImportVH`, `ImportFromSheetM`, `ShowCurrentUser`, `CheckFileExists`, `AutoMatchWorks`, `AutoMatchParts`, `PickWork`) | блок: 3 верхние строки + A:B; AllowEditRanges: `B4`, `B5:B17`, `C1`, `Z1`, данные с 4-й (D–AB) | **да** |
+| `main` | рабочий (осн.) | строка 3 (`A3=Поле`, `B3=Значение`, `D3:J3`, `L3:N3`, `P3:V3`, `X3:AA3`) | `A4:A17` (подписи), `B4` (№ ЗН), `B5:B17` (значения), `C1`/`Z1` (резерв) | с 4-й строки, `D–N` (работы) + `P–AB` (запчасти) | строки 1–2: `Btn_main_*` (`Clear`, `FillHeader`, `ClearHeader`, `RunTests`, `WriteLog`, `ImportDataToMain`, `FindOrder`, `ImportVH`, `CheckFileExists`, `AutoMatchWorks`, `AutoMatchParts`, `PickWork`, `PickParts`) | блок: 3 верхние строки + A:B; AllowEditRanges: `B4`, `B5:B17`, `C1`, `Z1`, данные с 4-й (D–AB) | **да** |
 | `spisok` | служебный | строка 3 (A–J: `№ п/п`, `Модель`, `ГРЗ`, `VIN`, `гараж. №`, `год вып.`, `пробег`, `дата`, `№ акта ЕИС`, `сумма`) | — | с 4-й строки, `A–J` | нет | блок: 3 верхние строки; FreezePanes A4; AllowEditRanges: данные с 4-й | **да** |
 | `models` | служебный | строка 3 (A–F: `Модель`, `Группа`, `Цена н/ч`, `Работы исх`, `Работы мод`, `З/ч мод`) | — | с 4-й строки, `A–F` | нет | блок: 3 верхние строки; FreezePanes A4; AllowEditRanges: данные с 4-й | **да** |
 | `libname` | служебный | строка 3 (`A3={_name}`, `B3=England`, `C3=Русский`) | — | с 4-й строки (реестр имён) | нет | блок: 3 верхние строки; FreezePanes A4; AllowEditRanges: данные с 4-й | **да** |
@@ -717,16 +719,18 @@
 > Проблемы TC-28, TC-48, TC-49 и ошибки тестовой части вынесены в промт 12
 > (вне объёма v1.0.8).
 
-### 9.2. Поиск/фильтрация на листах запчастей (v1.0.8)
+### 9.2. Поиск/фильтрация на листах работ и запчастей (универсальный, v1.0.12)
 
 | Макрос | Назначение |
 | --- | --- |
-| `ExecutePartsSearch(searchColumn)` | Общий поиск «содержит» по столбцу активного листа запчастей (whitelist `z4`, `{Группа}z4`), данные с 4-й строки |
-| `Btn_Parts_SearchByArticle` | Поиск по артикулу (столбец **B=2**) |
-| `Btn_Parts_SearchByName` | Поиск по наименованию (столбец **C=3**) |
-| `Btn_Parts_ClearFilter` | Сброс фильтра + очистка поля ввода **C1** |
+| `ExecuteSearch(searchColumn)` | Единый поиск «содержит» по активному листу работ/запчастей (`{Group}`, `{Group}w`, `z4`, `{Group}z4`), имя группы из `main!$B$14`, данные с 4-й строки |
+| `Btn_Search_ByArticle` | Поиск по артикулу (столбец **B=2**) |
+| `Btn_Search_ByName` | Поиск по наименованию (столбец **C=3**) |
+| `Btn_ClearFilter` | Сброс фильтра + очистка поля ввода **C1** |
 
-Диспетчеры: `Btn_Parts_Article_Click`, `Btn_Parts_Name_Click`, `Btn_Parts_Clear_Click`
+Диспетчеры: `Btn_Search_ByArticle_Click`, `Btn_Search_ByName_Click`, `Btn_Search_Clear_Click`
 в `Mod_ButtonDispatcher.bas`. Лист `spisok` поиском **не затрагивается**. Механизм
-аналогичен UAZ-поиску (§0.5): `AutoFilter` «содержит», подсчёт видимых строк,
-`MsgBox` «Найдено строк / Совпадений не найдено».
+аналогичен §0.5: `AutoFilter` «содержит», подсчёт видимых строк,
+`MsgBox` «Найдено строк / Совпадений не найдено». В v1.0.12 имена приведены к нейтральным:
+`ExecuteUAZSearch`/`ExecutePartsSearch` → `ExecuteSearch`;
+`Btn_UAZ_*`/`Btn_Parts_*` → `Btn_Search_*` / `Btn_ClearFilter`.

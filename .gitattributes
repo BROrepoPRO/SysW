@@ -4,17 +4,16 @@
 # VBA-файлы: хранить в UTF-8, Git не меняет кодировку
 *.bas text working-tree-encoding=UTF-8
 *.cls text working-tree-encoding=UTF-8
-
 # PowerShell-скрипты
 *.ps1 text
-
 # Python-файлы
 *.py text
-
 # Markdown
 *.md text
-
 # Excel файлы (бинарные) - не трогать
 *.xlsm binary
 *.xlsx binary
 *.xls binary
+base/models/** filter=lfs diff=lfs merge=lfs -text
+base/templates/** filter=lfs diff=lfs merge=lfs -text
+work.xlsm filter=lfs diff=lfs merge=lfs -text

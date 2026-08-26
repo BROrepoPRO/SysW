@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v1.0.11)
+# Техническая документация разработчика — SysW (v1.0.12)
 
 ## 1. Архитектура проекта
 
@@ -71,9 +71,9 @@
 
 Mod_ButtonDispatcher (обработчики кнопок)
        │
-       ├── Mod_Import.ClearMainSheet_UI()
-       ├── Mod_Import.ImportSheet_UI()
-       ├── Mod_Import.ClearHeader_UI()
+       ├── Mod_SheetOps.ClearMainSheet_UI()
+       ├── Mod_Import.ImportDataToMain_UI()
+       ├── Mod_SheetOps.ClearHeader_UI()
        ├── Mod_OrderHeader.FillHeaderFromOrder_UI()
        └── ...
 
@@ -183,15 +183,12 @@ Mod_FullTestRunner.RunAllTests()
 |---------|----------|
 | `ImportSheet(grz)` | Импортирует лист из report.xlsx по ГРЗ в текущую книгу |
 | `ImportDataToMain(wsSource)` | Переносит данные из листа-источника в лист main по столбцам |
-| `ImportSheet_UI()` | Запускает импорт из отчёта по ГРЗ из ячейки B6 |
-| `ImportByInput_UI()` | Запрашивает ГРЗ через InputBox, вызывает ImportSheet |
-| `RenameSheets_UI()` | Переименовывает листы в report.xlsx по ГРЗ |
 | `ImportDataToMain_UI()` | Переносит данные с активного листа в лист main |
-| `ImportFromB2_UI()` | Импорт данных на лист "мэйн" из листа {B2}M; если листа нет — копирует из report.xlsx |
+| `ImportFromB2_UI()` | Импорт данных на лист "мэйн" из листа {B4}M; если листа нет — копирует из report.xlsx |
 
 ### 2.4 Mod_ButtonDispatcher.bas — Диспетчер кнопок
 
-**Файл:** [`Mod_ButtonDispatcher.bas`](../src/modules/Mod_ButtonDispatcher.bas) (121 строка)
+**Файл:** [`Mod_ButtonDispatcher.bas`](../src/modules/Mod_ButtonDispatcher.bas) (153 строки)
 
 **Назначение:** Содержит **только** однострочные вызовы UI-процедур. Является прослойкой между кнопками на формах и бизнес-логикой. Не содержит бизнес-логики.
 
@@ -200,25 +197,27 @@ Mod_FullTestRunner.RunAllTests()
 | Процедура | Вызов |
 |-----------|-------|
 | `Btn_main_Clear_Click()` | `Mod_SheetOps.ClearMainSheet_UI` |
-| `Btn_main_Import_Click()` | `Mod_Import.ImportSheet_UI` — импорт из report.xlsx по B6 |
 | `Btn_main_ImportVH_Click()` | `Mod_Import.ImportFromB2_UI` — импорт + перенос данных по B4 |
 | `Btn_main_FillHeader_Click()` | `Mod_OrderHeader.FillHeaderFromOrder_UI` |
 | `Btn_main_ClearHeader_Click()` | `Mod_SheetOps.ClearHeader_UI` |
-| `Btn_main_ImportByInput_Click()` | Импорт по ГРЗ, введённому пользователем через InputBox |
 | `Btn_main_RunTests_Click()` | `Mod_FullTestRunner.RunAllTests_UI` |
 | `Btn_main_WriteLog_Click()` | `Mod_Utils.WriteLog_UI` |
-| `Btn_main_RenameSheets_Click()` | `Mod_Import.RenameSheets_UI` |
 | `Btn_main_ImportDataToMain_Click()` | `Mod_Import.ImportDataToMain_UI` |
 | `Btn_main_FindOrder_Click()` | `Mod_OrderHeader.FindOrder_UI` |
-| `Btn_main_ShowWorkbookPath_Click()` | `Mod_Utils.ShowWorkbookPath_UI` |
-| `Btn_main_ShowCurrentUser_Click()` | `Mod_Utils.ShowCurrentUser_UI` |
 | `Btn_main_CheckFileExists_Click()` | `Mod_Utils.CheckFileExists_UI` |
+| `Btn_main_AutoMatchWorks_Click()` | `Mod_AutoMatch.AutoMatchWorks` |
+| `Btn_main_AutoMatchParts_Click()` | `Mod_AutoMatch.AutoMatchParts` |
+| `Btn_main_PickWork_Click()` | `Mod_PickWork.PickWork_UI` |
+| `Btn_main_PickParts_Click()` | `Mod_PickWork.PickParts_UI` — ручной подбор запчастей `{Group}z4`/`z4` |
+| `Btn_Search_ByArticle_Click()` | `Mod_SheetButtons.Btn_Search_ByArticle` — поиск по артикулу (столбец B) |
+| `Btn_Search_ByName_Click()` | `Mod_SheetButtons.Btn_Search_ByName` — поиск по наименованию (столбец C) |
+| `Btn_Search_Clear_Click()` | `Mod_SheetButtons.Btn_ClearFilter` — сброс фильтра + очистка C1 |
 
 ### 2.5 Mod_FullTestRunner.bas — Тестовый раннер
 
 **Файл:** [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas) (577 строк)
 
-**Назначение:** Автоматическое тестирование VBA-модулей. Набор сценариев **TC-01..TC-50** + **TC-S1..TC-S3** (полный перечень — см. [`docs/reestr.md`](reestr.md), раздел 3).
+**Назначение:** Автоматическое тестирование VBA-модулей. Набор сценариев **TC-01..TC-58** + **TC-S1..TC-S3** (полный перечень — см. [`docs/reestr.md`](reestr.md), раздел 3).
 
 **Группы тестов:**
 
@@ -239,6 +238,7 @@ Mod_FullTestRunner.RunAllTests()
 | `RunAutoMatchTests()` | TC-39..TC-44 | Mod_AutoMatch |
 | `RunConstantsTests()` | TC-46 | Mod_Constants |
 | `RunSQLiteTests()` | TC-S1..TC-S3, TC-47..TC-50 | Mod_SQLiteDB / провайдер |
+| `RunSearchTests()` | TC-51..TC-58 | Mod_SheetButtons / Mod_PickWork |
 
 **Механизмы:**
 - **SKIP** — тесты, зависящие от отсутствующих данных, пропускаются
@@ -341,31 +341,47 @@ python scripts/run_tests.py
 | `ModelWorkEntry` | `Work As WorkEntry` | Работа модели |
 | | `Model As String` | Модель |
 
-### 2.10 Mod_SheetButtons.bas — Кнопки листов UAZ и запчастей
+### 2.10 Mod_SheetButtons.bas — Универсальный поиск на листах работ и запчастей
 
 **Файл:** [`Mod_SheetButtons.bas`](../src/modules/Mod_SheetButtons.bas)
 
-**Назначение:** Обработчики кнопок поиска/фильтрации на листах UAZ (UAZ, UAZw, z4, UAZz4) и листах запчастей (z4, `{GroupName}z4`). Модуль содержит **только** поисковые обработчики и приватные помощники. Заявленные в старой документации заглушки `Btn_z4_Action*`/`Btn_work_Action*` в коде **отсутствуют**.
+**Назначение:** Универсальные обработчики кнопок поиска/фильтрации на листах работ и запчастей любой группы. С v1.0.12 имя группы динамически читается из `main!$B$14` (с fallback на имя листа), поэтому имена листов в код **не зашиты** — поиск работает на `{Group}`, `{Group}w`, `z4`, `{Group}z4` любой группы. Модуль содержит **только** поисковые обработчики и приватные помощники. Заявленные в старой документации заглушки `Btn_z4_Action*`/`Btn_work_Action*` в коде **отсутствуют**.
+
+**Классификация листов (`ClassifySheet`, enum `SheetKind`):**
+
+| Тип | Значение | Лист |
+|-----|----------|------|
+| `skWorks` | 1 | `{Group}` (работы группы) |
+| `skWorksModel` | 2 | `{Group}w` |
+| `skParts` | 3 | `z4` (общие запчасти) |
+| `skPartsModel` | 4 | `{Group}z4` (запчасти группы) |
+| `skUnknown` | 0 | прочее (в поиске не участвует) |
+
+Имя группы определяется через `GetGroupName()` (чтение `main!$B$14`) и
+`ResolveGroupName(ws)` — при пустом `B14` (например, в модельной книге без листа main)
+группа выводится из имени листа (`{Group}`, `{Group}w`, `{Group}z4`; для `z4` — пустая строка).
+`ClassifySheet(ws, groupName)` — публичная функция классификации листа в `SheetKind`.
 
 **Публичные обработчики:**
 
 | Процедура | Описание |
 |----------|----------|
-| `Btn_UAZ_SearchByArticle()` | Поиск «содержит» по столбцу B (артикул) на активном листе UAZ |
-| `Btn_UAZ_SearchByName()` | Поиск «содержит» по столбцу C (наименование) на активном листе UAZ |
-| `Btn_UAZ_ClearFilter()` | Сброс фильтра и очистка поля ввода C1 |
-| `Btn_Parts_SearchByArticle()` | Поиск по столбцу B на листе запчастей (z4 / `{GroupName}z4`) |
-| `Btn_Parts_SearchByName()` | Поиск по столбцу C на листе запчастей |
-| `Btn_Parts_ClearFilter()` | Сброс фильтра на листе запчастей |
+| `Btn_Search_ByArticle()` | Поиск «содержит» по столбцу B (артикул) на активном листе работ/запчастей |
+| `Btn_Search_ByName()` | Поиск «содержит» по столбцу C (наименование) на активном листе работ/запчастей |
+| `Btn_ClearFilter()` | Сброс фильтра и очистка поля ввода C1 |
 
 **Приватные помощники:**
 
 | Процедура | Описание |
 |----------|----------|
-| `ExecuteUAZSearch(searchColumn)` | Общий алгоритм поиска «содержит» для листов UAZ |
-| `ExecutePartsSearch(searchColumn)` | Общий алгоритм поиска «содержит» для листов запчастей |
+| `ExecuteSearch(searchColumn)` | Единый алгоритм поиска «содержит» (классификация листа, поле C1, данные с 4-й строки, AutoFilter) |
+| `GetGroupName()` | Читает имя группы из `main!$B$14` |
+| `ResolveGroupName(ws)` | Определяет группу: `B14` либо из имени листа |
 | `IsSearchableSheet(ws)` | Проверка, что лист подходит для поиска (данные с 4-й строки) |
-| `IsPartsSheet(ws)` | Проверка, что лист является листом запчастей (z4 / `{GroupName}z4`) |
+
+> Ранее существовавшие `Btn_UAZ_SearchByArticle`/`Btn_UAZ_SearchByName`/`Btn_UAZ_ClearFilter`,
+> `Btn_Parts_SearchByArticle`/`Btn_Parts_SearchByName`/`Btn_Parts_ClearFilter` и
+> `ExecuteUAZSearch`/`ExecutePartsSearch` переименованы в нейтральные имена выше (v1.0.12).
 
 ### 2.11 Mod_ModelDB.bas — Доступ к файлам модельных групп
 
@@ -401,11 +417,11 @@ python scripts/run_tests.py
 | `GetModelDataProvider(ByRef provider)` | Фабрика провайдера данных (SQLite при наличии SysW.db, иначе Excel-fallback) |
 | `GetParts/GetModelWorks/GetModelParts/GetMatLibEntries/GetWorkIdentities/GetPartIdentities/GetAllModelGroups/CreateModelGroupFile/FindModelGroupByModel` | Делегаты чтения/создания данных через выбранный провайдер |
 
-### 2.12 Mod_PickWork.bas — Ручной подбор работ
+### 2.12 Mod_PickWork.bas — Ручной подбор работ и запчастей
 
-**Файл:** [`Mod_PickWork.bas`](../src/modules/Mod_PickWork.bas) (130 строк)
+**Файл:** [`Mod_PickWork.bas`](../src/modules/Mod_PickWork.bas) (279 строк)
 
-**Назначение:** Ручной подбор работ из справочника группы. Открывает файл группы, активирует лист работ, пользователь ищет через фильтр и копирует данные вручную в диапазон E4:H на листе main.
+**Назначение:** Ручной подбор работ и запчастей из справочника группы. Открывает файл группы, активирует нужный лист, пользователь ищет через фильтр и копирует данные вручную в диапазон E4:H (работы) или P:W/X:AB (запчасти) на листе main.
 
 **Ключевые функции:**
 
@@ -413,7 +429,9 @@ python scripts/run_tests.py
 |---------|----------|
 | `GetGroupNameFromMain()` | Читает название группы из ячейки B14 листа main |
 | `GetWorkSheetName(groupName)` | Возвращает имя листа работ (совпадает с именем группы) |
-| `PickWork_UI()` | Главная точка входа: открывает файл группы, активирует лист, показывает инструкцию |
+| `GetPartsSheetName(wb, groupName)` | Имя модельного листа запчастей `{Group}z4`; при отсутствии — общий `z4` |
+| `PickWork_UI()` | Ручной подбор работ (кнопка «РУЧ РАБ»): открывает файл группы, активирует лист работ, показывает инструкцию |
+| `PickParts_UI()` | Ручной подбор запчастей (кнопка «РУЧ ЗЧ»): открывает файл группы, активирует `{Group}z4`/`z4`, показывает инструкцию |
 
 **Процесс работы:**
 1. Пользователь нажимает кнопку **РУЧ РАБ** на листе `main`
@@ -718,6 +736,7 @@ python scripts/impVBA.py      # Импорт всех модулей
 | `RunAutoMatchTests()` | TC-39..TC-44 | Mod_AutoMatch | нет (TC-41..44 — SKIP) |
 | `RunConstantsTests()` | TC-46 | Mod_Constants | лист libname |
 | `RunSQLiteTests()` | TC-S1..TC-S3, TC-47..TC-50 | Mod_SQLiteDB | SQLite-провайдер/SysW.db |
+| `RunSearchTests()` | TC-51..TC-58 | Mod_SheetButtons / Mod_PickWork | лист main (B14) |
 
 **Легенда:** PASS — тест проходит; SKIP — пропущен (Private-процедура, небезопасность автотеста,
 отсутствие листа/данных/SQLite-провайдера); FAIL — падение теста (останавливает `run_tests.py` с кодом 1).
@@ -736,6 +755,8 @@ python scripts/impVBA.py      # Импорт всех модулей
 | Mod_PickWork | RunPickWorkTests | TC-36..38 |
 | Mod_ModelDB | RunModelDBTests, RunModelDBReadTests | TC-22..24, TC-31..35 |
 | Mod_SQLiteDB | RunSQLiteTests | TC-S1..S3, TC-47..50 |
+| Mod_SheetButtons | RunSearchTests | TC-51..54 |
+| Mod_PickWork | RunPickWorkTests, RunSearchTests | TC-36..38, TC-55 |
 
 > Точная статистика PASS/SKIP/FAIL зависит от окружения (наличие `SysW.db`, листов, данных)
 > и формируется по итогам прогона `python scripts/run_tests.py`.
@@ -1019,14 +1040,16 @@ Exit-коды: `0` — ошибок нет; `1` — найдены ошибки 
 
 Mod_ButtonDispatcher
   ├── Mod_SheetOps (ClearMainSheet_UI, ClearHeader_UI)
-  ├── Mod_Import (ImportSheet_UI, ImportByInput_UI, RenameSheets_UI, ImportDataToMain_UI, ImportFromB2_UI)
+  ├── Mod_Import (ImportDataToMain_UI, ImportFromB2_UI)
   ├── Mod_OrderHeader (FillHeaderFromOrder_UI, FindOrder_UI)
   ├── Mod_FullTestRunner (RunAllTests_UI)
-  └── Mod_Utils (WriteLog_UI, ShowWorkbookPath_UI, ShowCurrentUser_UI, CheckFileExists_UI)
+  ├── Mod_Utils (WriteLog_UI, CheckFileExists_UI)
+  ├── Mod_SheetButtons (Btn_Search_ByArticle, Btn_Search_ByName, Btn_ClearFilter)
+  └── Mod_PickWork (PickWork_UI, PickParts_UI)
 
 Mod_SheetButtons
-  ├── Mod_Import (вызовы импорта)
-  └── Mod_SheetOps (операции с листами)
+  ├── Mod_Constants (константы структуры листов, SilenceMsgBox)
+  └── Mod_Logger (логирование ошибок)
 
 Mod_FullTestRunner
   ├── Mod_Utils (тесты утилит TC-01..TC-08, TC-12)

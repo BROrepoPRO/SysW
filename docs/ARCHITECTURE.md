@@ -1,7 +1,7 @@
 # Архитектура выноса данных работ и запчастей из work.xlsm
 
 > Версия: 1.0
-> Проект: SysW v1.0.10
+> Проект: SysW v1.0.12
 > Статус: Реализовано (SQLite-хранилище внедрено в v1.0.7)
 >
 > **Актуальный статус:** Миграция на SQLite реализована — единая база `SysW.db` (корень проекта), DDL в `db/schema.sql`, провайдеры `Mod_SQLiteDB.cls` / `Mod_ModelDBProvider.cls` / `IModelDataProvider.cls`, пересборка скриптом `scripts/migrate_models_to_sqlite.py` и контроль целостности в составе конвейера `scripts/build_all.py`.
@@ -53,11 +53,11 @@ SysW\
 ├── report.xlsx                  # Входящие документы (не изменяется)
 │
 ├── base\
-│   ├── templates\               # Шаблоны (v1.0.4)
+│   ├── templates\               # Шаблоны (v1.0.4; v1.0.12: model.xlsm с модулями)
 │   │   ├── work.xlsm            # Шаблон work с кодом (после impVBA.py)
 │   │   ├── work0.xlsm           # Шаблон work пустой (без VBA)
-│   │   ├── model.xlsm           # Общий модельный шаблон с кодом
-│   │   ├── model0.xlsm          # Модельный шаблон пустой (без VBA)
+│   │   ├── model.xlsm           # Модельный шаблон с модулями (из копии GAZ.xlsm)
+│   │   ├── model0.xlsm          # Модельный шаблон без модулей
 │   │   └── report0.xlsx         # Шаблон отчёта пустой (без данных)
 │   └── models\                  # Файлы модельных групп
 │       ├── .gitkeep
@@ -841,13 +841,51 @@ Excel ловит типовые ошибки (недопустимая inline-и
 
 В `GetMatLibEntries` используется детерминированный `ORDER BY target_type, target_code`.
 
-#### 5.5.4. Поиск/фильтрация на листах запчастей (v1.0.8)
+#### 5.5.4. Поиск/фильтрация на листах работ и запчастей (v1.0.8)
 
-В `Mod_SheetButtons.bas` добавлены `ExecutePartsSearch`, `Btn_Parts_SearchByArticle`
-(столбец B), `Btn_Parts_SearchByName` (столбец C), `Btn_Parts_ClearFilter` (сброс +
-очистка C1). В `Mod_ButtonDispatcher.bas` — диспетчеры `Btn_Parts_Article_Click`,
-`Btn_Parts_Name_Click`, `Btn_Parts_Clear_Click`. Работают на листах `z4` и
-`{Группа}z4` (whitelist), лист `spisok` не затрагивается.
+Первоначально поиск был реализован отдельно для листов UAZ и запчастей:
+`ExecuteUAZSearch`/`ExecutePartsSearch`, `Btn_UAZ_SearchByArticle`/`Btn_Parts_SearchByArticle`
+(столбец B), `Btn_UAZ_SearchByName`/`Btn_Parts_SearchByName` (столбец C),
+`Btn_UAZ_ClearFilter`/`Btn_Parts_ClearFilter` (сброс + очистка C1), диспетчеры
+`Btn_UAZ_Article_Click`/`Btn_Parts_Article_Click`, `Btn_UAZ_Name_Click`/`Btn_Parts_Name_Click`,
+`Btn_UAZ_Clear_Click`/`Btn_Parts_Clear_Click`. Работали на листах `z4` и `{Группа}z4`,
+лист `spisok` не затрагивался. В v1.0.12 имена приведены к нейтральным (см. §5.5.5).
+
+#### 5.5.5. Универсальный поиск, ручной подбор запчастей и шаблоны (v1.0.12)
+
+**Макросы:**
+- **Удалены:** `Btn_main_Import_Click`, `Btn_main_ImportByInput_Click`,
+  `Btn_main_RenameSheets_Click`, `Btn_main_ShowWorkbookPath_Click`,
+  `Btn_main_ShowCurrentUser_Click`, `Btn_main_ImportFromSheetM_Click`
+  (+ их `_UI`: `ImportSheet_UI`, `ImportByInput_UI`, `RenameSheets_UI`, `ImportFromSheetM_UI`).
+- **Переименованы в нейтральные (универсальный поиск листов):**
+  - `Mod_SheetButtons.bas`: `ExecuteUAZSearch` → `ExecuteSearch`;
+    `Btn_UAZ_SearchByArticle`/`Btn_Parts_SearchByArticle` → `Btn_Search_ByArticle`;
+    `Btn_UAZ_SearchByName`/`Btn_Parts_SearchByName` → `Btn_Search_ByName`;
+    `Btn_UAZ_ClearFilter`/`Btn_Parts_ClearFilter` → `Btn_ClearFilter`.
+    Добавлены `ClassifySheet` (enum `SheetKind`), `ResolveGroupName`, `GetGroupName`.
+    Имя группы динамически читается из `main!$B$14` с fallback по имени листа; поиск
+    работает на `{Group}`, `{Group}w`, `z4`, `{Group}z4` любой группы.
+  - `Mod_ButtonDispatcher.bas`: `Btn_UAZ_Article_Click`/`Btn_Parts_Article_Click` →
+    `Btn_Search_ByArticle_Click`; `Btn_UAZ_Name_Click`/`Btn_Parts_Name_Click` →
+    `Btn_Search_ByName_Click`; `Btn_UAZ_Clear_Click`/`Btn_Parts_Clear_Click` →
+    `Btn_Search_Clear_Click`.
+- **Добавлены:** `Mod_PickWork.PickParts_UI` (ручной подбор запчастей «РУЧ ЗЧ» для
+  листа `{Group}z4`/`z4`) + хелпер `GetPartsSheetName`;
+  обработчик `Mod_ButtonDispatcher.Btn_main_PickParts_Click`.
+- `Mod_AutoMatch.bas`: комментарии «из тождеств UAZ/UAZw/UAZz4» → «из тождеств работ/запчастей»;
+  исправлен комментарий `ImportVH` (`{B2}M` → `{B4}M`).
+
+**Шаблоны `base/templates/` и импорт VBA:**
+- `export_vba.py`: карта `COMPONENTS` — `Лист4` → `Лист9`.
+- `impVBA.py`: добавлен CLI-аргумент `--target` (параметризация целевой книги);
+  sheet-компоненты при отсутствии в целевой книге пропускаются.
+- `build_templates.py`: `GROUPS` читаются из `base/models/*.xlsm`; `build_model_templates`
+  строится из копии `GAZ.xlsm` (модель с модулями).
+- `template_protection.py`: исправлен порядок XML-узлов защиты (после `</sheetData>`),
+  устранена ошибка `0x800A03EC`; `_reduce_to_include` снимает защиту перед удалением.
+- Пересобраны шаблоны: `work.xlsm`, `work0.xlsm`, `model.xlsm` (с модулями),
+  `model0.xlsm` (без модулей), `report0.xlsx`.
 
 ---
 

@@ -47,7 +47,7 @@ COMPONENTS = {
     # --- Worksheet documents (src/sheets/) ---
     "Лист2": "sheets/Лист2.cls",
     "Лист3": "sheets/Лист3.cls",
-    "Лист4": "sheets/Лист4.cls",
+    "Лист9": "sheets/Лист9.cls",
     "Лист5": "sheets/Лист5.cls",
     # --- Class modules (src/classes/) ---
     "IModelDataProvider": "classes/IModelDataProvider.cls",

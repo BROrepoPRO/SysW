@@ -367,63 +367,6 @@ End Function
 ' ============================================================
 
 ' --------------------------------------------------------------------------
-' ImportSheet_UI
-' Импортирует лист из report.xlsx по ГРЗ из ячейки B4 листа main
-' --------------------------------------------------------------------------
-Public Sub ImportSheet_UI()
-    On Error GoTo ErrHandler
-
-    Call ImportSheet(ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN).Range("B6").Value)
-
-    Exit Sub
-
-ErrHandler:
-    MsgBox "Ошибка в ImportSheet_UI: " & Err.Description, vbCritical, "Ошибка"
-    Call Mod_Utils.WriteLog("ImportSheet_UI: " & Err.Description)
-End Sub
-
-' --------------------------------------------------------------------------
-' ImportByInput_UI
-' Запрашивает ГРЗ через InputBox, вызывает ImportSheet
-' --------------------------------------------------------------------------
-Public Sub ImportByInput_UI()
-    On Error GoTo ErrHandler
-
-    Dim grz As String
-    grz = InputBox("Введите ГРЗ для импорта:", "Импорт по ГРЗ")
-
-    If grz = "" Then
-        Exit Sub
-    End If
-
-    Call ImportSheet(grz)
-
-    MsgBox "Импорт по ГРЗ '" & grz & "' выполнен.", vbInformation, "SysW"
-    Exit Sub
-
-ErrHandler:
-    MsgBox "Ошибка в ImportByInput_UI: " & Err.Description, vbCritical, "Ошибка"
-    Call Mod_Utils.WriteLog("ImportByInput_UI: " & Err.Description)
-End Sub
-
-' --------------------------------------------------------------------------
-' RenameSheets_UI
-' Переименовывает листы в report.xlsx по ГРЗ
-' --------------------------------------------------------------------------
-Public Sub RenameSheets_UI()
-    On Error GoTo ErrHandler
-
-    Call Mod_SheetOps.RenameSheetsByGRZ
-
-    MsgBox "Переименование листов выполнено.", vbInformation, "SysW"
-    Exit Sub
-
-ErrHandler:
-    MsgBox "Ошибка в RenameSheets_UI: " & Err.Description, vbCritical, "Ошибка"
-    Call Mod_Utils.WriteLog("RenameSheets_UI: " & Err.Description)
-End Sub
-
-' --------------------------------------------------------------------------
 ' ImportDataToMain_UI
 ' Переносит данные с активного листа в лист main
 ' --------------------------------------------------------------------------
@@ -455,9 +398,9 @@ End Sub
 
 ' ============================================================
 ' ImportFromB2_UI
-' Импорт данных на лист "мэйн" из листа {B2}M
+' Импорт данных на лист "мэйн" из листа {B4}M
 ' Если листа нет — копирует из report.xlsx
-' Номер для поиска берётся из ячейки B2 листа "мэйн"
+' Номер для поиска берётся из ячейки B4 листа "мэйн"
 ' ============================================================
 Public Sub ImportFromB2_UI()
     On Error GoTo ErrHandler
@@ -476,11 +419,11 @@ Public Sub ImportFromB2_UI()
     Application.EnableEvents = False
     Application.DisplayAlerts = False
 
-    ' 1. Получаем лист "мэйн" и читаем B2
+    ' 1. Получаем лист "мэйн" и читаем B4
     Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
     grz = Trim(CStr(wsMain.Range("B4").Value))
 
-    ' 2. Проверяем, что B2 не пуст
+    ' 2. Проверяем, что B4 не пуст
     If grz = "" Or grz = "0" Then
         If Not SilenceMsgBox Then
             MsgBox "Ячейка B4 на листе 'main' пуста. Укажите номер заказа.", _
@@ -492,7 +435,7 @@ Public Sub ImportFromB2_UI()
     ' 3. Формируем имя листа-источника
     sheetName = grz & "M"
 
-    ' 4. Проверяем, существует ли лист {B2}M в текущей книге
+    ' 4. Проверяем, существует ли лист {B4}M в текущей книге
     Set wsSource = Mod_Utils.GetSheetByName(ThisWorkbook, sheetName)
 
     If wsSource Is Nothing Then
@@ -585,69 +528,4 @@ ErrHandler:
 
     MsgBox "Ошибка при импорте ВХ: " & Err.Description, vbCritical, "Ошибка"
     Call Mod_Logger.WriteLog("Mod_Import", "ImportFromB2_UI: " & Err.Description)
-End Sub
-
-' ============================================================
-' ИМПОРТ С ЛИСТА {B4}M (БЕЗ REPORT.XLSX)
-' ============================================================
-
-' --------------------------------------------------------------------------
-' ImportFromSheetM_UI
-' Переносит данные с листа "{B4}M" в лист main.
-' Не требует report.xlsx — лист уже должен быть внутри work.xlsm.
-' --------------------------------------------------------------------------
-Public Sub ImportFromSheetM_UI()
-    On Error GoTo ErrHandler
-
-    Dim wsMain As Worksheet
-    Dim grz As String
-    Dim sheetName As String
-    Dim wsSource As Worksheet
-
-    Application.ScreenUpdating = False
-    Application.EnableEvents = False
-    Application.DisplayAlerts = False
-
-    ' 1. Получаем лист main и читаем B4
-    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
-    grz = Trim(CStr(wsMain.Range("B4").Value))
-
-    ' 2. Проверяем, что B4 не пуст
-    If grz = "" Or grz = "0" Then
-        MsgBox "Ячейка B4 на листе 'main' пуста. Укажите номер заказа.", _
-               vbExclamation, "Импорт с листа M"
-        GoTo CleanUp
-    End If
-
-    ' 3. Формируем имя листа-источника
-    sheetName = grz & "M"
-
-    ' 4. Ищем лист {B4}M в текущей книге
-    Set wsSource = Mod_Utils.GetSheetByName(ThisWorkbook, sheetName)
-
-    If wsSource Is Nothing Then
-        MsgBox "Лист '" & sheetName & "' не найден в текущей книге." & vbCrLf & _
-               "Сначала скопируйте лист из report.xlsx или переименуйте существующий.", _
-               vbExclamation, "Импорт с листа M"
-        GoTo CleanUp
-    End If
-
-    ' 5. Переносим данные в main
-    Call ImportDataToMain(wsSource)
-
-    MsgBox "Данные с листа '" & sheetName & "' перенесены в main.", _
-           vbInformation, "SysW"
-
-CleanUp:
-    Application.ScreenUpdating = True
-    Application.EnableEvents = True
-    Application.DisplayAlerts = True
-    Exit Sub
-
-ErrHandler:
-    Application.ScreenUpdating = True
-    Application.EnableEvents = True
-    Application.DisplayAlerts = True
-    MsgBox "Ошибка при импорте с листа M: " & Err.Description, vbCritical, "Ошибка"
-    Call Mod_Logger.WriteLog("Mod_Import", "ImportFromSheetM_UI: " & Err.Description)
 End Sub
