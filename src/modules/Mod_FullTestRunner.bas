@@ -102,6 +102,10 @@ Public Sub RunAllTests()
     RunSearchTests
     Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunSearchTests END")
 
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunGlobalBaseTests START")
+    RunGlobalBaseTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunGlobalBaseTests END")
+
     ' Финальный отчёт
     PrintFinalReport
 
@@ -2073,6 +2077,54 @@ End Sub
 ' ============================================================
 ' Вспомогательные функции
 ' ============================================================
+
+' ============================================================
+' RunGlobalBaseTests — тесты глобальной базы з/ч и тождеств (v1.0.13)
+' ============================================================
+Private Sub RunGlobalBaseTests()
+    ' TC-60: GetGlobalPartsBasePath возвращает путь к z4.xlsx
+    On Error Resume Next
+    Dim basePath As String
+    basePath = Mod_ModelDB.GetGlobalPartsBasePath()
+    If Err.Number <> 0 Then
+        AddResult "TC-60", "GetGlobalPartsBasePath путь", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-60", "GetGlobalPartsBasePath путь", _
+                  (LCase$(basePath) Like "*z4.xlsx"), _
+                  "Ожидался путь к z4.xlsx, получено '" & basePath & "'"
+    End If
+
+    ' TC-61: ReadGlobalPartByKey возвращает Nothing при отсутствии совпадения
+    On Error Resume Next
+    Dim gPart As PartIdentity
+    Set gPart = Mod_ModelDB.ReadGlobalPartByKey("__NO_SUCH_PART__", "")
+    Dim tc61ok As Boolean
+    tc61ok = (gPart Is Nothing)
+    If Err.Number <> 0 Then
+        AddResult "TC-61", "ReadGlobalPartByKey отсутствие совпадения", False, _
+                  "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-61", "ReadGlobalPartByKey отсутствие совпадения", tc61ok, _
+                  "Ожидалось Nothing при отсутствии совпадения/файла"
+    End If
+
+    ' TC-62: ReadLocalWorkByName возвращает Nothing для несуществующей группы
+    On Error Resume Next
+    Dim lw As WorkIdentity
+    Set lw = Mod_ModelDB.ReadLocalWorkByName("__NO_GROUP__", "__NO_WORK__")
+    Dim tc62ok As Boolean
+    tc62ok = (lw Is Nothing)
+    If Err.Number <> 0 Then
+        AddResult "TC-62", "ReadLocalWorkByName отсутствие группы", False, _
+                  "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-62", "ReadLocalWorkByName отсутствие группы", tc62ok, _
+                  "Ожидалось Nothing при отсутствии группы/работы"
+    End If
+End Sub
 
 ' Добавляет результат теста в статистику и выводит в Immediate Window
 Private Sub AddResult(testId As String, testName As String, _

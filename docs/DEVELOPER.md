@@ -416,6 +416,11 @@ python scripts/run_tests.py
 | `GetWorks(groupName, filters)` | Возвращает коллекцию `WorkEntry` из листа `{groupName}` файла группы |
 | `GetModelDataProvider(ByRef provider)` | Фабрика провайдера данных (SQLite при наличии SysW.db, иначе Excel-fallback) |
 | `GetParts/GetModelWorks/GetModelParts/GetMatLibEntries/GetWorkIdentities/GetPartIdentities/GetAllModelGroups/CreateModelGroupFile/FindModelGroupByModel` | Делегаты чтения/создания данных через выбранный провайдер |
+| `GetGlobalPartsBasePath()` | Путь к глобальному файлу запчастей `base/models/z4.xlsx` (v1.0.13) |
+| `ReadGlobalPartByKey(catNum, partName)` | Поиск з/ч в глобальной базе `z4.xlsx`: приоритет № кат. (B), fallback наименование (C); возвращает `PartIdentity` или `Nothing` |
+| `AppendPartIdentity(groupName, identity)` | Запись тождества запчасти на лист `{GroupName}z4` модельной книги |
+| `AppendWorkIdentity(groupName, identity)` | Запись тождества работы на лист `{GroupName}w` модельной книги |
+| `ReadLocalWorkByName(groupName, workName)` | Поиск работы в локальном листе `{GroupName}` по наименованию (fallback для работ) |
 
 ### 2.12 Mod_PickWork.bas — Ручной подбор работ и запчастей
 

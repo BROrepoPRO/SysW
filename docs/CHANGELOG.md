@@ -5,6 +5,38 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.0.13] — 2026-08-26
+
+### Added
+- **Глобальная база запчастей вынесена в отдельный файл `base/models/z4.xlsx`** (650 000+
+  позиций) из модельных книг. В модельной книге лист `z4` становится **фрагментом** глобальной
+  базы, актуальным для текущей `GroupName`. Работы остаются в модельных книгах (лист `{GroupName}`),
+  отдельный глобальный файл для работ не создаётся.
+- **Новый скрипт `scripts/build_global_parts.py`:** сборка `base/models/z4.xlsx` из
+  `parts_catalog` (SysW.db), резервный путь — из листа `z4` модельных файлов
+  (`--source models`). Структура листа `z4`: заголовки строка 3, данные с 4-й строки,
+  колонки A–H (№ п/п, Артикул, Наименование, Ед. изм., кол-во, Цена, Кол-во ЗН, Сумма ЗН).
+- **Функции `Mod_ModelDB`:** `GetGlobalPartsBasePath`, `ReadGlobalPartByKey` (поиск по № кат.
+  B, fallback по наименованию C), `AppendPartIdentity` (запись тождества на `{GroupName}z4`),
+  `AppendWorkIdentity` (на `{GroupName}w`), `ReadLocalWorkByName` (fallback-поиск работ в
+  локальном листе `{GroupName}`).
+- **Новый алгоритм автопоиска з/ч (`Mod_AutoMatch.AutoMatchParts`):** при отсутствии тождества
+  запрос «искать в общей базе з/ч?»; при «да» — поиск в `z4.xlsx`; при успехе — запрос
+  «создать тождество?»; при «да» — запись тождества на `{GroupName}z4`. Аналогично для работ
+  (`AutoMatchWorks`) через локальный лист `{GroupName}`.
+- **Новая группа тестов `RunGlobalBaseTests`:** TC-60 (путь к `z4.xlsx`), TC-61
+  (`ReadGlobalPartByKey` отсутствие совпадения), TC-62 (`ReadLocalWorkByName` отсутствие группы).
+
+### Changed
+- `src/modules/Mod_AutoMatch.bas`: обработка ненайденных з/ч и работ дополнена fallback-ветками
+  с диалогами (подавляются при `SilenceMsgBox` в тестах).
+- `docs/table.md`, `docs/ARCHITECTURE.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`: описаны новый
+  файл глобальной базы, функции `Mod_ModelDB` и алгоритм fallback-автопоиска.
+
+### Note
+- Полная генерация `base/models/z4.xlsx` выполняется скриптом `scripts/build_global_parts.py`
+  (желательно после миграции `SysW.db`); сами `.xlsm`-данные в репозиторий не коммитятся.
+
 ## [v1.0.12] — 2026-08-26
 
 ### Added

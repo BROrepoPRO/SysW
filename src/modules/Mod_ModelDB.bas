@@ -291,6 +291,265 @@ ErrHandler:
     Set GetPartIdentities = New Collection
 End Function
 
+' ============================================================
+' Глобальная база запчастей (base\models\z4.xlsx) v1.0.13
+' Глобальная база з/ч вынесена из модельных книг в отдельный файл
+' (650 000+ позиций). Лист z4 модельной книги — только фрагмент
+' для текущей GroupName. Здесь — доступ к глобальному источнику.
+' ============================================================
+
+' --------------------------------------------------------------------------
+' GetGlobalPartsBasePath
+' Возвращает путь к глобальному файлу запчастей base\models\z4.xlsx.
+' --------------------------------------------------------------------------
+Public Function GetGlobalPartsBasePath() As String
+    GetGlobalPartsBasePath = GetModelDBBasePath() & "z4.xlsx"
+End Function
+
+' --------------------------------------------------------------------------
+' ReadGlobalPartByKey
+' Ищет запчасть в глобальной базе base\models\z4.xlsx по ключу.
+' Приоритет — № кат. (столбец B листа z4 = Артикул), fallback — наименование
+' (столбец C). Маппинг ключей согласно docs/table.md §8.2.
+' Возвращает PartIdentity (OutArticle/OutName/Price/QtyZN) или Nothing.
+' --------------------------------------------------------------------------
+Public Function ReadGlobalPartByKey(ByVal catNum As String, _
+                                    ByVal partName As String) As PartIdentity
+    On Error GoTo ErrHandler
+
+    Dim filePath As String
+    filePath = GetGlobalPartsBasePath()
+    If Len(Dir(filePath)) = 0 Then
+        Call Mod_Logger.WriteLog("Mod_ModelDB", _
+            "ReadGlobalPartByKey: глобальный файл не найден: " & filePath)
+        Set ReadGlobalPartByKey = Nothing
+        Exit Function
+    End If
+
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+
+    Set wb = Workbooks.Open(filePath, ReadOnly:=True)
+    Set ws = wb.Sheets(Mod_Constants.Z4_NAME)
+    lastRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row
+
+    Dim keyCat As String
+    Dim keyName As String
+    Dim rowVal As String
+    keyCat = UCase$(Trim$(catNum))
+    keyName = UCase$(Trim$(partName))
+
+    ' 1. Поиск по № кат. (столбец B)
+    If keyCat <> "" Then
+        For i = Mod_Constants.DATA_START_ROW To lastRow
+            rowVal = UCase$(Trim$(CStr(ws.Cells(i, 2).Value)))
+            If rowVal = keyCat Then
+                Set ReadGlobalPartByKey = BuildGlobalPart(ws, i, catNum, partName)
+                wb.Close SaveChanges:=False
+                Exit Function
+            End If
+        Next i
+    End If
+
+    ' 2. Fallback по наименованию (столбец C)
+    If keyName <> "" Then
+        For i = Mod_Constants.DATA_START_ROW To lastRow
+            rowVal = UCase$(Trim$(CStr(ws.Cells(i, 3).Value)))
+            If rowVal = keyName Then
+                Set ReadGlobalPartByKey = BuildGlobalPart(ws, i, catNum, partName)
+                wb.Close SaveChanges:=False
+                Exit Function
+            End If
+        Next i
+    End If
+
+    wb.Close SaveChanges:=False
+    Set ReadGlobalPartByKey = Nothing
+    Exit Function
+
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_ModelDB", "ReadGlobalPartByKey: Ошибка — " & Err.Description)
+    On Error Resume Next
+    wb.Close SaveChanges:=False
+    On Error GoTo 0
+    Set ReadGlobalPartByKey = Nothing
+End Function
+
+' --------------------------------------------------------------------------
+' BuildGlobalPart
+' Формирует объект PartIdentity из строки глобального листа z4 (A..H).
+' Столбцы: B=Артикул, C=Наименование, F=Цена, G=Кол-во ЗН.
+' --------------------------------------------------------------------------
+Private Function BuildGlobalPart(ByVal ws As Worksheet, ByVal r As Long, _
+                                 ByVal inCatNum As String, _
+                                 ByVal inName As String) As PartIdentity
+    Dim pi As PartIdentity
+    Set pi = New PartIdentity
+    pi.OutArticle = Trim(CStr(ws.Cells(r, 2).Value))
+    pi.OutName = Trim(CStr(ws.Cells(r, 3).Value))
+    pi.Price = Val(ws.Cells(r, 6).Value)
+    pi.QtyZN = Val(ws.Cells(r, 7).Value)
+    pi.InCatNum = inCatNum
+    pi.InName = inName
+    Set BuildGlobalPart = pi
+End Function
+
+' --------------------------------------------------------------------------
+' ReadLocalWorkByName
+' Ищет работу в локальном листе {GroupName} (все работы группы) модельной
+' книги по наименованию (столбец C). Fallback для автопоиска работ
+' (глобальный файл для работ не создаётся).
+' Возвращает WorkIdentity или Nothing.
+' --------------------------------------------------------------------------
+Public Function ReadLocalWorkByName(ByVal groupName As String, _
+                                    ByVal workName As String) As WorkIdentity
+    On Error GoTo ErrHandler
+
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim key As String
+
+    Set wb = OpenModelGroupFile(groupName)
+    If wb Is Nothing Then
+        Set ReadLocalWorkByName = Nothing
+        Exit Function
+    End If
+
+    Set ws = wb.Sheets(groupName)
+    lastRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row
+    key = UCase$(Trim$(workName))
+
+    For i = Mod_Constants.DATA_START_ROW To lastRow
+        If UCase$(Trim$(CStr(ws.Cells(i, 3).Value))) = key Then
+            Dim wi As WorkIdentity
+            Set wi = New WorkIdentity
+            wi.OutArticle = Trim(CStr(ws.Cells(i, 2).Value))
+            wi.OutName = Trim(CStr(ws.Cells(i, 3).Value))
+            wi.NormHours = Val(ws.Cells(i, 4).Value)
+            wi.QtyZN = Val(ws.Cells(i, 7).Value)
+            wi.InName = workName
+            Set ReadLocalWorkByName = wi
+            wb.Close SaveChanges:=False
+            Exit Function
+        End If
+    Next i
+
+    wb.Close SaveChanges:=False
+    Set ReadLocalWorkByName = Nothing
+    Exit Function
+
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_ModelDB", _
+        "ReadLocalWorkByName: Ошибка — " & Err.Description)
+    On Error Resume Next
+    wb.Close SaveChanges:=False
+    On Error GoTo 0
+    Set ReadLocalWorkByName = Nothing
+End Function
+
+' --------------------------------------------------------------------------
+' AppendPartIdentity
+' Добавляет тождество запчасти на лист {GroupName}z4 модельной книги.
+' Столбцы: A=№ п/п, B=Артикул, C=Наименование, F=Цена, G=Кол-во ЗН,
+'          I=АГРЕГАТ, J=№ кат., K=Наим-ние.
+' Возвращает True при успехе.
+' --------------------------------------------------------------------------
+Public Function AppendPartIdentity(ByVal groupName As String, _
+                                   ByVal identity As PartIdentity) As Boolean
+    On Error GoTo ErrHandler
+
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim sheetName As String
+    Dim newRow As Long
+
+    Set wb = OpenModelGroupFile(groupName)
+    If wb Is Nothing Then
+        AppendPartIdentity = False
+        Exit Function
+    End If
+
+    sheetName = Trim(groupName) & "z4"
+    Set ws = wb.Sheets(sheetName)
+    newRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row + 1
+    If newRow < Mod_Constants.DATA_START_ROW Then newRow = Mod_Constants.DATA_START_ROW
+
+    ws.Cells(newRow, 1).Value = newRow - Mod_Constants.DATA_START_ROW + 1  ' № п/п
+    ws.Cells(newRow, 2).Value = identity.OutArticle   ' B
+    ws.Cells(newRow, 3).Value = identity.OutName      ' C
+    ws.Cells(newRow, 6).Value = identity.Price        ' F
+    ws.Cells(newRow, 7).Value = identity.QtyZN        ' G
+    ws.Cells(newRow, 9).Value = identity.Aggregate    ' I
+    ws.Cells(newRow, 10).Value = identity.InCatNum    ' J
+    ws.Cells(newRow, 11).Value = identity.InName      ' K
+
+    wb.Save
+    wb.Close SaveChanges:=False
+    AppendPartIdentity = True
+    Exit Function
+
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_ModelDB", _
+        "AppendPartIdentity: Ошибка — " & Err.Description)
+    On Error Resume Next
+    wb.Close SaveChanges:=False
+    On Error GoTo 0
+    AppendPartIdentity = False
+End Function
+
+' --------------------------------------------------------------------------
+' AppendWorkIdentity
+' Добавляет тождество работы на лист {GroupName}w модельной книги.
+' Столбцы: A=№п/п, B=Артикул, C=Наименование, D=н/ч, G=Кол-во ЗН,
+'          I=Агрегат, J=Наим-ние.
+' Возвращает True при успехе.
+' --------------------------------------------------------------------------
+Public Function AppendWorkIdentity(ByVal groupName As String, _
+                                   ByVal identity As WorkIdentity) As Boolean
+    On Error GoTo ErrHandler
+
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim sheetName As String
+    Dim newRow As Long
+
+    Set wb = OpenModelGroupFile(groupName)
+    If wb Is Nothing Then
+        AppendWorkIdentity = False
+        Exit Function
+    End If
+
+    sheetName = Trim(groupName) & "w"
+    Set ws = wb.Sheets(sheetName)
+    newRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row + 1
+    If newRow < Mod_Constants.DATA_START_ROW Then newRow = Mod_Constants.DATA_START_ROW
+
+    ws.Cells(newRow, 1).Value = newRow - Mod_Constants.DATA_START_ROW + 1  ' №п/п
+    ws.Cells(newRow, 2).Value = identity.OutArticle   ' B
+    ws.Cells(newRow, 3).Value = identity.OutName      ' C
+    ws.Cells(newRow, 4).Value = identity.NormHours    ' D
+    ws.Cells(newRow, 7).Value = identity.QtyZN        ' G
+    ws.Cells(newRow, 9).Value = identity.Aggregate    ' I
+    ws.Cells(newRow, 10).Value = identity.InName      ' J
+
+    wb.Save
+    wb.Close SaveChanges:=False
+    AppendWorkIdentity = True
+    Exit Function
+
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_ModelDB", _
+        "AppendWorkIdentity: Ошибка — " & Err.Description)
+    On Error Resume Next
+    wb.Close SaveChanges:=False
+    On Error GoTo 0
+    AppendWorkIdentity = False
+End Function
+
 ' --------------------------------------------------------------------------
 ' GetAllModelGroups
 ' Возвращает Collection имён всех групп моделей.

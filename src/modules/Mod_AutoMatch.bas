@@ -203,10 +203,49 @@ Public Sub AutoMatchWorks()
         Next identity
 
         If Not found Then
-            ' Не найдено — подсветка
-            HighlightNotFound wsMain.Cells(i, MAIN_W_IN_NAME)
-            wsMain.Cells(i, MAIN_W_IN_NAME).Value = "НЕ НАЙДЕНО"
-            notFoundCount = notFoundCount + 1
+            ' Не найдено по тождествам — поиск по локальному листу работ группы
+            If Mod_Constants.SilenceMsgBox Then
+                ' Тестовый режим (без диалогов): пометить как не найденное
+                HighlightNotFound wsMain.Cells(i, MAIN_W_IN_NAME)
+                wsMain.Cells(i, MAIN_W_IN_NAME).Value = "НЕ НАЙДЕНО"
+                notFoundCount = notFoundCount + 1
+            Else
+                Dim lw As WorkIdentity
+                Set lw = Mod_ModelDB.ReadLocalWorkByName(groupName, inName)
+                If lw Is Nothing Then
+                    MsgBox "Работа не найдена по тождествам и в списке работ группы.", _
+                           vbExclamation, "АВТО РАБ"
+                    HighlightNotFound wsMain.Cells(i, MAIN_W_IN_NAME)
+                    wsMain.Cells(i, MAIN_W_IN_NAME).Value = "НЕ НАЙДЕНО"
+                    notFoundCount = notFoundCount + 1
+                Else
+                    wsMain.Cells(i, MAIN_W_ARTICLE).Value = lw.OutArticle
+                    wsMain.Cells(i, MAIN_W_NAME).Value = lw.OutName
+                    wsMain.Cells(i, MAIN_W_NORMHOURS).Value = lw.NormHours
+                    wsMain.Cells(i, MAIN_W_QTY).Value = lw.QtyZN
+                    wsMain.Cells(i, MAIN_W_PRICE).Value = priceNH
+                    wsMain.Cells(i, MAIN_W_SUM).FormulaLocal = _
+                        "=ROUND(G" & i & "*H" & i & "*I" & i & ";2)"
+                    matchCount = matchCount + 1
+
+                    Dim askWId As VbMsgBoxResult
+                    askWId = MsgBox("Создать тождество для этой работы?", _
+                                    vbYesNo, "АВТО РАБ")
+                    If askWId = vbYes Then
+                        Dim newW As WorkIdentity
+                        Set newW = New WorkIdentity
+                        newW.OutArticle = lw.OutArticle
+                        newW.OutName = lw.OutName
+                        newW.NormHours = lw.NormHours
+                        newW.QtyZN = Val(wsMain.Cells(i, MAIN_W_IN_QTY).Value)
+                        newW.InName = inName
+                        If Not Mod_ModelDB.AppendWorkIdentity(groupName, newW) Then
+                            MsgBox "Не удалось сохранить тождество.", _
+                                   vbExclamation, "АВТО РАБ"
+                        End If
+                    End If
+                End If
+            End If
         End If
 
 ContinueWork:
@@ -261,6 +300,7 @@ Public Sub AutoMatchParts()
     Dim lastRow As Long
     Dim i As Long
     Dim inCatNum As String
+    Dim inName As String
     Dim found As Boolean
     Dim matchCount As Long
     Dim notFoundCount As Long
@@ -313,9 +353,10 @@ Public Sub AutoMatchParts()
 
     For i = 4 To lastRow
         inCatNum = Trim(CStr(wsMain.Cells(i, MAIN_P_IN_CATNUM).Value))
+        inName = Trim(CStr(wsMain.Cells(i, MAIN_P_IN_NAME).Value))
 
-        ' Пропускаем пустые строки
-        If inCatNum = "" Then GoTo ContinuePart
+        ' Пропускаем строки без ключа (пусты и № кат., и наименование)
+        If inCatNum = "" And inName = "" Then GoTo ContinuePart
 
         found = False
 
@@ -339,10 +380,58 @@ Public Sub AutoMatchParts()
         Next identity
 
         If Not found Then
-            ' Не найдено — подсветка
-            HighlightNotFound wsMain.Cells(i, MAIN_P_IN_CATNUM)
-            wsMain.Cells(i, MAIN_P_IN_CATNUM).Value = "НЕ НАЙДЕНО"
-            notFoundCount = notFoundCount + 1
+            ' Не найдено по тождествам — предлагаем поиск по общей базе з/ч
+            If Mod_Constants.SilenceMsgBox Then
+                ' Тестовый режим (без диалогов): пометить как не найденное
+                HighlightNotFound wsMain.Cells(i, MAIN_P_IN_CATNUM)
+                wsMain.Cells(i, MAIN_P_IN_CATNUM).Value = "НЕ НАЙДЕНО"
+                notFoundCount = notFoundCount + 1
+            Else
+                Dim askBase As VbMsgBoxResult
+                askBase = MsgBox("По тождествам не найдено. Искать в общей базе з/ч?", _
+                                 vbYesNo, "АВТО ЗЧ")
+                If askBase = vbNo Then
+                    HighlightNotFound wsMain.Cells(i, MAIN_P_IN_CATNUM)
+                    wsMain.Cells(i, MAIN_P_IN_CATNUM).Value = "НЕ НАЙДЕНО"
+                    notFoundCount = notFoundCount + 1
+                Else
+                    Dim gPart As PartIdentity
+                    Set gPart = Mod_ModelDB.ReadGlobalPartByKey(inCatNum, inName)
+                    If gPart Is Nothing Then
+                        MsgBox "Запчасть не найдена в общей базе з/ч.", _
+                               vbExclamation, "АВТО ЗЧ"
+                        HighlightNotFound wsMain.Cells(i, MAIN_P_IN_CATNUM)
+                        wsMain.Cells(i, MAIN_P_IN_CATNUM).Value = "НЕ НАЙДЕНО"
+                        notFoundCount = notFoundCount + 1
+                    Else
+                        wsMain.Cells(i, MAIN_P_ARTICLE).Value = gPart.OutArticle
+                        wsMain.Cells(i, MAIN_P_NAME).Value = gPart.OutName
+                        wsMain.Cells(i, MAIN_P_QTY).Value = gPart.QtyZN
+                        wsMain.Cells(i, MAIN_P_PRICE).Value = gPart.Price
+                        wsMain.Cells(i, MAIN_P_SUM).FormulaLocal = _
+                            "=ROUND(T" & i & "*U" & i & ";2)"
+                        matchCount = matchCount + 1
+
+                        Dim askId As VbMsgBoxResult
+                        askId = MsgBox("Создать тождество для этой запчасти?", _
+                                       vbYesNo, "АВТО ЗЧ")
+                        If askId = vbYes Then
+                            Dim newId As PartIdentity
+                            Set newId = New PartIdentity
+                            newId.OutArticle = gPart.OutArticle
+                            newId.OutName = gPart.OutName
+                            newId.Price = gPart.Price
+                            newId.QtyZN = Val(wsMain.Cells(i, MAIN_P_IN_QTY).Value)
+                            newId.InCatNum = inCatNum
+                            newId.InName = inName
+                            If Not Mod_ModelDB.AppendPartIdentity(groupName, newId) Then
+                                MsgBox "Не удалось сохранить тождество.", _
+                                       vbExclamation, "АВТО ЗЧ"
+                            End If
+                        End If
+                    End If
+                End If
+            End If
         End If
 
 ContinuePart:
