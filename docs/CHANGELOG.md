@@ -5,6 +5,26 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.0.14] — 2026-08-26
+
+### Added
+- **Версия поднята до v1.0.14** во всех точках: `src/modules/Mod_Constants.bas`
+  (`APP_VERSION`), `scripts/config.py` (`APP_VERSION`), `scripts/config.ps1`
+  (`$Script:AppVersion`), `README.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`,
+  `docs/ARCHITECTURE.md`.
+- **Исправлен диапазон тестов** в заголовке прогона `RunAllTests` и в
+  `RunAllTests_UI` до **TC-01..TC-62** (ранее TC-58): упомянута группа
+  `RunGlobalBaseTests` (TC-60..62).
+
+### Changed
+- **Документация актуализирована до v1.0.14:** `docs/DEVELOPER.md`,
+  `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`, `docs/table.md`, `README.md`.
+
+### Note
+- `docs/reestrOLD.md` будет перенесён в `plans/_archive/` (этап очистки).
+- Генерация `base/models/z4.xlsx` остаётся отложенной задачей **R-Z4GEN** —
+  не блокирует релиз; допускается тестом TC-61.
+
 ## [v1.0.13] — 2026-08-26
 
 ### Added

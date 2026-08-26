@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v1.0.12)
+# Техническая документация разработчика — SysW (v1.0.14)
 
 ## 1. Архитектура проекта
 
@@ -217,7 +217,7 @@ Mod_FullTestRunner.RunAllTests()
 
 **Файл:** [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas) (577 строк)
 
-**Назначение:** Автоматическое тестирование VBA-модулей. Набор сценариев **TC-01..TC-58** + **TC-S1..TC-S3** (полный перечень — см. [`docs/reestr.md`](reestr.md), раздел 3).
+**Назначение:** Автоматическое тестирование VBA-модулей. Набор сценариев **TC-01..TC-62** + **TC-S1..TC-S3** (полный перечень — см. [`docs/reestr.md`](reestr.md), раздел 3).
 
 **Группы тестов:**
 
@@ -238,7 +238,8 @@ Mod_FullTestRunner.RunAllTests()
 | `RunAutoMatchTests()` | TC-39..TC-44 | Mod_AutoMatch |
 | `RunConstantsTests()` | TC-46 | Mod_Constants |
 | `RunSQLiteTests()` | TC-S1..TC-S3, TC-47..TC-50 | Mod_SQLiteDB / провайдер |
-| `RunSearchTests()` | TC-51..TC-58 | Mod_SheetButtons / Mod_PickWork |
+| `RunSearchTests()` | TC-51..TC-55 | Mod_SheetButtons / Mod_PickWork |
+| `RunGlobalBaseTests()` | TC-60..TC-62 | Mod_ModelDB (глобальная база з/ч, fallback) |
 
 **Механизмы:**
 - **SKIP** — тесты, зависящие от отсутствующих данных, пропускаются
@@ -719,7 +720,7 @@ python scripts/impVBA.py      # Импорт всех модулей
 
 ## 6. Тестирование
 
-### 6.1 Реестр тестов (TC-01..TC-50 + TC-S1..S3)
+### 6.1 Реестр тестов (TC-01..TC-62 + TC-S1..S3)
 
 Полный перечень тестов с группами, статусами, механизмом записи результатов и замечаниями
 приведён в [`docs/reestr.md`](reestr.md), раздел 3. Ниже — сводка по группам и модулям.
@@ -741,7 +742,8 @@ python scripts/impVBA.py      # Импорт всех модулей
 | `RunAutoMatchTests()` | TC-39..TC-44 | Mod_AutoMatch | нет (TC-41..44 — SKIP) |
 | `RunConstantsTests()` | TC-46 | Mod_Constants | лист libname |
 | `RunSQLiteTests()` | TC-S1..TC-S3, TC-47..TC-50 | Mod_SQLiteDB | SQLite-провайдер/SysW.db |
-| `RunSearchTests()` | TC-51..TC-58 | Mod_SheetButtons / Mod_PickWork | лист main (B14) |
+| `RunSearchTests()` | TC-51..TC-55 | Mod_SheetButtons / Mod_PickWork | лист main (B14) |
+| `RunGlobalBaseTests()` | TC-60..TC-62 | Mod_ModelDB | глобальная база `z4.xlsx` / файлы групп |
 
 **Легенда:** PASS — тест проходит; SKIP — пропущен (Private-процедура, небезопасность автотеста,
 отсутствие листа/данных/SQLite-провайдера); FAIL — падение теста (останавливает `run_tests.py` с кодом 1).
@@ -762,6 +764,7 @@ python scripts/impVBA.py      # Импорт всех модулей
 | Mod_SQLiteDB | RunSQLiteTests | TC-S1..S3, TC-47..50 |
 | Mod_SheetButtons | RunSearchTests | TC-51..54 |
 | Mod_PickWork | RunPickWorkTests, RunSearchTests | TC-36..38, TC-55 |
+| Mod_ModelDB | RunGlobalBaseTests | TC-60..62 |
 
 > Точная статистика PASS/SKIP/FAIL зависит от окружения (наличие `SysW.db`, листов, данных)
 > и формируется по итогам прогона `python scripts/run_tests.py`.

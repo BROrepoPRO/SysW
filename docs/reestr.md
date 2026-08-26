@@ -1,6 +1,6 @@
 # Реестр макросов и скриптов системы SysW
 
-> **Версия:** v1.0.12
+> **Версия:** v1.0.14
 >
 > **Назначение:** единый реестр процедур/функций VBA основной бизнес-логики и скриптов
 > автоматизации (Python, PowerShell). Документ отражает фактическое состояние кодовой
@@ -19,7 +19,7 @@
 | `Btn_main_Clear_Click`            | Очистка данных main B4:ZZ (с подтверждением) | «ОЧИСТ ВСЁ»            | Mod_ButtonDispatcher |
 | `Btn_main_FillHeader_Click`       | Заполнение шапки B5:B17 по № из B4                   | «ЗАПОЛН ШАПКУ»      | Mod_ButtonDispatcher |
 | `Btn_main_ClearHeader_Click`      | Очистка шапки B5:B17                                         | «ОЧИСТ ШАПКУ»        | Mod_ButtonDispatcher |
-| `Btn_main_RunTests_Click`         | Запуск всех автотестов (TC-01..TC-58+TC-S*)          | «Тесты»                   | Mod_ButtonDispatcher |
+| `Btn_main_RunTests_Click`         | Запуск всех автотестов (TC-01..TC-62+TC-S*)          | «Тесты»                   | Mod_ButtonDispatcher |
 | `Btn_main_WriteLog_Click`         | Запись сообщения в лог через InputBox            | «Лог»                       | Mod_ButtonDispatcher |
 | `Btn_main_ImportDataToMain_Click` | Перенос данных с активного листа в main     | «Перенести в main»   | Mod_ButtonDispatcher |
 | `Btn_main_FindOrder_Click`        | Поиск заказа по № (InputBox) + вывод                  | «Найти заказ»        | Mod_ButtonDispatcher |
@@ -197,7 +197,9 @@
 
 ## 3. Реестр тестов (Mod_FullTestRunner)
 
-> Набор автоматических тестов покрывает **TC-01..TC-58** + **TC-S1..TC-S3**.
+> Набор автоматических тестов покрывает **TC-01..TC-62** + **TC-S1..TC-S3**
+> (включая новые TC-60..TC-62 из группы `RunGlobalBaseTests` — глобальная база
+> запчастей `z4.xlsx` и fallback-поиск `ReadGlobalPartByKey`/`ReadLocalWorkByName`).
 > Управляется процедурами-группами в [`src/modules/Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas)
 > и запускается через `RunAllTests()` / `RunAllTests_UI()` либо `python scripts/run_tests.py`.
 > Запуск подавляет MsgBox (`Mod_Constants.SilenceMsgBox = True`), результаты пишутся
@@ -222,7 +224,8 @@
 | `RunAutoMatchTests`             | TC-39..TC-44               | Mod_AutoMatch                                         |
 | `RunConstantsTests`             | TC-46                      | Mod_Constants (AddWorkEntry)                          |
 | `RunSQLiteTests`                | TC-S1..TC-S3, TC-47..TC-50 | Mod_SQLiteDB / провайдер                     |
-| `RunSearchTests`                | TC-51..TC-58               | Mod_SheetButtons / Mod_PickWork              |
+| `RunSearchTests`                | TC-51..TC-55               | Mod_SheetButtons / Mod_PickWork              |
+| `RunGlobalBaseTests`            | TC-60..TC-62               | Mod_ModelDB (глобальная база з/ч, fallback) |
 
 ### 3.2 Полный перечень тестов
 
@@ -286,6 +289,9 @@
 | TC-S1 | Фабрика GetModelDataProvider                                                  | RunSQLiteTests        | Mod_SQLiteDB    | Модульный           | PASS; SKIP, если SysW.db недоступен                                                                      |
 | TC-S2 | GetWorks через провайдер (SQLite эквивалент Excel)           | RunSQLiteTests        | Mod_SQLiteDB    | Модульный           | PASS; SKIP, если провайдер недоступен                                                           |
 | TC-S3 | Данные мигрированы в SysW.db (контрольные объёмы) | RunSQLiteTests        | Mod_SQLiteDB    | Интеграционный | PASS; SKIP, если провайдер недоступен                                                           |
+| TC-60 | GetGlobalPartsBasePath возвращает путь к `z4.xlsx`             | RunGlobalBaseTests    | Mod_ModelDB     | Модульный           | PASS                                                                                                                   |
+| TC-61 | ReadGlobalPartByKey отсутствие совпадения                        | RunGlobalBaseTests    | Mod_ModelDB     | Модульный           | PASS; SKIP, если файл `z4.xlsx` недоступен                                                                |
+| TC-62 | ReadLocalWorkByName отсутствие группы                              | RunGlobalBaseTests    | Mod_ModelDB     | Модульный           | PASS                                                                                                                   |
 
 **Легенда статусов:** PASS — тест проходит при наличии данных/окружения; SKIP — тест пропускается по условию (Private-процедура, небезопасность автотеста, отсутствие листа/данных/SQLite-провайдера); FAIL — падение теста (останавливает конвейер `run_tests.py` с кодом 1).
 

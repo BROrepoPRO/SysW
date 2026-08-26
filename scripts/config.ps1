@@ -4,7 +4,7 @@
 #   . "$PSScriptRoot\config.ps1"
 
 # Версия приложения (единый источник для всей системы)
-$Script:AppVersion = "1.0.12"
+$Script:AppVersion = "1.0.14"
 
 # Корень проекта — родительская директория scripts/
 $Script:ProjectRoot = Resolve-Path "$PSScriptRoot\.."
