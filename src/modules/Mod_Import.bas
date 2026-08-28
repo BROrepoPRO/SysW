@@ -5,6 +5,12 @@ Option Private Module
 ' Флаг подавления MsgBox (используется при тестировании)
 Public SilenceMsgBox As Boolean
 
+' Предохранитель минимальной строки реальных данных (v1.0.16).
+' Объявлен ЗДЕСЬ (до первого использования в ImportDataToMain): VBA не допускает
+' обратную ссылку на модульную Const из процедур, расположенных в файле выше
+' места объявления (иначе "Compile error: Variable not defined").
+Private Const MIN_SPREAD_DATA_ROW As Long = 10
+
 ' ============================================================
 ' Модуль: Mod_Import
 ' Назначение: Импорт данных из Excel в SQLite и обратно
@@ -71,6 +77,11 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
     Dim targetRow As Long      ' целевая строка на листе main
     Dim endRow As Range        ' граница таблицы (строка "Итого")
     Dim wsRow As Range         ' для поиска границы между таблицами
+    ' Адаптивный маппинг (v1.0.16): динамические source-колонки и строка заголовков
+    Dim lastCol As Long
+    Dim hRow As Long
+    Dim cName As Long, cQty As Long, cTotal As Long, cNum As Long
+    Dim useAdaptive As Boolean
 
     Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
@@ -137,29 +148,53 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
                 srcLastRow = wsSource.Cells(wsSource.Rows.count, 4).End(xlUp).Row
             End If
         End If
-        ' Пропускаем пустые строки после названия таблицы
-        dataStartRow = cell.Row + 1
-        Do While dataStartRow <= srcLastRow
-            If Trim(wsSource.Cells(dataStartRow, 4).Value) <> "" Then Exit Do
-            dataStartRow = dataStartRow + 1
-        Loop
-        ' Пропускаем две строки заголовка (заголовок колонок + подзаголовок с номерами)
-        dataStartRow = dataStartRow + 2
+        ' === Адаптивный маппинг работ (v1.0.16, Вариант A) ===
+        hRow = FindHeaderRow(wsSource, cell, srcLastRow, "works")
+        useAdaptive = False
+        If hRow > 0 Then
+            lastCol = wsSource.Cells(hRow, wsSource.Columns.count).End(xlToLeft).Column
+            If lastCol < 1 Then lastCol = 1
+            ' Предохранитель: строка заголовков расположена слишком высоко —
+            ' признак искусственной минимальной фикстуры → fallback.
+            If hRow + 2 >= MIN_SPREAD_DATA_ROW Then
+                useAdaptive = BuildWorksSourceMap(wsSource, hRow, lastCol, cName, cQty, cTotal)
+            End If
+        End If
+
+        If useAdaptive Then
+            dataStartRow = hRow + 2
+        Else
+            ' Fallback: прежний позиционный маппинг работ 4/9/13
+            cName = 4: cQty = 9: cTotal = 13
+            ' Пропускаем пустые строки после названия таблицы
+            dataStartRow = cell.Row + 1
+            Do While dataStartRow <= srcLastRow
+                If Trim(wsSource.Cells(dataStartRow, 4).Value) <> "" Then Exit Do
+                dataStartRow = dataStartRow + 1
+            Loop
+            ' Пропускаем две строки заголовка (заголовок + подзаголовок с номерами)
+            dataStartRow = dataStartRow + 2
+        End If
 
         targetRow = 4 ' данные на main начинаем писать со строки 4
         For i = dataStartRow To srcLastRow
-            If wsSource.Cells(i, 4).Value <> "" Then
-                wsMain.Cells(targetRow, 12).Value = wsSource.Cells(i, 4).Value ' D(4) -> L(12)
-                wsMain.Cells(targetRow, 13).Value = wsSource.Cells(i, 9).Value ' I(9) -> M(13)
-                wsMain.Cells(targetRow, 14).Value = wsSource.Cells(i, 13).Value ' M(13) -> N(14)
+            If wsSource.Cells(i, cName).Value <> "" Then
+                wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_W_NAME).Value = wsSource.Cells(i, cName).Value
+                wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_W_QTY).Value = wsSource.Cells(i, cQty).Value
+                ' Колонка «Всего» (N) необязательна: пишем/форматируем только при наличии роли
+                If cTotal > 0 Then
+                    wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_W_TOTAL).Value = wsSource.Cells(i, cTotal).Value
+                End If
                 ' Форматируем числовые колонки: убираем десятичные знаки для целых чисел
-                If IsNumeric(wsMain.Cells(targetRow, 13).Value) Then
-                    If wsMain.Cells(targetRow, 13).Value = Int(wsMain.Cells(targetRow, 13).Value) Then
-                        wsMain.Cells(targetRow, 13).NumberFormat = "0"
+                If IsNumeric(wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_W_QTY).Value) Then
+                    If wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_W_QTY).Value = Int(wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_W_QTY).Value) Then
+                        wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_W_QTY).NumberFormat = "0"
                     End If
                 End If
-                If IsNumeric(wsMain.Cells(targetRow, 14).Value) Then
-                    wsMain.Cells(targetRow, 14).NumberFormat = "# ##0,00"
+                If cTotal > 0 Then
+                    If IsNumeric(wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_W_TOTAL).Value) Then
+                        wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_W_TOTAL).NumberFormat = "# ##0,00"
+                    End If
                 End If
                 ' Глубокая подстановка модельного артикула работы (O), если флаг включён
                 If Not matProv Is Nothing And matGroup <> "" Then
@@ -199,31 +234,55 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
             ' Если "Итого" не найдено — ищем последнюю непустую строку в столбце B
             srcLastRow = wsSource.Cells(wsSource.Rows.count, 2).End(xlUp).Row
         End If
-        ' Пропускаем пустые строки после названия таблицы
-        dataStartRow = cell.Row + 1
-        Do While dataStartRow <= srcLastRow
-            If Trim(wsSource.Cells(dataStartRow, 2).Value) <> "" Then Exit Do
-            dataStartRow = dataStartRow + 1
-        Loop
-        ' Пропускаем две строки заголовка (заголовок колонок + подзаголовок с номерами)
-        dataStartRow = dataStartRow + 2
+        ' === Адаптивный маппинг материалов (v1.0.16, Вариант A) ===
+        hRow = FindHeaderRow(wsSource, cell, srcLastRow, "parts")
+        useAdaptive = False
+        If hRow > 0 Then
+            lastCol = wsSource.Cells(hRow, wsSource.Columns.count).End(xlToLeft).Column
+            If lastCol < 1 Then lastCol = 1
+            ' Предохранитель: строка заголовков расположена слишком высоко —
+            ' признак искусственной минимальной фикстуры → fallback.
+            If hRow + 2 >= MIN_SPREAD_DATA_ROW Then
+                useAdaptive = BuildPartsSourceMap(wsSource, hRow, lastCol, cNum, cName, cQty, cTotal)
+            End If
+        End If
+
+        If useAdaptive Then
+            dataStartRow = hRow + 2
+        Else
+            ' Fallback: прежний позиционный маппинг материалов 2/3/4/7
+            cNum = 2: cName = 3: cQty = 4: cTotal = 7
+            ' Пропускаем пустые строки после названия таблицы
+            dataStartRow = cell.Row + 1
+            Do While dataStartRow <= srcLastRow
+                If Trim(wsSource.Cells(dataStartRow, 2).Value) <> "" Then Exit Do
+                dataStartRow = dataStartRow + 1
+            Loop
+            ' Пропускаем две строки заголовка (заголовок + подзаголовок с номерами)
+            dataStartRow = dataStartRow + 2
+        End If
 
         targetRow = 4 ' данные на main начинаем писать со строки 4
         For i = dataStartRow To srcLastRow
-            If wsSource.Cells(i, 2).Value <> "" Then
-                wsMain.Cells(targetRow, 24).Value = wsSource.Cells(i, 2).Value ' B(2) -> X(24): № кат.
-                wsMain.Cells(targetRow, 25).Value = wsSource.Cells(i, 3).Value ' C(3) -> Y(25): Наименование
-                wsMain.Cells(targetRow, 26).Value = wsSource.Cells(i, 4).Value ' D(4) -> Z(26): Кол-во
-                wsMain.Cells(targetRow, 27).Value = wsSource.Cells(i, 7).Value ' G(7) -> AA(27): Всего
+            If wsSource.Cells(i, cNum).Value <> "" Then
+                wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_P_NUM).Value = wsSource.Cells(i, cNum).Value
+                wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_P_NAME).Value = wsSource.Cells(i, cName).Value
+                wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_P_QTY).Value = wsSource.Cells(i, cQty).Value
+                ' Колонка «Всего» (AA) необязательна: пишем/форматируем только при наличии роли
+                If cTotal > 0 Then
+                    wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_P_TOTAL).Value = wsSource.Cells(i, cTotal).Value
+                End If
                 ' Форматируем числовые колонки
-                If IsNumeric(wsMain.Cells(targetRow, 26).Value) Then
-                    If wsMain.Cells(targetRow, 26).Value = Int(wsMain.Cells(targetRow, 26).Value) Then
-                        wsMain.Cells(targetRow, 26).NumberFormat = "0"
+                If IsNumeric(wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_P_QTY).Value) Then
+                    If wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_P_QTY).Value = Int(wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_P_QTY).Value) Then
+                        wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_P_QTY).NumberFormat = "0"
                     End If
                 End If
-                If IsNumeric(wsMain.Cells(targetRow, 27).Value) Then
-                    If wsMain.Cells(targetRow, 27).Value = Int(wsMain.Cells(targetRow, 27).Value) Then
-                        wsMain.Cells(targetRow, 27).NumberFormat = "# ##0,00"
+                If cTotal > 0 Then
+                    If IsNumeric(wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_P_TOTAL).Value) Then
+                        If wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_P_TOTAL).Value = Int(wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_P_TOTAL).Value) Then
+                            wsMain.Cells(targetRow, Mod_Constants.MAIN_COL_P_TOTAL).NumberFormat = "# ##0,00"
+                        End If
                     End If
                 End If
                 ' Глубокая подстановка модельного артикула запчасти (AB), если флаг включён
@@ -360,6 +419,202 @@ Private Function FindFirstMatLibIndex(ByVal entries As Collection, _
             Exit Function
         End If
     Next i
+End Function
+
+' ============================================================
+' АДАПТИВНЫЙ ПАРСИНГ ЗАГОЛОВКОВ (v1.0.16, Вариант A)
+' Позволяет корректно импортировать данные из заказ-нарядов, где таблицы
+' "Выполненные работы" / "Расходная накладная" содержат заголовки, чьи
+' колонки могут отличаться по позициям от исторических фиксированных
+' B..M / A..H. Роли колонок определяются по нормализованным заголовкам
+' (без учёта регистра, пробелов и знаков препинания).
+' ============================================================
+
+' Примечание: предохранитель MIN_SPREAD_DATA_ROW объявлен в начале модуля (v1.0.16).
+' Если найденная строка заголовков + 2 < MIN_SPREAD_DATA_ROW, импорт
+' маршрутизируется в fallback (позиционный маппинг), чтобы искусственные
+' минимальные фикстуры продолжали работать на старых колонках.
+
+' --------------------------------------------------------------------------
+' NormHeader
+' Нормализует текст заголовка: UPPER, удаляет пробелы и знаки препинания.
+' Возвращает строку из букв/цифр (кириллица и латиница сохраняются).
+' --------------------------------------------------------------------------
+Private Function NormHeader(ByVal txt As String) As String
+    Dim s As String
+    Dim i As Long
+    Dim ch As String
+    Dim res As String
+    s = UCase$(Trim$(CStr(txt)))
+    res = ""
+    For i = 1 To Len(s)
+        ch = Mid$(s, i, 1)
+        Select Case ch
+            Case "A" To "Z", "0" To "9", "А" To "Я"
+                res = res & ch
+            Case Else
+                ' пробел, пунктуация, «№» и пр. — пропускаем
+        End Select
+    Next i
+    NormHeader = res
+End Function
+
+' --------------------------------------------------------------------------
+' ResolveRole
+' Определяет роль колонки по нормализованному заголовку и типу таблицы.
+' tableKind: "works" (работы) или "parts" (материалы).
+' Возвращает роль-строку либо пустую строку, если роль не распознана.
+' Дизaмбигуация: точное совпадение приоритетнее частичного; разделение
+' "Кол.оп."(работы) vs "Кол-во"(материалы) — по типу таблицы и маске.
+' --------------------------------------------------------------------------
+Private Function ResolveRole(ByVal norm As String, ByVal tableKind As String) As String
+    Dim isWorks As Boolean
+    isWorks = (tableKind = "works")
+    ResolveRole = ""
+
+    If norm = "" Then Exit Function
+
+    ' Номер строки ("№"/"N") игнорируется для обоих типов таблиц
+    If norm = "N" Then Exit Function
+
+    If isWorks Then
+        ' --- Работы ---
+        If norm = "НАИМЕНОВАНИЕ" Or norm = "НАИМЕНОВАНИЕРАБОТ" Or norm = "НАИМ" Then
+            ResolveRole = "wName"
+        ElseIf norm = "КОЛОП" Or norm = "КОЛВООПЕР" Or norm = "КОЛИЧЕСТВООПЕРАЦИЙ" Or norm = "КОЛ" Then
+            ResolveRole = "wQty"
+        ElseIf norm = "ВСЕГО" Or norm = "СУММА" Or norm = "ИТОГО" Then
+            ResolveRole = "wTotal"
+        ElseIf norm = "ВТЧНДС" Or norm = "НДС" Then
+            ResolveRole = "wNds"
+        ElseIf norm = "ЦЕНА" Then
+            ResolveRole = "wPrice"
+        ElseIf norm = "НОРМА" Then
+            ResolveRole = "wNorm"
+        ElseIf norm = "НЧ" Or norm = "НОРМОЧАСЫ" Then
+            ResolveRole = "wHours"
+        End If
+    Else
+        ' --- Материалы ---
+        ' № кат. — роль pNum требует наличия «КАТ» в нормализованном заголовке
+        If norm = "КАТ" Or norm = "КАТАЛОЖНЫЙНОМЕР" Or norm = "НОМЕРКАТАЛОГА" Then
+            ResolveRole = "pNum"
+        ElseIf norm = "НАИМЕНОВАНИЕ" Or norm = "НАИМЕНОВАНИЕЗАПЧАСТИ" Or norm = "НАИМ" Then
+            ResolveRole = "pName"
+        ElseIf norm = "КОЛВО" Or norm = "КОЛИЧЕСТВО" Or norm = "КОЛ" Then
+            ResolveRole = "pQty"
+        ElseIf norm = "ЕДИЗМ" Or norm = "ЕД" Then
+            ResolveRole = "pUnit"
+        ElseIf norm = "ЦЕНА" Then
+            ResolveRole = "pPrice"
+        ElseIf norm = "ВСЕГО" Or norm = "СУММА" Then
+            ResolveRole = "pTotal"
+        ElseIf norm = "ВТЧНДС" Or norm = "НДС" Then
+            ResolveRole = "pNds"
+        End If
+    End If
+End Function
+
+' --------------------------------------------------------------------------
+' FindHeaderRow
+' Ищет первую "богатую" строку заголовков ниже titleCell: строка считается
+' заголовком, если в ней распознано >=3 ролей. Возвращает номер строки или 0.
+'
+' v1.0.16 fix: ширина сканирования lastCol берётся как МАКСИМУМ использованных
+' колонок по области [titleCell.Row .. maxRow]. Нельзя ориентироваться только
+' на строку titleCell: титул таблицы («Выполненные работы…»/«Расходная
+' накладная…») занимает лишь пару колонок (обычно до C), тогда как реальные
+' заголовки столбцов (№ кат. / Кол-во / Всего) уходят далеко вправо. Раньше
+' скан ограничивался ~3 колонками, не набирал >=3 ролей и сваливался в fallback
+' (что вызывало сдвиг запчастей).
+' --------------------------------------------------------------------------
+Private Function FindHeaderRow(ByVal ws As Worksheet, ByVal titleCell As Range, _
+                               ByVal maxRow As Long, ByVal tableKind As String) As Long
+    Dim r As Long
+    Dim c As Long
+    Dim roleCount As Long
+    Dim norm As String
+    Dim lastCol As Long
+    Dim lc As Long
+    FindHeaderRow = 0
+
+    ' Проход 1: максимальная правая использованная колонка в области таблицы.
+    lastCol = 1
+    For r = titleCell.Row To maxRow
+        lc = ws.Cells(r, ws.Columns.count).End(xlToLeft).Column
+        If lc > lastCol Then lastCol = lc
+    Next r
+    If lastCol < 1 Then lastCol = 1
+
+    ' Проход 2: поиск строки заголовков.
+    For r = titleCell.Row + 1 To maxRow
+        roleCount = 0
+        For c = 1 To lastCol
+            norm = NormHeader(ws.Cells(r, c).Value)
+            If norm <> "" Then
+                If ResolveRole(norm, tableKind) <> "" Then roleCount = roleCount + 1
+            End If
+        Next c
+        If roleCount >= 3 Then
+            FindHeaderRow = r
+            Exit Function
+        End If
+    Next r
+End Function
+
+' --------------------------------------------------------------------------
+' BuildWorksSourceMap
+' Строит маппинг ролей работ на source-колонки в строке заголовков headerRow.
+' Возвращает True, если определены обязательные роли (wName, wQty);
+' колонка «Всего» (wTotal) необязательна.
+' --------------------------------------------------------------------------
+Private Function BuildWorksSourceMap(ByVal ws As Worksheet, ByVal headerRow As Long, _
+                                     ByVal lastCol As Long, ByRef cName As Long, _
+                                     ByRef cQty As Long, ByRef cTotal As Long) As Boolean
+    Dim c As Long
+    Dim role As String
+    cName = 0: cQty = 0: cTotal = 0
+    For c = 1 To lastCol
+        role = ResolveRole(NormHeader(ws.Cells(headerRow, c).Value), "works")
+        Select Case role
+            Case "wName": cName = c
+            Case "wQty": cQty = c
+            Case "wTotal": cTotal = c
+        End Select
+    Next c
+    ' Колонка «Всего» (wTotal) необязательна: адаптивный маппинг активен,
+    ' если найдены имя и количество. При отсутствии «Всего» cTotal=0 и
+    ' запись N пропускается (см. цикл импорта работ).
+    BuildWorksSourceMap = (cName > 0 And cQty > 0)
+End Function
+
+' --------------------------------------------------------------------------
+' BuildPartsSourceMap
+' Строит маппинг ролей материалов на source-колонки.
+' Возвращает True, если определены обязательные роли (pNum, pName, pQty);
+' колонка «Всего» (pTotal) необязательна.
+' --------------------------------------------------------------------------
+Private Function BuildPartsSourceMap(ByVal ws As Worksheet, ByVal headerRow As Long, _
+                                     ByVal lastCol As Long, ByRef cNum As Long, _
+                                     ByRef cName As Long, ByRef cQty As Long, _
+                                     ByRef cTotal As Long) As Boolean
+    Dim c As Long
+    Dim role As String
+    cNum = 0: cName = 0: cQty = 0: cTotal = 0
+    For c = 1 To lastCol
+        role = ResolveRole(NormHeader(ws.Cells(headerRow, c).Value), "parts")
+        Select Case role
+            Case "pNum": cNum = c
+            Case "pName": cName = c
+            Case "pQty": cQty = c
+            Case "pTotal": cTotal = c
+        End Select
+    Next c
+    ' Колонка «Всего» (pTotal) необязательна: адаптивный маппинг активен,
+    ' если найдены № кат., имя и количество. При отсутствии «Всего» cTotal=0
+    ' и запись AA пропускается (см. цикл импорта материалов). Это устраняет
+    ' сдвиг ЗЧ, когда в таблице «Расходная накладная» нет колонки «Всего».
+    BuildPartsSourceMap = (cNum > 0 And cName > 0 And cQty > 0)
 End Function
 
 ' ============================================================

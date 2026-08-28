@@ -162,6 +162,25 @@ Public Const MANWRK_COL_QTY As Long = 8        ' H — Кол-во оп
 Public Const MANWRK_START_ROW As Long = 4      ' Строка начала данных
 
 ' ============================================================
+' Константы целевых колонок листа main для импорта (адаптивный маппинг v1.0.16)
+' Согласованный маппинг (материалы и работы → main):
+'   Работы    → main: L(12)=Наименование, M(13)=Кол.оп., N(14)=Всего.
+'   Материалы → main: X(24)=№ кат., Y(25)=Наименование, Z(26)=Кол-во, AA(27)=Всего.
+' Подставленные артикулы: O(15) — работы, AB(28) — материалы.
+' ============================================================
+Public Const MAIN_COL_W_NAME As Long = 12    ' L  — Наименование работы
+Public Const MAIN_COL_W_QTY As Long = 13     ' M  — Кол. оп.
+Public Const MAIN_COL_W_TOTAL As Long = 14   ' N  — Всего
+Public Const MAIN_COL_P_NUM As Long = 24     ' X  — № кат.
+Public Const MAIN_COL_P_NAME As Long = 25    ' Y  — Наименование
+Public Const MAIN_COL_P_QTY As Long = 26     ' Z  — Кол-во
+Public Const MAIN_COL_P_TOTAL As Long = 27   ' AA — Всего
+
+' Заголовки таблиц-источников на листе импорта (адаптивный поиск v1.0.16)
+Public Const TABLE_WORKS_TITLE As String = "Выполненные работы"
+Public Const TABLE_PARTS_TITLE As String = "Расходная накладная"
+
+' ============================================================
 ' Приватный тип: запись реестра libname
 ' ============================================================
 Private Type LibNameEntry
