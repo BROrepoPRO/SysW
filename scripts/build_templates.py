@@ -38,9 +38,9 @@ from win32com.client import gencache
 from template_protection import (
     apply_protection,
     apply_freeze_only,
-    ensure_freeze_panes_after_save,
     apply_protection_xml,
     apply_freeze_panes_xml,
+    strip_vba_project,
     build_zone_map,
     apply_freeze_panes_to_models,
 )
@@ -263,6 +263,9 @@ def build_work_templates(excel):
     _remove_vba(wb0)
     wb0.SaveAs(str(TEMPLATES / "work0.xlsm"), FileFormat=52)
     wb0.Close()
+    # Фикс П2: гарантированно удаляем vbaProject.bin из «нулевого» шаблона
+    # на zip-уровне (после SaveAs контейнер проекта может сохраниться).
+    strip_vba_project(TEMPLATES / "work0.xlsm")
     print("  Созданы work.xlsm и work0.xlsm")
 
 

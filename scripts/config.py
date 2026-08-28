@@ -8,7 +8,7 @@
 from pathlib import Path
 
 # Версия приложения (единый источник для всей системы)
-APP_VERSION = "1.0.14"
+APP_VERSION = "1.0.15"
 
 # Корень проекта — родительская директория scripts/
 PROJECT_DIR = Path(__file__).resolve().parent.parent
@@ -47,3 +47,6 @@ MODELS_DIR = PROJECT_DIR / "base" / "models"
 
 # Файл отчёта миграции (в директории logs/)
 MIGRATION_REPORT_FILE = LOGS_DIR / "migration_report.log"
+
+# Файл отчёта инициации пользовательских модельных файлов (в директории logs/)
+INITIATION_REPORT_FILE = LOGS_DIR / "initiation_report.log"

@@ -43,24 +43,6 @@ Private Const MAIN_P_IN_TOTAL As Long = 27   ' AA — Всего
 ' ============================================================
 
 ' --------------------------------------------------------------------------
-' GetGroupName
-' Возвращает название группы из ячейки B14 листа main
-' --------------------------------------------------------------------------
-Private Function GetGroupName() As String
-    On Error GoTo ErrHandler
-
-    Dim wsMain As Worksheet
-    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
-
-    GetGroupName = Trim(CStr(wsMain.Range("B14").Value))
-    Exit Function
-
-ErrHandler:
-    Call Mod_Logger.WriteLog("Mod_AutoMatch", "GetGroupName: Ошибка — " & Err.Description)
-    GetGroupName = ""
-End Function
-
-' --------------------------------------------------------------------------
 ' HighlightNotFound
 ' Подсвечивает ячейку жёлтым и помечает "НЕ НАЙДЕНО"
 ' --------------------------------------------------------------------------
@@ -116,13 +98,16 @@ Public Sub AutoMatchWorks()
     Dim matchCount As Long
     Dim notFoundCount As Long
     Dim priceNH As Double
+    Dim lw As WorkIdentity
+    Dim askWId As VbMsgBoxResult
+    Dim newW As WorkIdentity
 
     Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: START")
 
     Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
-    ' 1. Получаем группу из B14
-    groupName = GetGroupName()
+    ' 1. Получаем группу из B14 (единый хелпер Mod_Utils.GetGroupName)
+    groupName = Mod_Utils.GetGroupName()
     Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: groupName=" & groupName)
     If groupName = "" Then
         If Not Mod_Constants.SilenceMsgBox Then
@@ -210,7 +195,6 @@ Public Sub AutoMatchWorks()
                 wsMain.Cells(i, MAIN_W_IN_NAME).Value = "НЕ НАЙДЕНО"
                 notFoundCount = notFoundCount + 1
             Else
-                Dim lw As WorkIdentity
                 Set lw = Mod_ModelDB.ReadLocalWorkByName(groupName, inName)
                 If lw Is Nothing Then
                     MsgBox "Работа не найдена по тождествам и в списке работ группы.", _
@@ -228,11 +212,9 @@ Public Sub AutoMatchWorks()
                         "=ROUND(G" & i & "*H" & i & "*I" & i & ";2)"
                     matchCount = matchCount + 1
 
-                    Dim askWId As VbMsgBoxResult
                     askWId = MsgBox("Создать тождество для этой работы?", _
                                     vbYesNo, "АВТО РАБ")
                     If askWId = vbYes Then
-                        Dim newW As WorkIdentity
                         Set newW = New WorkIdentity
                         newW.OutArticle = lw.OutArticle
                         newW.OutName = lw.OutName
@@ -304,13 +286,17 @@ Public Sub AutoMatchParts()
     Dim found As Boolean
     Dim matchCount As Long
     Dim notFoundCount As Long
+    Dim askBase As VbMsgBoxResult
+    Dim gPart As PartIdentity
+    Dim askId As VbMsgBoxResult
+    Dim newId As PartIdentity
 
     Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchParts: START")
 
     Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
 
-    ' 1. Получаем группу из B14
-    groupName = GetGroupName()
+    ' 1. Получаем группу из B14 (единый хелпер Mod_Utils.GetGroupName)
+    groupName = Mod_Utils.GetGroupName()
     Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchParts: groupName=" & groupName)
     If groupName = "" Then
         If Not Mod_Constants.SilenceMsgBox Then
@@ -387,7 +373,6 @@ Public Sub AutoMatchParts()
                 wsMain.Cells(i, MAIN_P_IN_CATNUM).Value = "НЕ НАЙДЕНО"
                 notFoundCount = notFoundCount + 1
             Else
-                Dim askBase As VbMsgBoxResult
                 askBase = MsgBox("По тождествам не найдено. Искать в общей базе з/ч?", _
                                  vbYesNo, "АВТО ЗЧ")
                 If askBase = vbNo Then
@@ -395,7 +380,6 @@ Public Sub AutoMatchParts()
                     wsMain.Cells(i, MAIN_P_IN_CATNUM).Value = "НЕ НАЙДЕНО"
                     notFoundCount = notFoundCount + 1
                 Else
-                    Dim gPart As PartIdentity
                     Set gPart = Mod_ModelDB.ReadGlobalPartByKey(inCatNum, inName)
                     If gPart Is Nothing Then
                         MsgBox "Запчасть не найдена в общей базе з/ч.", _
@@ -412,11 +396,9 @@ Public Sub AutoMatchParts()
                             "=ROUND(T" & i & "*U" & i & ";2)"
                         matchCount = matchCount + 1
 
-                        Dim askId As VbMsgBoxResult
                         askId = MsgBox("Создать тождество для этой запчасти?", _
                                        vbYesNo, "АВТО ЗЧ")
                         If askId = vbYes Then
-                            Dim newId As PartIdentity
                             Set newId = New PartIdentity
                             newId.OutArticle = gPart.OutArticle
                             newId.OutName = gPart.OutName

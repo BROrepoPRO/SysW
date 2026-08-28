@@ -28,7 +28,7 @@ from win32com.client import gencache
 from template_protection import (
     apply_protection,
     apply_freeze_only,
-    ensure_freeze_panes_after_save,
+    apply_freeze_panes_xml,
 )
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
@@ -55,7 +55,7 @@ def main():
             apply_protection(ws, ws.Name, is_main=(ws.Name == "main"))
         wb.Save()
         wb.Close()
-        ensure_freeze_panes_after_save(TEMPLATES / "work.xlsm")
+        apply_freeze_panes_xml(TEMPLATES / "work.xlsm")
 
         # --- work0.xlsm: только FreezePanes A4 (защита при наполнении) ---
         print("Защита work0.xlsm (только FreezePanes A4) ...")
@@ -64,7 +64,7 @@ def main():
             apply_freeze_only(ws)
         wb0.Save()
         wb0.Close()
-        ensure_freeze_panes_after_save(TEMPLATES / "work0.xlsm")
+        apply_freeze_panes_xml(TEMPLATES / "work0.xlsm")
 
         # --- model.xlsm: полная защита ---
         print("Защита model.xlsm ...")
@@ -73,7 +73,7 @@ def main():
             apply_protection(ws, ws.Name, is_model=True)
         wb.Save()
         wb.Close()
-        ensure_freeze_panes_after_save(TEMPLATES / "model.xlsm")
+        apply_freeze_panes_xml(TEMPLATES / "model.xlsm")
 
         # --- model0.xlsm: только FreezePanes A4 (защита при наполнении) ---
         print("Защита model0.xlsm (только FreezePanes A4) ...")
@@ -82,7 +82,7 @@ def main():
             apply_freeze_only(ws)
         wb0.Save()
         wb0.Close()
-        ensure_freeze_panes_after_save(TEMPLATES / "model0.xlsm")
+        apply_freeze_panes_xml(TEMPLATES / "model0.xlsm")
 
         # --- report0.xlsx: полная защита ---
         print("Защита report0.xlsx ...")
@@ -91,7 +91,7 @@ def main():
             apply_protection(ws, ws.Name, is_report=True)
         wb.Save()
         wb.Close()
-        ensure_freeze_panes_after_save(TEMPLATES / "report0.xlsx")
+        apply_freeze_panes_xml(TEMPLATES / "report0.xlsx")
 
         print("Готово.")
     finally:

@@ -27,32 +27,16 @@ Public Enum SheetKind
 End Enum
 
 ' --------------------------------------------------------------------------
-' GetGroupName
-' Читает имя группы из ячейки B14 листа main (единый источник).
-' --------------------------------------------------------------------------
-Private Function GetGroupName() As String
-    On Error GoTo ErrHandler
-
-    Dim wsMain As Worksheet
-    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
-    GetGroupName = Trim(CStr(wsMain.Range("B14").Value))
-    Exit Function
-
-ErrHandler:
-    Call Mod_Logger.WriteLog("Mod_SheetButtons", "GetGroupName: " & Err.Description)
-    GetGroupName = ""
-End Function
-
-' --------------------------------------------------------------------------
 ' ResolveGroupName
-' Определяет имя группы для активного листа. Сначала читает main!$B$14;
-' если он пуст/недоступен (например, в модельной книге нет листа main),
-' выводит группу из имени листа ({Group}, {Group}w, {Group}z4) либо "" для z4.
+' Определяет имя группы для активного листа. Сначала читает main!$B$14
+' через единый хелпер Mod_Utils.GetGroupName; если он пуст/недоступен
+' (например, в модельной книге нет листа main), выводит группу из имени
+' листа ({Group}, {Group}w, {Group}z4) либо "" для z4.
 ' Это позволяет поиску работать в любом листе книги без жёсткой привязки к main.
 ' --------------------------------------------------------------------------
 Private Function ResolveGroupName(ByVal ws As Worksheet) As String
     Dim g As String
-    g = GetGroupName()
+    g = Mod_Utils.GetGroupName()
     If g <> "" Then
         ResolveGroupName = g
         Exit Function

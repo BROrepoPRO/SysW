@@ -13,11 +13,13 @@
     2. impVBA.py                — импорт исходников VBA из src/ в work.xlsm.
     3. check_vba_syntax.py      — ранний статический контроль компиляции VBA
                                   (inline-инициализация модульных переменных).
-    4. build_templates.py       — пересборка шаблонов base/templates/.
-    5. migrate_models_to_sqlite.py — пересборка SysW.db из base/models/*.
-    6. Контроль целостности БД — PRAGMA integrity_check ("ok") и контрольные
+    4. migrate_models_to_sqlite.py — пересборка SysW.db из base/models/*.
+    5. Контроль целостности БД — PRAGMA integrity_check ("ok") и контрольные
        количества по таблицам works, parts_catalog, parts, matlib_entries.
-    7. run_tests.py             — прогон тестов (после успешных этапов 2-6).
+    6. run_tests.py             — прогон тестов.
+    7. build_templates.py       — пересборка шаблонов base/templates/ ПОСЛЕ
+                                  прогона тестов (фикс П2: анти-загрязнение —
+                                  шаблоны не наследуют лог тестов в Z1).
 
 Каждый COM-этап ограничен таймаутом (STEP_TIMEOUTS); при превышении либо
 ненулевом коде «зависший» EXCEL.EXE, созданный именно конвейером, безопасно
@@ -32,10 +34,10 @@ Exit code скрипта (схема кодов, отражает конкрет
     1 - этап 1 (резервное копирование) провален;
     2 - этап 2 (impVBA.py) провален;
     22 - этап 3 (check_vba_syntax.py) провален;
-    3 - этап 4 (build_templates.py) провален;
-    4 - этап 5 (migrate_models_to_sqlite.py) провален;
-    5 - этап 6 (контроль целостности БД) провален;
-    6 - этап 7 (run_tests.py) провален;
+    4 - этап 4 (migrate_models_to_sqlite.py) провален;
+    5 - этап 5 (контроль целостности БД) провален;
+    6 - этап 6 (run_tests.py) провален;
+    3 - этап 7 (build_templates.py, ПОСЛЕ тестов) провален;
     70+ - внутренняя ошибка самого конвейера (сеть, отсутствие файла и т.п.).
 
 Поведение при ошибке:
@@ -426,16 +428,7 @@ def main() -> int:
     ):
         return EXIT_CODES["vbacompile"]
 
-    # --- Этап 3: пересборка шаблонов (build_templates.py) --------------
-    if not run_step_script(
-        "build_templates",
-        "build_templates.py",
-        timeout=STEP_TIMEOUTS["templates"],
-        pid_stage="templates",
-    ):
-        return EXIT_CODES["templates"]
-
-    # --- Этап 4: пересборка БД (migrate_models_to_sqlite.py) -----------
+    # --- Этап 3: пересборка БД (migrate_models_to_sqlite.py) -----------
     if not run_step_script(
         "migrate_models_to_sqlite",
         "migrate_models_to_sqlite.py",
@@ -457,6 +450,19 @@ def main() -> int:
         pid_stage="tests",
     ):
         return EXIT_CODES["tests"]
+
+    # --- Этап 7 (фикс П2): пересборка шаблонов ПОСЛЕ прогона тестов ----
+    # Шаблоны собираются из корневого work.xlsm после тестов, чтобы не
+    # унаследовать лог тестов в Z1 / загрязнение конвейера (анти-загрязнение).
+    # Рекомендация плана: перед сборкой выполнять пост-тестовую очистку Z1
+    # (отдельным follow-up) — см. plans/promt1.0.16_fix_P2_plan.md, Этап 4.
+    if not run_step_script(
+        "build_templates",
+        "build_templates.py",
+        timeout=STEP_TIMEOUTS["templates"],
+        pid_stage="templates",
+    ):
+        return EXIT_CODES["templates"]
 
     log_line("=" * 70)
     log_line("СБОРКА ЗАВЕРШЕНА УСПЕШНО")

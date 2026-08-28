@@ -35,6 +35,26 @@ Public Function GetCurrentUser() As String
     GetCurrentUser = Environ("USERNAME")
 End Function
 
+' --------------------------------------------------------------------------
+' GetGroupName
+' Единый публичный хелпер чтения имени группы из ячейки B14 листа main.
+' Централизует три прежние дублирующиеся реализации (Mod_SheetButtons,
+' Mod_PickWork, Mod_AutoMatch). При ошибке (лист/ячейка недоступны) логирует
+' ошибку и возвращает пустую строку.
+' --------------------------------------------------------------------------
+Public Function GetGroupName() As String
+    On Error GoTo ErrHandler
+
+    Dim wsMain As Worksheet
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
+    GetGroupName = Trim(CStr(wsMain.Range("B14").Value))
+    Exit Function
+
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_Utils", "GetGroupName: Ошибка — " & Err.Description)
+    GetGroupName = ""
+End Function
+
 ' Функция: форматирование даты в формат SQLite (ГГГГ-ММ-ДД)
 Public Function FormatDateSQL(ByVal d As Date) As String
     FormatDateSQL = Format(d, "yyyy-mm-dd")

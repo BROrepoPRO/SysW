@@ -718,6 +718,36 @@ Private Sub RunModelDBTests()
     Set prov = Nothing
     On Error GoTo 0
 
+    ' @test TC-64
+    ' -------------------------------------------------------
+    ' TC-64: CreateModelGroupFile регистрирует группу в model_groups
+    ' (SQLite-ветка). Используется существующая группа UAZ — запись
+    ' идемпотентна (INSERT OR REPLACE), загрязнения БД не создаётся.
+    ' Проверяем успешность операции и наличие группы в списке.
+    ' -------------------------------------------------------
+    On Error Resume Next
+    Dim createOk As Boolean
+    createOk = Mod_ModelDB.CreateModelGroupFile("UAZ")
+    If Err.number <> 0 Then
+        AddResult "TC-64", "CreateModelGroupFile регистрация", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        Dim allGrps As Collection
+        Dim grpFound As Boolean
+        Dim gi As Variant
+        Set allGrps = Mod_ModelDB.GetAllModelGroups()
+        grpFound = False
+        For Each gi In allGrps
+            If UCase$(Trim$(CStr(gi))) = "UAZ" Then
+                grpFound = True
+                Exit For
+            End If
+        Next gi
+        AddResult "TC-64", "CreateModelGroupFile регистрация", (createOk And grpFound), _
+                  "createOk=" & CStr(createOk) & ", гр. UAZ в списке=" & CStr(grpFound)
+    End If
+    On Error GoTo 0
+
     Debug.Print ""
 End Sub
 
@@ -752,6 +782,23 @@ Private Sub RunPickWorkTests()
     Else
         AddResult "TC-36", "GetGroupNameFromMain чтение B14", (Len(groupName) > 0), _
                   "Ожидалась непустая строка, получено '" & groupName & "'"
+    End If
+    On Error GoTo 0
+
+    ' @test TC-63
+    ' -------------------------------------------------------
+    ' TC-63: Mod_Utils.GetGroupName — единый хелпер чтения имени группы
+    ' из B14 листа main (централизация трёх прежних дублей).
+    ' Значение B14 = "UAZ" осталось установленным после TC-36.
+    ' -------------------------------------------------------
+    On Error Resume Next
+    groupName = Mod_Utils.GetGroupName()
+    If Err.number <> 0 Then
+        AddResult "TC-63", "GetGroupName единый хелпер B14", False, "Ошибка: " & Err.Description
+        Err.Clear
+    Else
+        AddResult "TC-63", "GetGroupName единый хелпер B14", (Trim(groupName) = "UAZ"), _
+                  "Ожидалась 'UAZ', получено '" & groupName & "'"
     End If
     On Error GoTo 0
 

@@ -12,8 +12,9 @@
 
 Зоны (docs/table.md, раздел 0.4 / решение пользователя v1.0.4):
   work.xlsm, лист main:
-      AllowEditRanges/разблокировка: B4, B5:B17, C1, Z1, данные D4:AB2000
-      (доп. блокировка столбцов A:B);
+      AllowEditRanges/разблокировка: B4, B5:B17, C1, Z1,
+      данные D4:AB{last} (динамическая фактическая последняя строка, фикс П2;
+      жёсткая D4:AB2000 УДАЛЕНА — она раздувала лист). Доп. блокировка A:B;
   work.xlsm, spisok/libname: A2:J5000;
   work.xlsm, models:          A3:F5000;
   model.xlsm: A4:U2000 на всех листах + C1 на {GroupName} и z4;
@@ -32,9 +33,18 @@ from openpyxl.utils import get_column_letter
 
 # --- Зоны ввода/данных по шаблонам ---
 WORK_MAIN_EDIT = ["B4", "B5:B17", "C1", "Z1"]
-WORK_MAIN_DATA = "D4:AB2000"     # данные работ/запчастей листа main
+# Данные работ/запчастей листа main. v1.0.16 (фикс П2): жёсткая константа
+# D4:AB2000 УДАЛЕНА — она материализовала ~50 тыс. ячеек и раздувала лист до
+# «одной большой пустой защищённой области». Фактическая последняя строка
+# определяется динамически на XML-уровне через _sheet_max_data_row().
+WORK_MAIN_DATA_MAX_ROW_FALLBACK = 133   # эталонный низ main (A3:AB133)
 WORK_LIST_EDIT = "A2:J5000"      # spisok, libname
 WORK_MODELS_EDIT = "A3:F5000"    # models
+
+# Предохранители де-блоата: COM-операции не должны выходить за эти границы,
+# чтобы не материализовать раздутые пустые зоны (D4:AB2000 и т.п.).
+_USED_RESET_MAX_ROW = 500        # предел строк при сбросе Locked в COM
+_USED_RESET_MAX_COL = 40         # предел столбцов (AB=28 < 40)
 
 MODEL_DATA = "A4:U2000"          # все листы модельного шаблона
 MODEL_EDIT_EXTRA = ["C1"]        # доп. зона на {GroupName} и z4
@@ -68,13 +78,33 @@ def _set_freeze_a4(ws):
 
 
 def _unlock_used(ws):
-    """Разблокирует использованный диапазон (сброс предыдущих Locked=True)."""
+    """Разблокирует ранее заблокированные ячейки (сброс Locked=True).
+
+    v1.0.16 (фикс П2): диапазон ОГРАНИЧЕН предохранителями _USED_RESET_MAX_ROW /
+    _USED_RESET_MAX_COL. Прежний вариант сбрасывал Locked на всём UsedRange,
+    что при раздутой зоне (D4:AB2000) материализовало ~50 тыс. ячеек.
+    """
     try:
         used = ws.UsedRange
-        if used is not None:
-            used.Locked = False
+        if used is None:
+            return
+        max_r = min(used.Row + used.Rows.Count - 1, _USED_RESET_MAX_ROW)
+        max_c = min(used.Column + used.Columns.Count - 1, _USED_RESET_MAX_COL)
+        rng = ws.Range(ws.Cells(1, 1), ws.Cells(max_r, max_c))
+        rng.Locked = False
     except Exception:
         pass
+
+
+def _sheet_max_data_row(xml_text, default=4):
+    """Возвращает фактическую последнюю строку данных из XML sheetData.
+
+    Источник истины — реальные узлы <row r="N"/> в листе, а не фиксированная
+    граница. Используется на XML-уровне для построения динамической зоны
+    D4:AB{last} без материализации ячеек.
+    """
+    nums = [int(r) for r in re.findall(r'<row r="(\d+)"', xml_text)]
+    return max(nums) if nums else default
 
 
 def _resolve_zones(sheet_name, is_main, is_model, is_report):
@@ -88,8 +118,10 @@ def _resolve_zones(sheet_name, is_main, is_model, is_report):
             return MODEL_EDIT_EXTRA + [MODEL_DATA]
         return [MODEL_DATA]
     if is_main:
-        # work.xlsm, лист main
-        return [*WORK_MAIN_EDIT, WORK_MAIN_DATA]
+        # work.xlsm, лист main: только малые зоны ввода (без раздувающей
+        # D4:AB2000). Зона данных D4:AB{last} добавляется на XML-уровне
+        # в apply_protection_xml() (см. _sheet_max_data_row).
+        return [*WORK_MAIN_EDIT]
     if sheet_name in ("spisok", "libname"):
         return [WORK_LIST_EDIT]
     if sheet_name == "models":
@@ -207,15 +239,14 @@ def _extract_sheet_xmls(path):
 
 
 def ensure_freeze_panes_after_save(path):
-    """Гарантированно закрепляет строки 1-3 (FreezePanes A4) на XML-уровне.
+    """DEPRECATED (v1.0.16, фикс П2). Используйте apply_freeze_panes_xml().
 
-    Вызывается ПОСЛЕ сохранения книги через Excel COM. Открывает .xlsm/.xlsx
-    через openpyxl (keep_vba=True) и задаёт freeze_panes = 'A4' каждому листу.
-    Важно: openpyxl переписывает xl/worksheets/*.xml и часть архивных записей,
-    но сохраняет vbaProject.bin для .xlsm (keep_vba=True). Используется как
-    страховка, когда COM-окно не смогло установить закрепление для невидимой
-    книги. При необходимости шрифт/формат сохраняются; допустимо запускать
-    повторно (идемпотентно).
+    Данная функция открывает .xlsm через openpyxl(keep_vba=True) и вызывает
+    wb.save() — это пересохранение опасно для .xlsm (валидировано v1.0.9:
+    файл может стать нечитаемым для Excel COM). Новый путь — точечная правка
+    только узла <pane> в zip-архиве (apply_freeze_panes_xml). Функция оставлена
+    только для обратной совместимости legacy-вызовов и не должна использоваться
+    для новых книг.
     """
     is_xlsm = str(path).lower().endswith(".xlsm")
     wb = load_workbook(str(path), keep_vba=is_xlsm)
@@ -460,6 +491,17 @@ def apply_protection_xml(path, zone_map):
                     if zones is None and '__default__' in zone_map:
                         zones = zone_map['__default__']
                     text = data.decode('utf-8')
+                    # Динамическая зона данных main (фикс П2): реальная последняя
+                    # строка из sheetData вместо раздувающей жёсткой D4:AB2000.
+                    # Создаётся лишь запись allowEditRanges (не ячейки) — лист
+                    # не материализуется, данные под защитой остаются доступными.
+                    if sheet_name == 'main' and zones:
+                        last = _sheet_max_data_row(text, WORK_MAIN_DATA_MAX_ROW_FALLBACK)
+                        last = min(last, _USED_RESET_MAX_ROW)
+                        data_zone = f"D4:AB{last}"
+                        zones = [z for z in zones if z != "D4:AB2000"]
+                        if data_zone not in zones:
+                            zones.append(data_zone)
                     text = _inject_sheet_xml(text, sheet_name, zones)
                     data = text.encode('utf-8')
             zout.writestr(item, data)
@@ -470,7 +512,9 @@ def build_zone_map(template_type):
     """Возвращает zone_map для apply_protection_xml по типу шаблона."""
     z = {}
     if template_type == 'work':
-        z['main'] = [*WORK_MAIN_EDIT, WORK_MAIN_DATA]          # B4,B5:B17,C1,Z1,D4:AB2000
+        # main: только малые зоны ввода; динамическая D4:AB{last} добавляется
+        # в apply_protection_xml() (фикс П2) — без жёсткой раздувающей D4:AB2000.
+        z['main'] = [*WORK_MAIN_EDIT]                           # B4,B5:B17,C1,Z1
         z['spisok'] = [WORK_LIST_EDIT]                          # A2:J5000
         z['libname'] = [WORK_LIST_EDIT]                         # A2:J5000
         z['models'] = [WORK_MODELS_EDIT]                        # A3:F5000
@@ -506,6 +550,39 @@ def apply_freeze_panes_xml(path):
                                  mv.group(2))
                         text = (text[:mv.start()] + mv.group(1) + inner +
                                 mv.group(3) + text[mv.end():])
+                data = text.encode('utf-8')
+            zout.writestr(item, data)
+    _shutil.move(tmp, str(path))
+
+
+def strip_vba_project(path):
+    """Удаляет VBA-проект из .xlsm на zip-уровне (без пересохранения книги).
+
+    Гарантирует отсутствие vbaProject.bin в «нулевом» шаблоне work0.xlsm
+    (фикс П2). Удаляет три записи:
+      - xl/vbaProject.bin
+      - его Relationship из xl/_rels/workbook.xml.rels
+      - Override для vbaProject.bin из [Content_Types].xml
+    Остальные записи архива переносятся байт-в-байт без изменений.
+    """
+    tmp = str(path) + '.vba.tmp'
+    with zipfile.ZipFile(str(path), 'r') as zin, \
+            zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == 'xl/vbaProject.bin':
+                continue  # сам бинарник VBA-проекта
+            if item.filename == 'xl/_rels/workbook.xml.rels':
+                text = data.decode('utf-8')
+                text = re.sub(
+                    r'<Relationship\b[^>]*Target="vbaProject\.bin"[^>]*/?>',
+                    '', text)
+                data = text.encode('utf-8')
+            elif item.filename == '[Content_Types].xml':
+                text = data.decode('utf-8')
+                text = re.sub(
+                    r'<Override\b[^>]*PartName="/xl/vbaProject\.bin"[^>]*/?>',
+                    '', text)
                 data = text.encode('utf-8')
             zout.writestr(item, data)
     _shutil.move(tmp, str(path))

@@ -15,23 +15,12 @@ Option Private Module
 
 ' --------------------------------------------------------------------------
 ' GetGroupNameFromMain
-' Читает название группы из ячейки B14 листа main
+' Читает название группы из ячейки B14 листа main.
+' Сохранена как Public-обёртка для обратной совместимости (вызывается TC-36);
+' фактическое чтение делегируется единому хелперу Mod_Utils.GetGroupName.
 ' --------------------------------------------------------------------------
 Public Function GetGroupNameFromMain() As String
-    On Error GoTo ErrHandler
-
-    Dim wsMain As Worksheet
-    Dim groupName As String
-
-    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
-    groupName = Trim(CStr(wsMain.Range("B14").Value))
-
-    GetGroupNameFromMain = groupName
-    Exit Function
-
-ErrHandler:
-    Call Mod_Logger.WriteLog("Mod_PickWork", "GetGroupNameFromMain: Ошибка — " & Err.Description)
-    GetGroupNameFromMain = ""
+    GetGroupNameFromMain = Mod_Utils.GetGroupName()
 End Function
 
 ' --------------------------------------------------------------------------

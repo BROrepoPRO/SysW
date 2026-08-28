@@ -348,6 +348,40 @@ def insert_shared_parts_for_group(conn: sqlite3.Connection, group: str,
     )
 
 
+def migrate_group(conn: sqlite3.Connection, group: str, wb,
+                  part_codes: list) -> dict:
+    """Мигрирует данные ОДНОЙ группы из загруженной книги в SysW.db.
+
+    Регистрирует группу в model_groups (идемпотентно, INSERT OR REPLACE),
+    заполняет works, model_works, model_parts, matlib_entries и привязки
+    parts к общему каталогу parts_catalog.
+
+    Возвращает словарь с количеством вставленных строк по таблицам.
+
+    Вынесена в отдельную функцию для переиспользования при точечной
+    инициации новых групп (scripts/initiate_models.py) без полного --force
+    прогона всех групп.
+    """
+    # Регистрация группы в model_groups (идемпотентно)
+    conn.execute(
+        "INSERT OR REPLACE INTO model_groups(group_name) VALUES (?)", (group,)
+    )
+
+    n_w = extract_works(conn, group, wb)
+    n_mw = extract_model_works(conn, group, wb)
+    n_mp = extract_model_parts(conn, group, wb)
+    # Привязки запчастей группы к общему каталогу parts_catalog (по кодам)
+    insert_shared_parts_for_group(conn, group, part_codes)
+
+    return {
+        "works": n_w,
+        "model_works": n_mw,
+        "model_parts": n_mp,
+        "matlib_entries": n_mw + n_mp,
+        "parts_inserted": len(part_codes),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Валидация результатов
 # ---------------------------------------------------------------------------
@@ -440,25 +474,17 @@ def run_migration(force: bool = False) -> int:
             log_line(f"  Обработка группы '{g}' ({src.name})...")
             wb = load_workbook(str(src), read_only=True, data_only=True)
 
-            # Регистрация группы (идемпотентно)
-            conn.execute(
-                "INSERT OR REPLACE INTO model_groups(group_name) VALUES (?)", (g,)
-            )
+            # Миграция данных одной группы (регистрация + заполнение таблиц)
+            res = migrate_group(conn, g, wb, part_codes)
 
-            n_w = extract_works(conn, g, wb)
-            n_mw = extract_model_works(conn, g, wb)
-            n_mp = extract_model_parts(conn, g, wb)
-            # Привязки запчастей группы к каталогу parts_catalog (по кодам)
-            insert_shared_parts_for_group(conn, g, part_codes)
+            total["works"] += res["works"]
+            total["model_works"] += res["model_works"]
+            total["model_parts"] += res["model_parts"]
+            total["matlib_entries"] += res["matlib_entries"]
+            total["parts_inserted"] += res["parts_inserted"]
 
-            total["works"] += n_w
-            total["model_works"] += n_mw
-            total["model_parts"] += n_mp
-            total["matlib_entries"] += n_mw + n_mp
-            total["parts_inserted"] += len(part_codes)
-
-            log_line(f"    works={n_w}, model_works={n_mw}, "
-                     f"model_parts={n_mp}, parts_links={len(part_codes)}")
+            log_line(f"    works={res['works']}, model_works={res['model_works']}, "
+                     f"model_parts={res['model_parts']}, parts_links={len(part_codes)}")
             wb.close()
             conn.commit()
 
