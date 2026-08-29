@@ -10,8 +10,10 @@
 ### Changed
 - **Исправлена кодировка вывода PowerShell** (Задача 3): UTF-8 установлен в профиле терминала
   `SourceCraft` (`.vscode/settings.json`) и в `scripts/config.ps1`
-  (`[Console]::OutputEncoding` / `$OutputEncoding`). Устраняет «кракозябры» кириллицы
-  в чате SourceCraft.
+  (`[Console]::OutputEncoding` / `$OutputEncoding`, `chcp 65001`). Добавлены переменные
+  окружения `PYTHONUTF8=1` и `PYTHONIOENCODING=utf-8` для корректного вывода кириллицы
+  Python-скриптами. Устраняет «кракозябры» в чате SourceCraft. Расширение выводимой
+  информации не требуется (контроль расхода нейрокредитов).
 
 ### Added
 - **Схема резервирования ключевых файлов Excel** (Задачи 2+5): этап 1 `scripts/build_all.py`
