@@ -1,6 +1,6 @@
 # Руководство по работе с SourceCraft Code Assistant
 
-> **Версия руководства:** v1.0.14 (актуализировано 2026-08-26).
+> **Версия руководства:** v1.0.15 (актуализировано 2026-08-26).
 
 ## Архитектура взаимодействия
 
@@ -116,11 +116,17 @@ VBA-файлы (`.bas`, `.cls`) используют двухфазную мод
 
 1. Работа с VBA-модулями — только через скрипты импорта/экспорта
 2. После изменений — запустить тесты: `python scripts/run_tests.py`
-3. Обновить [`CHANGELOG.md`](CHANGELOG.md)
+3. Обновить [`docs/CHANGELOG.md`](CHANGELOG.md)
 
 ### Обновление CHANGELOG.md
 
-При любых изменениях, влияющих на функциональность проекта, обновлять [`CHANGELOG.md`](CHANGELOG.md) в формате [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/).
+При любых изменениях, влияющих на функциональность проекта, обновлять [`docs/CHANGELOG.md`](CHANGELOG.md) в формате [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/).
+
+### Согласование изменений критических файлов
+
+Если подзадача затрагивает несколько критических файлов (см. `[E3]` в `.ycarules`) —
+запрос на изменение проводится **один раз для всех файлов подзадачи** (правило `[U4]`):
+все целевые файлы и планируемые правки перечисляются одним блоком, подтверждение — одной точкой.
 
 ---
 
@@ -155,6 +161,7 @@ SysW\
 │   ├── build_all.py          # Единый конвейер сборки
 │   ├── build_templates.py    # Пересборка шаблонов base/templates/
 │   ├── migrate_models_to_sqlite.py  # Пересборка SysW.db из base/models/
+│   ├── initiate_models.py    # Инициация пользовательских модельных файлов в систему
 │   ├── check_vba_syntax.py   # Статическая проверка синтаксиса VBA
 │   ├── update_version.py     # Автообновление версии SemVer
 │   ├── sqlite_schema.py      # DDL-схема SysW.db
@@ -193,9 +200,10 @@ SysW\
 ├── .codeassistant/       # Резервная конфигурация MCP (mcp.json)
 │   └── mcp.json
 ├── .ycarules             # Правила для SourceCraft Code Assistant
-├── CHANGELOG.md          # История изменений проекта
 ├── README.md             # Основное описание проекта
 └── work.xlsm             # Excel-файл с макросами (в .gitignore)
+```
+> История версий хранится в [`docs/CHANGELOG.md`](CHANGELOG.md).
 ```
 
 ### Назначение директорий
@@ -267,7 +275,7 @@ SysW\
 | 1.0.4 | 2026-08-21 | Каталог шаблонов `base/templates/`, защита листов шаблонов, SQLite-инфраструктура (стадия проектирования), новые скрипты `build_templates.py`, `apply_protection_templates.py` |
 | 1.0.3 | 2026-08-21 | Архивация планов, создание объединённого плана `integration_1.0.3.md`, актуализация документации (16 VBA-файлов, 1 лист `Лист2_main`) |
 | 1.0.2 | 2026-08-06 | Актуализация документации под 1.0.2, единый источник версии, интеграция MCP-серверов File System и Git Tools |
-| 0.18.0 | 2026-08-06 | Актуализация документации: переименование `ARCHITECTURE_SQLITE.md` → `ARCHITECTURE.md`, добавление `Mod_ModelTypes.bas`, `PartIdentity.cls`, `WorkIdentity.cls`, инструмент проверки документации `check_docs.py` |
+| 0.18.0 | 2026-08-06 | Актуализация документации: переименование `ARCHITECTURE.md` → `ARCHITECTURE.md`, добавление `Mod_ModelTypes.bas`, `PartIdentity.cls`, `WorkIdentity.cls`, инструмент проверки документации `check_docs.py` |
 | 0.17.0 | 2026-08-05 | Добавлены классы `PartIdentity.cls`, `WorkIdentity.cls`; модуль `Mod_ModelTypes.bas` |
 | 0.16.0 | 2026-08-03 | Добавлен `.sourcecraft` с MCP-серверами (относительные пути `${workspaceFolder}`), интеграция `.ycarules` через `customInstructions.file`, правила exclude/include/critical. Удалён `.vscode/mcp.json` |
 | 0.15.0 | 2026-07-25 | Тесты TC-31..TC-44 (Mod_ModelDB, Mod_PickWork, Mod_AutoMatch); покрытие 46% → 69%; deprecated MODELDB_BASE_PATH; делегирование Btn_main_ImportVH_Click; COMPONENTS расширен до 13+3; $ProjectPath в Set-ExcelTrust.ps1 |

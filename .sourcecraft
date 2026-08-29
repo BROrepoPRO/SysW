@@ -56,10 +56,10 @@
       "table.md",
       "report.xlsx",
       "README.md",
-      "CHANGELOG.md",
+      "docs/CHANGELOG.md",
       ".ycarules",
       ".sourcecraft",
-      "plans/ROADMAP.md",
+      "docs/ROADMAP.md",
       "base/",
       "base/models/"
     ]

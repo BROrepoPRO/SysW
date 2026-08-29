@@ -80,14 +80,14 @@ jobs:
 
       - name: Check CHANGELOG updated
         run: |
-          echo "=== Checking CHANGELOG.md ==="
-          if [ ! -f CHANGELOG.md ]; then
-            echo "[FAIL] CHANGELOG.md is missing!"
+          echo "=== Checking docs/CHANGELOG.md ==="
+          if [ ! -f docs/CHANGELOG.md ]; then
+            echo "[FAIL] docs/CHANGELOG.md is missing!"
             exit 1
           fi
           TODAY=$(date +%Y-%m-%d)
-          if grep -q "$TODAY" CHANGELOG.md; then
-            echo "  [OK] CHANGELOG.md contains entry for $TODAY"
+          if grep -q "$TODAY" docs/CHANGELOG.md; then
+            echo "  [OK] docs/CHANGELOG.md contains entry for $TODAY"
           else
             echo "  [WARN] No CHANGELOG entry found for $TODAY"
             echo "  (non-blocking — may not be a release version)"

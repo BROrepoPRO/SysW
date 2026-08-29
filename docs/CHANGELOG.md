@@ -5,6 +5,38 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [Unreleased]
+
+### Changed
+- **Правило единого запроса на критические файлы подзадачи** (`[U4]`, дополнение `[E3]`
+  в `.ycarules`): если подзадача затрагивает несколько критических файлов — запрос на изменение
+  проводится **один раз для всех файлов подзадачи**, одной точкой подтверждения (пример —
+  групповая комбинация git-команд). Синхронизировано в `.sourcecraft` и `docs/sourcecraft-guide.md`.
+- **Исправлены пути `CHANGELOG.md` и `ROADMAP.md`** в `.ycarules` ([S1], [U2], [E3]) и
+  `.sourcecraft` → `docs/CHANGELOG.md`, `docs/ROADMAP.md`; шаг CI `Check CHANGELOG updated`
+  в `.github/workflows/vba-check.yml` теперь проверяет `docs/CHANGELOG.md`.
+
+## [v1.0.15] — 2026-08-27
+
+### Added
+- **Механизм инициации пользовательских модельных файлов** `scripts/initiate_models.py`:
+  детекция новых групп в `base/models/`, валидация структуры листов, регистрация группы
+  в `model_groups`, точечная миграция данных группы в `SysW.db`, отчёт
+  `logs/initiation_report.log`. Режимы `--dry-run` / `--all`. `work.xlsm` не изменяется
+  автоматически (критический файл) — формируются рекомендации по листам `models`/`libname`.
+- **Функция `migrate_group()`** в `scripts/migrate_models_to_sqlite.py` — переиспользуемая
+  миграция одной группы (выделена из цикла `run_migration`).
+- **Единый публичный хелпер `Mod_Utils.GetGroupName()`** чтения имени группы из `main!$B$14`;
+  три дубля (`Mod_SheetButtons`, `Mod_PickWork`, `Mod_AutoMatch`) заменены на вызов хелпера;
+  `Mod_PickWork.GetGroupNameFromMain` сохранена как Public-обёртка (обратная совместимость TC-36).
+- **Тесты TC-63 и TC-64** в `Mod_FullTestRunner.bas`: единый `GetGroupName` (B14) и
+  `CreateModelGroupFile` (регистрация в `model_groups`, SQLite-ветка).
+
+### Changed
+- **Стилевой рефакторинг `Mod_AutoMatch.bas`:** объявления `Dim` перенесены из тел циклов
+  в шапки процедур `AutoMatchWorks`/`AutoMatchParts` (без изменения логики).
+- **Комментарий ImportVH и устаревшие упоминания `{B2}M` актуализированы** на `{B4}M`.
+
 ## [v1.0.14] — 2026-08-26
 
 ### Added
@@ -236,13 +268,13 @@
 - **`scripts/export_vba.py`:** запись `Mod_MainButtons` удалена из `COMPONENTS`
 
 ### Added
-- **`scripts/check_docs.py`** — инструмент проверки актуальности документации: проверяет версию v1.0.0, отсутствие упоминаний удалённого `Mod_MainButtons`, наличие новых элементов (`Mod_ModelTypes`, `PartIdentity`, `WorkIdentity`), корректность путей к скриптам (`scripts/`) и модулям (`src/modules/`), отсутствие ссылок на `ARCHITECTURE_SQLITE.md`
+- **`scripts/check_docs.py`** — инструмент проверки актуальности документации: проверяет версию v1.0.0, отсутствие упоминаний удалённого `Mod_MainButtons`, наличие новых элементов (`Mod_ModelTypes`, `PartIdentity`, `WorkIdentity`), корректность путей к скриптам (`scripts/`) и модулям (`src/modules/`), отсутствие ссылок на `ARCHITECTURE.md`
 - **`.github/workflows/docs-check.yml`** — GitHub Actions workflow для автоматической проверки документации при `push` и `pull_request` (установка Python, запуск `python scripts/check_docs.py`, публикация отчёта)
 - **Единый источник версии** — версия проекта централизована в трёх точках: `Mod_Constants.APP_VERSION` (VBA), `config.APP_VERSION` (Python), `$Script:AppVersion` (PowerShell). `scripts/check_docs.py` теперь импортирует версию из `config.APP_VERSION` вместо дублирования константы
 - **`scripts/update_version.py`** — скрипт автоматического обновления версии при релизе (`python scripts/update_version.py 1.1.0`): обновляет `Mod_Constants.bas`, `config.py`, `config.ps1`, `README.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`, `docs/ARCHITECTURE.md` и добавляет новый раздел в `docs/CHANGELOG.md`
 
 ### Changed
-- **`docs/ARCHITECTURE_SQLITE.md`** переименован в **`docs/ARCHITECTURE.md`** — актуализация имени документа архитектуры; обновлены все внутренние ссылки в README, DEVELOPER, ROADMAP, sourcecraft-guide и `.ycarules`
+- **`docs/ARCHITECTURE.md`** переименован в **`docs/ARCHITECTURE.md`** — актуализация имени документа архитектуры; обновлены все внутренние ссылки в README, DEVELOPER, ROADMAP, sourcecraft-guide и `.ycarules`
 - **Документация актуализирована до v0.18.0** — README.md, docs/ROADMAP.md, docs/DEVELOPER.md, docs/sourcecraft-guide.md, docs/git-workflow.md приведены в соответствие с фактической структурой проекта (13 модулей, классы `PartIdentity.cls`/`WorkIdentity.cls`, архивные классы листов `.bak`)
 
 ## [v0.17.0] — 2026-08-03
