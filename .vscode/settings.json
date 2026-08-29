@@ -26,7 +26,7 @@
             "args": [
                 "-NoExit",
                 "-Command",
-                ". \"${workspaceFolder}\\.venv\\Scripts\\Activate.ps1\""
+                "[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new(); $OutputEncoding=[System.Text.UTF8Encoding]::new(); . \"${workspaceFolder}\\.venv\\Scripts\\Activate.ps1\""
             ],
             "icon": "terminal-powershell"
         },
