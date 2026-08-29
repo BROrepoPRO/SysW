@@ -7,6 +7,11 @@
 
 ## [Unreleased]
 
+### Added
+- **Интегрировано расширение `gruntfuggly.todo-tree`**: добавлено в рекомендации
+  `.vscode/extensions.json`; в `.vscode/settings.json` расширен `todo-tree.filtering.excludeGlobs`
+  (исключены `_temp_export/`, `_temp_import/`, `_backup/`).
+
 ### Changed
 - **Правило единого запроса на критические файлы подзадачи** (`[U4]`, дополнение `[E3]`
   в `.ycarules`): если подзадача затрагивает несколько критических файлов — запрос на изменение

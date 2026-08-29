@@ -94,7 +94,10 @@
     "todo-tree.filtering.excludeGlobs": [
         "**/node_modules/**",
         "**/.venv/**",
-        "**/logs/*.log"
+        "**/logs/*.log",
+        "**/_temp_export/**",
+        "**/_temp_import/**",
+        "**/_backup/**"
     ],
     "todo-tree.tree.showScanModeButton": false
 }

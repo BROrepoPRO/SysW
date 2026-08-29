@@ -1,5 +1,6 @@
 {
     "recommendations": [
-        "yandex.yandex-code-assist"
+        "yandex.yandex-code-assist",
+        "gruntfuggly.todo-tree"
     ]
 }
