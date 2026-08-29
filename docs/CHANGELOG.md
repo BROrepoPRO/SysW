@@ -12,6 +12,10 @@
   `G-COLOR` (цветовая схема листов/дизайн) и `G-UBUNTU` (миграция на Ubuntu)
   внесены в `docs/ROADMAP.md` §11 «Глобальные цели верхнего уровня».
 
+### Changed
+- **Правило `[U7]` «Синхронизация todo ↔ CHANGELOG ↔ commits (единая версия)»** (Задача 4,
+  v1.1.0) внесено в `.ycarules`; синхронизировано в `docs/sourcecraft-guide.md`.
+
 ### Added
 - **Скрипт мониторинга длительных процессов `scripts/monitor_long.ps1`** (Задача 11, v1.1.0)
   с параметрами (`-LogFile`, `-IntervalSec`, `-MaxPolls`, `-Process`); пишет статус в
