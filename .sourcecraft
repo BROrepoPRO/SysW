@@ -62,7 +62,13 @@
       ".sourcecraft",
       "docs/ROADMAP.md",
       "base/",
-      "base/models/"
+      "base/models/",
+      "scripts/*.py",
+      "scripts/*.ps1",
+      "src/modules/*.bas",
+      "src/classes/*.cls",
+      "src/sheets/*.cls",
+      ".vscode/settings.json"
     ]
   }
 }
