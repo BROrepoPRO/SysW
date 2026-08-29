@@ -35,7 +35,9 @@ Public Sub ImportSheet(grz As String)
 
     Set wsSource = Mod_SheetOps.SearchSheetByGRZ(grz)
     If wsSource Is Nothing Then
-        MsgBox "Лист с ГРЗ " & grz & " не найден!", vbExclamation, "Ошибка"
+        If Not SilenceMsgBox Then
+            MsgBox "Лист с ГРЗ " & grz & " не найден!", vbExclamation, "Ошибка"
+        End If
         Exit Sub
     End If
 
@@ -54,7 +56,9 @@ ErrHandler:
     Application.EnableEvents = True
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
-    MsgBox "Ошибка при импорте данных: " & Err.Description & ". Импорт прерван.", vbCritical, "Ошибка"
+    If Not SilenceMsgBox Then
+        MsgBox "Ошибка при импорте данных: " & Err.Description & ". Импорт прерван.", vbCritical, "Ошибка"
+    End If
     Call Mod_Logger.WriteLog("Mod_Import", "ImportSheet: " & Err.Description)
 End Sub
 
@@ -295,11 +299,15 @@ Public Sub ImportDataToMain(wsSource As Worksheet)
     End If
 
     If Not foundWorks Then
-        MsgBox "Таблица 'Выполненные работы' не найдена!", vbExclamation, "Предупреждение"
+        If Not SilenceMsgBox Then
+            MsgBox "Таблица 'Выполненные работы' не найдена!", vbExclamation, "Предупреждение"
+        End If
     End If
 
     If Not foundMaterials Then
-        MsgBox "Таблица 'Расходная накладная' не найдена!", vbExclamation, "Предупреждение"
+        If Not SilenceMsgBox Then
+            MsgBox "Таблица 'Расходная накладная' не найдена!", vbExclamation, "Предупреждение"
+        End If
     End If
     Exit Sub
 
@@ -308,7 +316,9 @@ ErrHandler:
     Application.EnableEvents = True
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
-    MsgBox "Ошибка при импорте данных: " & Err.Description & ". Импорт прерван.", vbCritical, "Ошибка"
+    If Not SilenceMsgBox Then
+        MsgBox "Ошибка при импорте данных: " & Err.Description & ". Импорт прерван.", vbCritical, "Ошибка"
+    End If
     Call Mod_Logger.WriteLog("Mod_Import", "ImportDataToMain: " & Err.Description)
 End Sub
 
@@ -632,22 +642,30 @@ Public Sub ImportDataToMain_UI()
     Set wsSource = ActiveSheet
 
     If wsSource Is Nothing Then
-        MsgBox "Нет активного листа!", vbExclamation, "Ошибка"
+        If Not SilenceMsgBox Then
+            MsgBox "Нет активного листа!", vbExclamation, "Ошибка"
+        End If
         Exit Sub
     End If
 
     If wsSource.Name = Mod_Constants.SHEET_MAIN Then
-        MsgBox "Активный лист не может быть main. Выберите другой лист.", vbExclamation, "Предупреждение"
+        If Not SilenceMsgBox Then
+            MsgBox "Активный лист не может быть main. Выберите другой лист.", vbExclamation, "Предупреждение"
+        End If
         Exit Sub
     End If
 
     Call ImportDataToMain(wsSource)
 
-    MsgBox "Данные с листа '" & wsSource.Name & "' перенесены в main.", vbInformation, "SysW"
+    If Not SilenceMsgBox Then
+        MsgBox "Данные с листа '" & wsSource.Name & "' перенесены в main.", vbInformation, "SysW"
+    End If
     Exit Sub
 
 ErrHandler:
-    MsgBox "Ошибка в ImportDataToMain_UI: " & Err.Description, vbCritical, "Ошибка"
+    If Not SilenceMsgBox Then
+        MsgBox "Ошибка в ImportDataToMain_UI: " & Err.Description, vbCritical, "Ошибка"
+    End If
     Call Mod_Utils.WriteLog("ImportDataToMain_UI: " & Err.Description)
 End Sub
 
@@ -699,8 +717,10 @@ Public Sub ImportFromB2_UI()
 
         ' Проверяем, существует ли файл report.xlsx
         If Not Mod_Utils.FileExists(reportPath) Then
-            MsgBox "Файл report.xlsx не найден по пути:" & vbCrLf & reportPath, _
-                   vbExclamation, "Импорт ВХ"
+            If Not SilenceMsgBox Then
+                MsgBox "Файл report.xlsx не найден по пути:" & vbCrLf & reportPath, _
+                       vbExclamation, "Импорт ВХ"
+            End If
             GoTo CleanUp
         End If
 
@@ -722,8 +742,10 @@ Public Sub ImportFromB2_UI()
         End If
 
         If wsSource Is Nothing Then
-            MsgBox "Лист с номером '" & grz & "' не найден в файле report.xlsx.", _
-                   vbExclamation, "Импорт ВХ"
+            If Not SilenceMsgBox Then
+                MsgBox "Лист с номером '" & grz & "' не найден в файле report.xlsx.", _
+                       vbExclamation, "Импорт ВХ"
+            End If
             If Not wbReport Is Nothing Then
                 wbReport.Close SaveChanges:=False
             End If
@@ -741,8 +763,10 @@ Public Sub ImportFromB2_UI()
         On Error Resume Next
         ActiveSheet.Name = sheetName
         If Err.Number <> 0 Then
-            MsgBox "Не удалось переименовать лист в '" & sheetName & "': " & Err.Description, _
-                   vbExclamation, "Импорт ВХ"
+            If Not SilenceMsgBox Then
+                MsgBox "Не удалось переименовать лист в '" & sheetName & "': " & Err.Description, _
+                       vbExclamation, "Импорт ВХ"
+            End If
             On Error GoTo ErrHandler
             GoTo CleanUp
         End If
@@ -760,8 +784,10 @@ Public Sub ImportFromB2_UI()
         Call Mod_OrderHeader.FillHeaderFromOrder(grz)
     End If
 
-    MsgBox "Импорт по номеру '" & grz & "' выполнен успешно.", _
-           vbInformation, "Импорт ВХ"
+    If Not SilenceMsgBox Then
+        MsgBox "Импорт по номеру '" & grz & "' выполнен успешно.", _
+               vbInformation, "Импорт ВХ"
+    End If
 
 CleanUp:
     ' Восстановление состояния приложения
@@ -781,6 +807,8 @@ ErrHandler:
         wbReport.Close SaveChanges:=False
     End If
 
-    MsgBox "Ошибка при импорте ВХ: " & Err.Description, vbCritical, "Ошибка"
+    If Not SilenceMsgBox Then
+        MsgBox "Ошибка при импорте ВХ: " & Err.Description, vbCritical, "Ошибка"
+    End If
     Call Mod_Logger.WriteLog("Mod_Import", "ImportFromB2_UI: " & Err.Description)
 End Sub
