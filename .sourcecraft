@@ -28,6 +28,7 @@
   "rules": {
     "exclude": [
       "*.log",
+      "_temp/*",
       "_temp_export/*",
       "_temp_import/*",
       "__pycache__/*",

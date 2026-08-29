@@ -23,6 +23,9 @@ SRC_DIR = PROJECT_DIR / "src"
 TEMP_EXPORT_DIR = PROJECT_DIR / "_temp_export"
 TEMP_IMPORT_DIR = PROJECT_DIR / "_temp_import"
 
+# Единая папка временных артефактов ассистента/скриптов (Задача 1, v1.0.17)
+TEMP_DIR = PROJECT_DIR / "_temp"
+
 # Директория логов
 LOGS_DIR = PROJECT_DIR / "logs"
 

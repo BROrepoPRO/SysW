@@ -8,6 +8,9 @@
 ## [Unreleased]
 
 ### Added
+- **Создана единая папка временных файлов `_temp/`** (Задача 1): исключена из Git
+  (`.gitignore`) и из контекста ИИ (`.codeassistantignore`, `.sourcecraft rules.exclude`);
+  добавлена константа `TEMP_DIR` в `scripts/config.py`.
 - **Интегрировано расширение `gruntfuggly.todo-tree`**: добавлено в рекомендации
   `.vscode/extensions.json`; в `.vscode/settings.json` расширен `todo-tree.filtering.excludeGlobs`
   (исключены `_temp_export/`, `_temp_import/`, `_backup/`).

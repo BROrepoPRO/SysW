@@ -2,3 +2,4 @@
 !work.xlsm
 !report.xlsx
 !logs/*.log  
+_temp/ 

@@ -41,3 +41,4 @@ SysW_*.db
 work_*.xlsm
 models_pre_*
 work_pre_*
+_temp/ 
