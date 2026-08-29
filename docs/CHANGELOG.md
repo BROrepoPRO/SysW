@@ -8,6 +8,14 @@
 ## [Unreleased]
 
 ### Added
+- **Схема резервирования ключевых файлов Excel** (Задачи 2+5): этап 1 `scripts/build_all.py`
+  расширен — формируется единая «точка отката» `_backup/<stamp>/` с подпапками
+  `work/`, `db/`, `report/`, `templates/`, `models/` (резервируются `work.xlsm`, `SysW.db`,
+  `report.xlsx`, `base/templates/*`, `base/models/*`).
+- **Библиотека запретов редактирования**: константа `PROTECTED_FILES` в `scripts/config.py`
+  (единый источник перечня защищённых файлов) + константы путей `TEMPLATES_DIR`, `REPORT_PATH`.
+- **Правило `[U5]` «Копия перед изменением ключевых файлов Excel»** внесено в `.ycarules`;
+  синхронизировано в `docs/sourcecraft-guide.md`.
 - **Создана единая папка временных файлов `_temp/`** (Задача 1): исключена из Git
   (`.gitignore`) и из контекста ИИ (`.codeassistantignore`, `.sourcecraft rules.exclude`);
   добавлена константа `TEMP_DIR` в `scripts/config.py`.

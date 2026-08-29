@@ -48,6 +48,27 @@ DB_SCHEMA_PATH = PROJECT_DIR / "db" / "schema.sql"
 # Директория модельных файлов (легаси .xlsm)
 MODELS_DIR = PROJECT_DIR / "base" / "models"
 
+# Директория шаблонов (base/templates/)
+TEMPLATES_DIR = PROJECT_DIR / "base" / "templates"
+
+# Корневой файл отчёта Excel
+REPORT_PATH = PROJECT_DIR / "report.xlsx"
+
+# ============================================================
+# Библиотека запретов редактирования (Задача 5, v1.0.17)
+# ------------------------------------------------------------
+# Перечень критических ключевых файлов, которые НЕЛЬЗЯ редактировать
+# напрямую без резервной копии и согласования (см. правило [U5] в .ycarules).
+# Единый источник для Python-скриптов сборки/проверки.
+# ============================================================
+PROTECTED_FILES: list[Path] = [
+    WORKBOOK_PATH,   # work.xlsm
+    REPORT_PATH,     # report.xlsx
+    TEMPLATES_DIR,   # base/templates/* (все шаблоны)
+    MODELS_DIR,      # base/models/* (все модельные книги)
+    DB_PATH,         # SysW.db
+]
+
 # Файл отчёта миграции (в директории logs/)
 MIGRATION_REPORT_FILE = LOGS_DIR / "migration_report.log"
 

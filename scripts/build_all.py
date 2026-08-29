@@ -8,8 +8,10 @@
     запуская существующие скрипты подпроцессами (без дублирования их логики).
 
 Этапы (в этом порядке):
-    1. Резервное копирование — копии work.xlsm и SysW.db в _backup/
-       с меткой времени (work_YYYYmmdd_HHMMSS.xlsm, SysW_YYYYmmdd_HHMMSS.db).
+    1. Резервное копирование — единая «точка отката» _backup/<stamp>/ с
+       подпапками work/, db/, report/, templates/, models/ (копируются
+       work.xlsm, SysW.db, report.xlsx, base/templates/*, base/models/*)
+       (Задача 5 v1.0.17).
     2. impVBA.py                — импорт исходников VBA из src/ в work.xlsm.
     3. check_vba_syntax.py      — ранний статический контроль компиляции VBA
                                   (inline-инициализация модульных переменных).
@@ -67,7 +69,10 @@ try:
     from config import (
         DB_PATH,
         LOGS_DIR,
+        MODELS_DIR,
         PROJECT_DIR,
+        REPORT_PATH,
+        TEMPLATES_DIR,
         WORKBOOK_PATH,
         APP_VERSION,
     )
@@ -76,7 +81,10 @@ except ImportError:  # pragma: no cover - запуск из другой дир�
     from config import (  # type: ignore
         DB_PATH,
         LOGS_DIR,
+        MODELS_DIR,
         PROJECT_DIR,
+        REPORT_PATH,
+        TEMPLATES_DIR,
         WORKBOOK_PATH,
         APP_VERSION,
     )
@@ -291,6 +299,7 @@ def _cleanup_pid_file(pid_stage: str | None) -> None:
 def copy_with_backup(src: Path, dst: Path) -> bool:
     """Копирует одиночный файл, логируя ошибки. Возвращает успех."""
     try:
+        dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
     except OSError as exc:
         log_line(f"[ОШИБКА] Не удалось скопировать {src.name}: {exc}")
@@ -299,38 +308,79 @@ def copy_with_backup(src: Path, dst: Path) -> bool:
     return True
 
 
+def copy_dir_contents(src_dir: Path, dst_dir: Path) -> bool:
+    """Копирует всё содержимое каталога src_dir в dst_dir (рекурсивно).
+
+    Возвращает True, если скопирован хотя бы один файл. Пропускает несуществующие
+    каталоги (без ошибки), пустые каталоги считаются успешно обработанными,
+    если они существуют.
+    """
+    if not src_dir.is_dir():
+        log_line(f"[ПРЕДУПРЕЖДЕНИЕ] Каталог не найден, пропуск: {src_dir}")
+        return False
+    dst_dir.mkdir(parents=True, exist_ok=True)
+    copied = False
+    for item in src_dir.rglob("*"):
+        if item.is_file():
+            rel = item.relative_to(src_dir)
+            if copy_with_backup(item, dst_dir / rel):
+                copied = True
+    return copied or any(dst_dir.iterdir())
+
+
 # ---------------------------------------------------------------------------
 # Отдельные этапы конвейера
 # ---------------------------------------------------------------------------
 
 def step_backup() -> bool:
-    """Этап 1: резервное копирование work.xlsm и SysW.db в _backup/.
+    """Этап 1: резервное копирование ключевых файлов в _backup/<stamp>/.
 
-    Файлы копируются с меткой времени в имени. Если какой-либо из файлов
-    отсутствует на диске, копируется только существующий, но этап считается
-    успешным только при копировании хотя бы одного файла.
+    Создаётся единая «точка отката» за прогон с меткой времени:
+      _backup/<stamp>/work/work_*.xlsm
+      _backup/<stamp>/db/SysW_*.db
+      _backup/<stamp>/report/report_*.xlsx
+      _backup/<stamp>/templates/*  (все шаблоны base/templates/)
+      _backup/<stamp>/models/*     (все модельные книги base/models/)
+
+    Расширено в v1.0.17 (Задача 5): помимо work.xlsm и SysW.db резервируются
+    report.xlsx, шаблоны и модели. Этап считается успешным, если скопирован
+    хотя бы один файл.
     """
-    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
     stamp = timestamp_label()
+    snap = BACKUP_DIR / stamp
     ok = False
 
     # Резервная копия корневого work.xlsm
     if WORKBOOK_PATH.is_file():
-        dst = BACKUP_DIR / f"work_{stamp}.xlsm"
+        dst = snap / "work" / f"work_{stamp}.xlsm"
         ok = copy_with_backup(WORKBOOK_PATH, dst) or ok
     else:
         log_line(f"[ПРЕДУПРЕЖДЕНИЕ] Файл не найден, пропуск: {WORKBOOK_PATH}")
 
     # Резервная копия базы SysW.db (путь из config, корень проекта)
     if DB_PATH.is_file():
-        dst = BACKUP_DIR / f"SysW_{stamp}.db"
+        dst = snap / "db" / f"SysW_{stamp}.db"
         ok = copy_with_backup(DB_PATH, dst) or ok
     else:
         log_line(f"[ПРЕДУПРЕЖДЕНИЕ] Файл не найден, пропуск: {DB_PATH}")
 
+    # Резервная копия корневого report.xlsx (Задача 5)
+    if REPORT_PATH.is_file():
+        dst = snap / "report" / f"report_{stamp}.xlsx"
+        ok = copy_with_backup(REPORT_PATH, dst) or ok
+    else:
+        log_line(f"[ПРЕДУПРЕЖДЕНИЕ] Файл не найден, пропуск: {REPORT_PATH}")
+
+    # Резервная копия шаблонов base/templates/* (Задача 5)
+    ok = copy_dir_contents(TEMPLATES_DIR, snap / "templates") or ok
+
+    # Резервная копия модельных книг base/models/* (Задача 5)
+    ok = copy_dir_contents(MODELS_DIR, snap / "models") or ok
+
     if not ok:
         log_line("[ОШИБКА] Этап 'backup': не создано ни одной резервной копии")
         return False
+    log_line(f"    Точка отката сформирована: {snap.relative_to(PROJECT_DIR)}")
     return True
 
 
