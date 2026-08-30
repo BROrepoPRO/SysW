@@ -10,7 +10,6 @@
         "**/CVS": true,
         "**/.DS_Store": true,
         "**/Thumbs.db": true,
-        "workOt/": true,
         "hexdump_result.txt": true,
         "check_hex.ps1": true
     },
@@ -58,12 +57,17 @@
 
     },
     "todo-tree.general.tags": [
-        "[ ]",
-        "[x]",
         "TODO",
-        "FIXME"
+        "FIXME",
+        "XXX",
+        "HACK",
+        "NOTE",
+        "BUG",
+        "[ ]",
+        "[x]"
     ],
     "todo-tree.regex.regex": "(^\\s*[-*]\\s*\\[[ xX]\\])|($TAGS)",
+    "todo-tree.ripgrep.ripgrep": "K:\\Programs\\Microsoft VS Code\\08d4889f9e\\resources\\app\\node_modules.asar.unpacked\\@vscode\\ripgrep-universal\\bin\\win32-x64\\rg.exe",
     "todo-tree.highlights.enabled": true,
     "todo-tree.highlights.defaultHighlight": {
         "type": "tag",
@@ -89,15 +93,42 @@
             "icon": "bug",
             "type": "tag",
             "foreground": "#ff6b6b"
+        },
+        "XXX": {
+            "icon": "flame",
+            "type": "tag",
+            "foreground": "#ff9800"
+        },
+        "HACK": {
+            "icon": "tools",
+            "type": "tag",
+            "foreground": "#ce93d8"
+        },
+        "NOTE": {
+            "icon": "info",
+            "type": "tag",
+            "foreground": "#4fc3f7"
+        },
+        "BUG": {
+            "icon": "bug",
+            "type": "tag",
+            "foreground": "#ef5350"
         }
     },
+    "todo-tree.filtering.includeGlobs": [
+        "**/*.bas",
+        "**/*.cls",
+        "**/*.md"
+    ],
     "todo-tree.filtering.excludeGlobs": [
         "**/node_modules/**",
         "**/.venv/**",
         "**/logs/*.log",
         "**/_temp_export/**",
         "**/_temp_import/**",
-        "**/_backup/**"
+        "**/_backup/**",
+        "**/plans/_archive/**"
     ],
-    "todo-tree.tree.showScanModeButton": false
+    "todo-tree.tree.showScanModeButton": false,
+    "todo-tree.general.scanMode": "workspace"
 }
