@@ -8,7 +8,7 @@
 from pathlib import Path
 
 # Версия приложения (единый источник для всей системы)
-APP_VERSION = "1.0.15"
+APP_VERSION = "1.1.0"
 
 # Корень проекта — родительская директория scripts/
 PROJECT_DIR = Path(__file__).resolve().parent.parent
@@ -29,7 +29,11 @@ TEMP_DIR = PROJECT_DIR / "_temp"
 # Директория логов
 LOGS_DIR = PROJECT_DIR / "logs"
 
-# Файл лога тестов (в директории logs/)
+# Файл системного лога (в директории logs/) — общие системные события
+LOG_FILE = LOGS_DIR / "log.txt"
+
+# Файл лога тестов (в директории logs/) — расширенный тестовый лог
+# (уровни INFO/WARN/ERROR; заполняется VBA Mod_Logger.WriteTestLog и run_tests.py)
 TEST_LOG_FILE = LOGS_DIR / "test_results.log"
 
 # ============================================================
@@ -68,6 +72,15 @@ PROTECTED_FILES: list[Path] = [
     MODELS_DIR,      # base/models/* (все модельные книги)
     DB_PATH,         # SysW.db
 ]
+
+# ============================================================
+# Резервирование (Задача 10, v1.1.0)
+# ------------------------------------------------------------
+# Каталог резервных копий и количество хранимых «точек отката».
+# При превышении лимита самая старая точка отката удаляется (ротация).
+# ============================================================
+BACKUP_DIR = PROJECT_DIR / "_backup"
+BACKUP_KEEP = 5
 
 # Файл отчёта миграции (в директории logs/)
 MIGRATION_REPORT_FILE = LOGS_DIR / "migration_report.log"

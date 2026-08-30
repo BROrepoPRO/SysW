@@ -67,6 +67,8 @@ from pathlib import Path
 # с остальными скриптами системы).
 try:
     from config import (
+        BACKUP_DIR,
+        BACKUP_KEEP,
         DB_PATH,
         LOGS_DIR,
         MODELS_DIR,
@@ -79,6 +81,8 @@ try:
 except ImportError:  # pragma: no cover - запуск из другой директории
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from config import (  # type: ignore
+        BACKUP_DIR,
+        BACKUP_KEEP,
         DB_PATH,
         LOGS_DIR,
         MODELS_DIR,
@@ -96,8 +100,8 @@ except ImportError:  # pragma: no cover - запуск из другой дир�
 # Файл лога сборки (в директории logs/)
 BUILD_LOG_FILE = LOGS_DIR / "build.log"
 
-# Каталог резервных копий (корень проекта)
-BACKUP_DIR = PROJECT_DIR / "_backup"
+# Каталог резервных копий (из config, единый источник)
+# BACKUP_DIR = PROJECT_DIR / "_backup"  # определено в config.py
 
 # Файл лога тестов (используется run_tests.py, путь берётся из config)
 TEST_LOG_FILE = LOGS_DIR / "test_results.log"
@@ -381,7 +385,33 @@ def step_backup() -> bool:
         log_line("[ОШИБКА] Этап 'backup': не создано ни одной резервной копии")
         return False
     log_line(f"    Точка отката сформирована: {snap.relative_to(PROJECT_DIR)}")
+
+    # Ротация бэкапов (Задача 10, v1.1.0): хранить не более BACKUP_KEEP точек отката
+    _prune_backups(BACKUP_DIR, keep=BACKUP_KEEP)
+
     return True
+
+
+def _prune_backups(backup_dir: Path, keep: int) -> None:
+    """Удаляет самые старые точки отката в _backup, оставляя не более `keep`.
+
+    Каждая точка отката — каталог с меткой времени вида YYYYmmdd_HHMMSS.
+    Удаляются самые старые (по имени/времени создания), пока число точек
+    превышает лимит. Реализовано безопасно (только внутри backup_dir).
+    """
+    if keep <= 0 or not backup_dir.is_dir():
+        return
+    snapshots = sorted(
+        (p for p in backup_dir.iterdir() if p.is_dir()),
+        key=lambda p: (p.name,),
+    )
+    excess = len(snapshots) - keep
+    for old in snapshots[:excess]:
+        try:
+            shutil.rmtree(old)
+            log_line(f"    Ротация: удалена старая точка отката {old.name}")
+        except OSError as exc:
+            log_line(f"[ПРЕДУПРЕЖДЕНИЕ] Не удалось удалить {old.name}: {exc}")
 
 
 def step_integrity() -> bool:

@@ -5,7 +5,33 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
-## [Unreleased]
+## [v1.1.0] — 2026-08-30
+
+### Added
+- **Единый источник версии и скрипт `update_version.py`:** версия проекта централизована в `config.APP_VERSION`, `Mod_Constants.APP_VERSION` и `$Script:AppVersion`; добавлен скрипт автоматического обновления версии.
+
+### Changed
+- **Интеграция реестра в общую документацию** (Задача 13, v1.1.0): реестр макросов, скриптов
+  и тестов полностью перенесён из `docs/reestr.md` в `docs/DEVELOPER.md` (Приложения D–G) без
+  потерь; файл `docs/reestr.md` удалён; ссылки на него заменены на `docs/DEVELOPER.md`
+  (в `ARCHITECTURE.md`, `ROADMAP.md`, `table.md`, `sourcecraft-guide.md`, `README.md`);
+  конфигурационные списки (`.ycarules`, `scripts/check_docs.py`) согласованы.
+  Глобальная задача `G-REESTR` закрыта.
+
+### Changed
+- **Логгер «2 лога» + переработка списка тестов** (Задача 1, v1.1.0, §3.3):
+  - [`Mod_Logger.bas`](src/modules/Mod_Logger.bas) разделён на два независимых лога:
+    системный `logs/log.txt` (`WriteLog`/`WriteLogE`, ротация/очистка) и расширенный
+    тестовый `logs/test_results.log` (`WriteTestLog`/`LogTestInfo`/`LogTestWarn`/`LogTestError`
+    с уровнями **INFO/WARN/ERROR**, включая ошибки VBA; `ClearTestLog`, `GetTestLogPath`).
+  - Константы путей логов: `LOG_FILE` и `TEST_LOG_FILE` добавлены в
+    [`Mod_Constants.bas`](src/modules/Mod_Constants.bas) и `scripts/config.py`.
+  - [`Mod_FullTestRunner.bas`](src/modules/Mod_FullTestRunner.bas): каждая строка результата
+    пишется в `logs/test_results.log` через `WriteTestLog` (PASS→INFO, SKIP→WARN, FAIL→ERROR);
+    маркеры START/END; список тестов актуализирован под фактическое покрытие
+    (**TC-01..TC-64 + TC-S1..TC-S3**, Total=65).
+  - `docs/reestr.md` (§3) и `docs/DEVELOPER.md` (§2.5, §2.6, §6.1–6.4) актуализированы
+    под новое «2 лога» и перечень тестов.
 
 ### Added
 - **Зарегистрированы отложенные глобальные задачи** (промт 1.1.0, Задачи 7 и 8):
@@ -69,6 +95,22 @@
 - **Исправлены пути `CHANGELOG.md` и `ROADMAP.md`** в `.ycarules` ([S1], [U2], [E3]) и
   `.sourcecraft` → `docs/CHANGELOG.md`, `docs/ROADMAP.md`; шаг CI `Check CHANGELOG updated`
   в `.github/workflows/vba-check.yml` теперь проверяет `docs/CHANGELOG.md`.
+
+### Added
+- **Скрипт очистки системы `scripts/clean_system.py`** (Задача 9, v1.1.0): ручная очистка
+  системы через терминал VSCode с режимами `--dry-run` (предпросмотр) и `--apply`
+  (применение); обрабатывает `_temp/`, `_temp_export/`, `_temp_import/`, `__pycache__/`,
+  `*.tmp`, `~$*.xlsm`; защищённые файлы (`work.xlsm`, `report.xlsx`, `SysW.db`, `base/`)
+  не затрагиваются.
+- **Лимит хранимых бэкапов `BACKUP_KEEP=5`** (Задача 10, v1.1.0): в `scripts/config.py`
+  задано количество хранимых точек отката; в `scripts/build_all.py` реализована
+  автоматическая ротация `_backup/<stamp>/` (удаление бэкапов сверх лимита).
+
+### Changed
+- **Версионность `update_version.py` расширена до формата X.Y.Z.W** (Задача 3, v1.1.0):
+  `scripts/update_version.py` принимает и корректно заменяет четвёртый сегмент (шаг внутри
+  промта) без остаточных «хвостов» (`1.0.18` → `1.0.18.1`, `1.0.18.1` → `1.0.18.2`);
+  сообщение об ошибке актуализировано на «Ожидается формат X.Y.Z или X.Y.Z.W».
 
 ## [v1.0.15] — 2026-08-27
 
@@ -207,7 +249,7 @@
 ## [v1.0.10] — 2026-08-25
 
 ### Added
-- **Реестр макросов, скриптов и тестов:** новый документ [`docs/reestr.md`](reestr.md) — таблицы макросов основной бизнес-логики (кнопки листа main, автоподбор/ручной подбор, поиск UAZ/запчастей, служебная логика по модулям, провайдеры данных, листовые события), реестр скриптов (Python/PowerShell/служебные), реестр тестов (TC-01..TC-50 + TC-S1..TC-S3) и раздел замечаний аудита (ошибки, расхождения, актуальность, рекомендации).
+- **Реестр макросов, скриптов и тестов:** новый документ `docs/reestr.md` (в v1.1.0 интегрирован в `docs/DEVELOPER.md`, Приложения D–G) — таблицы макросов основной бизнес-логики (кнопки листа main, автоподбор/ручной подбор, поиск UAZ/запчастей, служебная логика по модулям, провайдеры данных, листовые события), реестр скриптов (Python/PowerShell/служебные), реестр тестов (TC-01..TC-50 + TC-S1..TC-S3) и раздел замечаний аудита (ошибки, расхождения, актуальность, рекомендации).
 - **Актуализация документации до фактического состояния:** `DEVELOPER.md` (§2.10 Mod_SheetButtons — только поисковые обработчики UAZ/Parts; §2.11 `GetModelDBBasePath` вместо константы `MODELDB_BASE_PATH` + фабрика `GetModelDataProvider`; §2.13 `AutoMatchWorks`/`AutoMatchParts` вместо несуществующей `AutoMatch_UI`; состав листов `src/sheets/` = `Лист2/Лист3/Лист5/Лист9`; `GetTestResults()` описан как Public Sub с записью в Z1; тестовое покрытие TC-01..TC-50 + TC-S1..S3), `ARCHITECTURE.md` (диапазон шапки B3:B15 → B5:B17), `sourcecraft-guide.md` (полный список скриптов и состав листов).
 - **Перекрёстные ссылки на реестр:** `README.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`, `docs/ARCHITECTURE.md`, `docs/sourcecraft-guide.md`, `docs/table.md` дополнены ссылками на `docs/reestr.md`.
 - **Версия поднята до v1.0.10** — `Mod_Constants.bas`, `config.py`, `config.ps1`, `README.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`, `docs/ARCHITECTURE.md`, `docs/CHANGELOG.md`.

@@ -226,8 +226,12 @@
   **Примечание:** обязательное создание плана отменено; `plans/` используется по решению
   Orchestrator для крупных/архитектурных задач.
 
-- **`[U2]` CHANGELOG**
-  При любых изменениях, влияющих на функциональность – обновить `docs/CHANGELOG.md` (формат Keep a Changelog).
+- **`[U2]` CHANGELOG И ВЕРСИОНИРОВАНИЕ**
+  При любых изменениях, влияющих на функциональность – обновить `docs/CHANGELOG.md`
+  (формат Keep a Changelog). Версия проекта: `X.Y.Z` (SemVer) или расширенная `X.Y.Z.W`
+  (v1.1.0): компонента **W** инкрементируется при изменениях внутри одного промта
+  (todo/CHANGELOG/commits), например `1.0.18.1`. Обновление версии — через
+  `scripts/update_version.py`.
 
 - **`[U3]` ТОЧНОСТЬ ВЫПОЛНЕНИЯ**
   Строго следовать инструкциям, не отклоняться и не добавлять незапрошенный функционал.
@@ -287,7 +291,7 @@
   | `.github/` | GitHub Actions |
   | `.vscode/` | Настройки VS Code |
   | Корень | `work.xlsm`, `report.xlsx`, `table.md`, `README.md`, `.ycarules`, `.gitattributes`, `.gitignore`, `.codeassistantignore` |
-  | `docs/` | Документация (`ARCHITECTURE.md`, `DEVELOPER.md`, `git-workflow.md`, `sourcecraft-guide.md`, `ROADMAP.md`, `reestr.md`, `table.md`, `CHANGELOG.md`) |
+  | `docs/` | Документация (`ARCHITECTURE.md`, `DEVELOPER.md`, `git-workflow.md`, `sourcecraft-guide.md`, `ROADMAP.md`, `table.md`, `CHANGELOG.md`) |
 
 - **`[S2]` VBA-МОДУЛИ** (`src/modules/`)
 

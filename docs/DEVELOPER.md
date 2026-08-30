@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v1.0.14)
+# Техническая документация разработчика — SysW (v1.1.0)
 
 ## 1. Архитектура проекта
 
@@ -215,9 +215,9 @@ Mod_FullTestRunner.RunAllTests()
 
 ### 2.5 Mod_FullTestRunner.bas — Тестовый раннер
 
-**Файл:** [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas) (577 строк)
+**Файл:** [`Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas)
 
-**Назначение:** Автоматическое тестирование VBA-модулей. Набор сценариев **TC-01..TC-62** + **TC-S1..TC-S3** (полный перечень — см. [`docs/reestr.md`](reestr.md), раздел 3).
+**Назначение:** Автоматическое тестирование VBA-модулей. Набор сценариев **TC-01..TC-64** + **TC-S1..TC-S3** (полный перечень — см. [Приложение F](#приложение-f-реестр-тестов-mod_fulltestrunner)). Результаты каждого теста дублируются в расширенный тестовый лог `logs/test_results.log` (см. §2.6).
 
 **Группы тестов:**
 
@@ -233,8 +233,8 @@ Mod_FullTestRunner.RunAllTests()
 | `RunModelDBReadTests()` | TC-22..TC-24 | Mod_ModelDB / провайдер |
 | `RunOrderHeaderTests()` | TC-25..TC-28 | Mod_OrderHeader |
 | `RunImportDataTests()` | TC-29, TC-30 | Mod_Import |
-| `RunModelDBTests()` | TC-31..TC-35 | Mod_ModelDB |
-| `RunPickWorkTests()` | TC-36..TC-38 | Mod_PickWork |
+| `RunModelDBTests()` | TC-31..TC-35, TC-64 | Mod_ModelDB |
+| `RunPickWorkTests()` | TC-36..TC-38, TC-63 | Mod_PickWork / Mod_Utils |
 | `RunAutoMatchTests()` | TC-39..TC-44 | Mod_AutoMatch |
 | `RunConstantsTests()` | TC-46 | Mod_Constants |
 | `RunSQLiteTests()` | TC-S1..TC-S3, TC-47..TC-50 | Mod_SQLiteDB / провайдер |
@@ -245,6 +245,7 @@ Mod_FullTestRunner.RunAllTests()
 - **SKIP** — тесты, зависящие от отсутствующих данных, пропускаются
 - **Сохранение/восстановление** состояния листов до и после тестов
 - **Статистика** — подсчёт Total, Passed, Failed, Skipped
+- **Детальный тестовый лог** — каждая строка результата пишется через `Mod_Logger.WriteTestLog` в `logs/test_results.log` (PASS→INFO, SKIP→WARN, FAIL→ERROR)
 - **GetTestResults()** — **Public Sub**: записывает отчёт в ячейку `Z1` листа main для чтения из Python (не функция)
 - **Silent mode** — параметр `silent` в `ClearMainSheet_UI` для автоматических тестов без MsgBox
 
@@ -253,21 +254,36 @@ Mod_FullTestRunner.RunAllTests()
 python scripts/run_tests.py
 ```
 
-### 2.6 Mod_Logger.bas — Логирование с ротацией
+### 2.6 Mod_Logger.bas — Логирование «2 лога» (Задача 1, v1.1.0)
 
 **Файл:** [`Mod_Logger.bas`](../src/modules/Mod_Logger.bas)
 
-**Назначение:** Централизованное логирование с поддержкой ротации лог-файлов.
+**Назначение:** Централизованное логирование, разделённое на **два независимых лога**:
+
+- **Системный лог** — `logs/log.txt`: общие системные события (текущее поведение).
+- **Расширенный тестовый лог** — `logs/test_results.log`: детальный лог тестов
+  с уровнями **INFO/WARN/ERROR**, включая ошибки VBA.
+
+Пути задаются константами [`Mod_Constants.LOG_FILE`](../src/modules/Mod_Constants.bas)
+(`log.txt`) и `Mod_Constants.TEST_LOG_FILE` (`test_results.log`) в директории
+`Mod_Constants.LOGS_DIR`.
 
 **Ключевые функции:**
 
-| Функция | Описание |
-|---------|----------|
-| `WriteLog(ModuleName, Message)` | Запись сообщения в лог |
-| `WriteLogE(ModuleName, Message)` | Запись сообщения об ошибке с префиксом [ERROR] |
-| `RotateLogIfNeeded(MaxSizeKB)` | Ротация лог-файла при превышении указанного размера |
-| `ClearLog()` | Очистка файла лога |
-| `GetLogPath()` | Возвращает путь к файлу лога |
+| Функция | Лог | Описание |
+|---------|-----|----------|
+| `WriteLog(ModuleName, Message)` | системный | Запись сообщения |
+| `WriteLogE(ModuleName, Message)` | системный | Запись ошибки с префиксом [ERROR] |
+| `WriteTestLog(ModuleName, Level, Message)` | тестовый | Запись с уровнем INFO/WARN/ERROR |
+| `LogTestInfo / LogTestWarn / LogTestError(...)` | тестовый | Обёртки фиксированного уровня |
+| `RotateLogIfNeeded(MaxSizeKB)` | системный | Ротация при превышении размера |
+| `ClearLog()` | системный | Очистка системного лога |
+| `ClearTestLog()` | тестовый | Очистка тестового лога |
+| `GetLogPath()` | системный | Путь к системному логу |
+| `GetTestLogPath()` | тестовый | Путь к тестовому логу |
+
+> Сопоставление статусов теста и уровней тестового лога: PASS→INFO, SKIP→WARN, FAIL→ERROR
+> (реализуется в `Mod_FullTestRunner.AddResult`).
 
 ### 2.7 Mod_Constants.bas — Константы столбцов
 
@@ -358,8 +374,9 @@ python scripts/run_tests.py
 | `skPartsModel` | 4 | `{Group}z4` (запчасти группы) |
 | `skUnknown` | 0 | прочее (в поиске не участвует) |
 
-Имя группы определяется через `GetGroupName()` (чтение `main!$B$14`) и
-`ResolveGroupName(ws)` — при пустом `B14` (например, в модельной книге без листа main)
+Имя группы определяется через единый публичный хелпер `Mod_Utils.GetGroupName()`
+(чтение `main!$B$14`) и `ResolveGroupName(ws)` — при пустом `B14` (например,
+в модельной книге без листа main)
 группа выводится из имени листа (`{Group}`, `{Group}w`, `{Group}z4`; для `z4` — пустая строка).
 `ClassifySheet(ws, groupName)` — публичная функция классификации листа в `SheetKind`.
 
@@ -376,7 +393,7 @@ python scripts/run_tests.py
 | Процедура | Описание |
 |----------|----------|
 | `ExecuteSearch(searchColumn)` | Единый алгоритм поиска «содержит» (классификация листа, поле C1, данные с 4-й строки, AutoFilter) |
-| `GetGroupName()` | Читает имя группы из `main!$B$14` |
+| `Mod_Utils.GetGroupName()` | Единый публичный хелпер чтения имени группы из `main!$B$14` (централизация дублей `Mod_SheetButtons`/`Mod_PickWork`/`Mod_AutoMatch`) |
 | `ResolveGroupName(ws)` | Определяет группу: `B14` либо из имени листа |
 | `IsSearchableSheet(ws)` | Проверка, что лист подходит для поиска (данные с 4-й строки) |
 
@@ -723,7 +740,7 @@ python scripts/impVBA.py      # Импорт всех модулей
 ### 6.1 Реестр тестов (TC-01..TC-62 + TC-S1..S3)
 
 Полный перечень тестов с группами, статусами, механизмом записи результатов и замечаниями
-приведён в [`docs/reestr.md`](reestr.md), раздел 3. Ниже — сводка по группам и модулям.
+приведён в [Приложении F](#приложение-f-реестр-тестов-mod_fulltestrunner) ниже. Здесь — сводка по группам и модулям.
 
 | Группа | Сценарии | Модуль | Зависимость от окружения |
 |--------|----------|--------|--------------------------|
@@ -737,8 +754,8 @@ python scripts/impVBA.py      # Импорт всех модулей
 | `RunModelDBReadTests()` | TC-22..TC-24 | Mod_ModelDB | SQLite-провайдер |
 | `RunOrderHeaderTests()` | TC-25..TC-28 | Mod_OrderHeader | листы main/spisok/models |
 | `RunImportDataTests()` | TC-29, TC-30 | Mod_Import | лист main |
-| `RunModelDBTests()` | TC-31..TC-35 | Mod_ModelDB | файлы групп/провайдер |
-| `RunPickWorkTests()` | TC-36..TC-38 | Mod_PickWork | нет |
+| `RunModelDBTests()` | TC-31..TC-35, TC-64 | Mod_ModelDB | файлы групп/провайдер (TC-64 — SQLite) |
+| `RunPickWorkTests()` | TC-36..TC-38, TC-63 | Mod_PickWork / Mod_Utils | нет |
 | `RunAutoMatchTests()` | TC-39..TC-44 | Mod_AutoMatch | нет (TC-41..44 — SKIP) |
 | `RunConstantsTests()` | TC-46 | Mod_Constants | лист libname |
 | `RunSQLiteTests()` | TC-S1..TC-S3, TC-47..TC-50 | Mod_SQLiteDB | SQLite-провайдер/SysW.db |
@@ -752,19 +769,19 @@ python scripts/impVBA.py      # Импорт всех модулей
 
 | Модуль | Группы | Сценарии |
 |--------|--------|----------|
-| Mod_Utils | RunUtilsTests, RunUtilsEdgeTests | TC-01..08, TC-12 |
+| Mod_Utils | RunUtilsTests, RunUtilsEdgeTests | TC-01..08, TC-12, TC-63 |
 | Mod_Logger | RunLoggerTests | TC-09..11 |
 | Mod_Constants | RunLibNameTests, RunAggregateNameTests, RunConstantsTests | TC-13, TC-19..21, TC-46 |
 | Mod_Import | RunImportVHTests, RunImportDataTests | TC-14, TC-29, TC-30 |
 | Mod_SheetOps | RunSheetOpsTests | TC-15..18, TC-45 |
 | Mod_OrderHeader | RunOrderHeaderTests | TC-25..28 |
 | Mod_AutoMatch | RunAutoMatchTests | TC-39..44 (TC-41..44 — SKIP) |
-| Mod_PickWork | RunPickWorkTests | TC-36..38 |
-| Mod_ModelDB | RunModelDBTests, RunModelDBReadTests | TC-22..24, TC-31..35 |
+| Mod_PickWork | RunPickWorkTests | TC-36..38, TC-63 |
+| Mod_ModelDB | RunModelDBTests, RunModelDBReadTests, RunGlobalBaseTests | TC-22..24, TC-31..35, TC-64, TC-60..62 |
 | Mod_SQLiteDB | RunSQLiteTests | TC-S1..S3, TC-47..50 |
 | Mod_SheetButtons | RunSearchTests | TC-51..54 |
-| Mod_PickWork | RunPickWorkTests, RunSearchTests | TC-36..38, TC-55 |
-| Mod_ModelDB | RunGlobalBaseTests | TC-60..62 |
+| Mod_PickWork | RunSearchTests | TC-55 |
+| Mod_ModelDB | RunModelDBTests (TC-64), RunGlobalBaseTests | TC-64, TC-60..62 |
 
 > Точная статистика PASS/SKIP/FAIL зависит от окружения (наличие `SysW.db`, листов, данных)
 > и формируется по итогам прогона `python scripts/run_tests.py`.
@@ -809,7 +826,9 @@ python scripts/run_tests.py
 4. Собирает результаты через VBA-процедуру `GetTestResults()` (запись в ячейку `Z1` листа main)
 5. Парсит статистику (Total, Passed, Failed, Skipped)
 6. Возвращает exit code: `0` — все PASS, `1` — есть FAIL
-7. Сохраняет результаты в `logs/test_results.log`
+7. Дописывает служебные строки прогона в `logs/test_results.log` (тот же файл, куда VBA
+   пишет детальный лог через `Mod_Logger.WriteTestLog` с уровнями INFO/WARN/ERROR;
+   константа пути — `TEST_LOG_FILE` из `scripts/config.py`)
 8. Гарантированно закрывает Excel (в `finally` блоке)
 
 **Интеграция с GitHub Actions:**
@@ -1030,7 +1049,6 @@ Exit-коды: `0` — ошибок нет; `1` — найдены ошибки 
 ## Связанные документы
 
 - [`README.md`](../README.md) — общее описание проекта, быстрый старт
-- [`docs/reestr.md`](reestr.md) — реестр макросов, скриптов и тестов
 - [`docs/sourcecraft-guide.md`](sourcecraft-guide.md) — руководство по работе с SourceCraft Code Assistant
 - [`docs/git-workflow.md`](git-workflow.md) — Git-инструкции и веточная стратегия
 - [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) — архитектура выноса данных в SQLite
@@ -1112,7 +1130,378 @@ Mod_Utils
 | [`run_tests.py`](../scripts/run_tests.py) | Запуск тестов VBA | UTF-8 |
 | [`build_all.py`](../scripts/build_all.py) | Единый конвейер сборки: бэкап → импорт VBA → шаблоны → миграция БД → контроль целостности → тесты | UTF-8 |
 | [`migrate_models_to_sqlite.py`](../scripts/migrate_models_to_sqlite.py) | Пересборка `SysW.db` из `base/models/*` | UTF-8 |
+| [`initiate_models.py`](../scripts/initiate_models.py) | Инициация пользовательских модельных файлов: детекция новых групп, валидация структуры, регистрация в `model_groups` и миграция данных в `SysW.db`; отчёт `logs/initiation_report.log` | UTF-8 |
 | [`config.py`](../scripts/config.py) | Конфигурация проекта (пути, настройки) | UTF-8 |
 | [`config.ps1`](../scripts/config.ps1) | Конфигурация окружения PowerShell | UTF-8 with BOM |
 | [`Set-ExcelTrust.ps1`](../scripts/Set-ExcelTrust.ps1) | Настройка доверия Excel для работы VBA-макросов | UTF-8 with BOM |
 | [`check_docs.py`](../scripts/check_docs.py) | Проверка актуальности документации | UTF-8 |
+
+---
+
+## Приложение D: Реестр макросов VBA
+
+> **Версия:** v1.0.15 (историческая — реестр отражает фактическое состояние кодовой базы по
+> результатам аудита `src/` и `scripts/`). Содержимое перенесено из `docs/reestr.md` без потерь.
+> Служит перекрёстной ссылкой с текущим документом, [ARCHITECTURE.md](ARCHITECTURE.md),
+> [table.md](table.md) и [README.md](../README.md).
+
+### D.1 Кнопки листа main (обработчики `Mod_ButtonDispatcher`)
+
+| Имя макроса               | Краткое описание функционала                   | Кнопка (если есть) | Модуль         |
+| ----------------------------------- | ------------------------------------------------------------------------ | -------------------------------- | -------------------- |
+| `Btn_main_Clear_Click`            | Очистка данных main B4:ZZ (с подтверждением) | «ОЧИСТ ВСЁ»            | Mod_ButtonDispatcher |
+| `Btn_main_FillHeader_Click`       | Заполнение шапки B5:B17 по № из B4                   | «ЗАПОЛН ШАПКУ»      | Mod_ButtonDispatcher |
+| `Btn_main_ClearHeader_Click`      | Очистка шапки B5:B17                                         | «ОЧИСТ ШАПКУ»        | Mod_ButtonDispatcher |
+| `Btn_main_RunTests_Click`         | Запуск всех автотестов (TC-01..TC-64+TC-S*)          | «Тесты»                   | Mod_ButtonDispatcher |
+| `Btn_main_WriteLog_Click`         | Запись сообщения в лог через InputBox            | «Лог»                       | Mod_ButtonDispatcher |
+| `Btn_main_ImportDataToMain_Click` | Перенос данных с активного листа в main     | «Перенести в main»   | Mod_ButtonDispatcher |
+| `Btn_main_FindOrder_Click`        | Поиск заказа по № (InputBox) + вывод                  | «Найти заказ»        | Mod_ButtonDispatcher |
+| `Btn_main_CheckFileExists_Click`  | Проверка существования файла по пути     | «Проверить файл»  | Mod_ButtonDispatcher |
+| `Btn_main_ImportVH_Click`         | Импорт ВХ: лист {B4}M + заполнение шапки      | «Импорт ВХ»            | Mod_ButtonDispatcher |
+
+### D.2 Автоподбор / ручной подбор (`Mod_ButtonDispatcher` → логика)
+
+| Имя макроса             | Краткое описание функционала                                                | Кнопка (если есть) | Модуль         |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------- | -------------------- |
+| `Btn_main_AutoMatchWorks_Click` | Автоподбор работ (L→E:I + формула J)                                           | «АВТО РАБ»              | Mod_ButtonDispatcher |
+| `Btn_main_AutoMatchParts_Click` | Автоподбор запчастей (X→Q:U + формула V)                                   | «АВТО ЗЧ»                | Mod_ButtonDispatcher |
+| `Btn_main_PickWork_Click`       | Ручной подбор работ: открытие файла группы + инструкция | «РУЧ РАБ»                | Mod_ButtonDispatcher |
+| `Btn_main_PickParts_Click`      | Ручной подбор запчастей: открытие `{Group}z4`/`z4` + инструкция | «РУЧ ЗЧ»    | Mod_ButtonDispatcher |
+
+### D.3 Универсальный поиск листов работ и запчастей (`Mod_SheetButtons`)
+
+| Имя макроса                                        | Краткое описание функционала | Кнопка (если есть)             | Модуль     |
+| ------------------------------------------------------------ | ------------------------------------------------------ | -------------------------------------------- | ---------------- |
+| `Btn_Search_ByArticle_Click` → `Btn_Search_ByArticle`   | Поиск «содержит» по ст. B (артикул) | «Поиск по артикулу»         | Mod_SheetButtons |
+| `Btn_Search_ByName_Click` → `Btn_Search_ByName`         | Поиск по ст. C (наименование)          | «Поиск по наименованию» | Mod_SheetButtons |
+| `Btn_Search_Clear_Click` → `Btn_ClearFilter`            | Сброс фильтра + очистка поля ввода C1 | «Сброс»                            | Mod_SheetButtons |
+
+> Универсальный поиск (v1.0.12): имя группы читается из `main!$B$14` (fallback — имя листа);
+> классификация листов `{Group}`/`{Group}w`/`z4`/`{Group}z4` через `ClassifySheet` (enum `SheetKind`).
+> Прежние имена `Btn_UAZ_*`/`Btn_Parts_*` и `ExecuteUAZSearch`/`ExecutePartsSearch`
+> переименованы в нейтральные (`Btn_Search_*`/`Btn_ClearFilter`/`ExecuteSearch`).
+
+> Приватные помощники модуля `Mod_SheetButtons` (в состав реестра включаются для полноты):
+> `ExecuteSearch(searchColumn)`, `IsSearchableSheet(ws)`, `ResolveGroupName(ws)`,
+> `GetGroupName()`. Других обработчиков в модуле нет.
+
+### D.4 Служебная бизнес-логика по модулям
+
+| Имя                                                | Краткое описание функционала                                                | Кнопка (если есть)  | Модуль    |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------- | --------------- |
+| `FillHeaderFromOrder(orderNum)`                     | Заполнение шапки B5:B17 данными из spisok/models                              | —                                | Mod_OrderHeader |
+| `FindOrder(orderNum, Header)`                       | Поиск заказа по №, заполнение структуры`OrderHeader`               | —                                | Mod_OrderHeader |
+| `FillHeaderFromOrder_UI`                            | UI-обёртка заполнения шапки                                                     | «Заполнить шапку» | Mod_OrderHeader |
+| `FindOrder_UI`                                      | UI-обёртка поиска заказа                                                           | «Найти заказ»         | Mod_OrderHeader |
+| `ImportSheet(grz)`                                  | Импорт листа из report.xlsx по ГРЗ                                                  | —                                | Mod_Import      |
+| `ImportDataToMain(wsSource)`                        | Перенос данных с листа-источника в main                                  | —                                | Mod_Import      |
+| `ImportDataToMain_UI`                               | Перенос данных с активного листа в main                                  | «Перенести в main»    | Mod_Import      |
+| `ImportFromB2_UI`                                   | Импорт ВХ: фактически читает B4/{B4}M                                         | «Импорт ВХ»             | Mod_Import      |
+| `SubstituteWorkArticle` / `SubstitutePartArticle` | Приватная подстановка тождеств (работы/запчасти)            | —                                | Mod_Import      |
+| `AutoMatchWorks()`                                  | Автоподбор работ (L→E:I + формула J)                                           | «АВТО РАБ»               | Mod_AutoMatch   |
+| `AutoMatchParts()`                                  | Автоподбор запчастей (X→Q:U + формула V)                                   | «АВТО ЗЧ»                 | Mod_AutoMatch   |
+| `PickWork_UI`                                       | Ручной подбор работ: открытие файла группы + инструкция | «РУЧ РАБ»                 | Mod_PickWork    |
+| `PickParts_UI`                                      | Ручной подбор запчастей: открытие `{Group}z4`/`z4` + инструкция | «РУЧ ЗЧ»    | Mod_PickWork    |
+| `GetGroupNameFromMain`                              | Чтение группы из B14 листа main                                                    | —                                | Mod_PickWork    |
+| `GetWorkSheetName(groupName)`                       | Имя листа работ (совпадает с группой)                                   | —                                | Mod_PickWork    |
+| `GetPartsSheetName(wb, groupName)`                  | Имя модельного листа запчастей `{Group}z4`; при отсутствии — `z4` | —                 | Mod_PickWork    |
+| `ExtractNumberFromGRZ(grz)`                         | Извлечение цифровой группы 3/4 из ГРЗ                                    | —                                | Mod_SheetOps    |
+| `SearchSheetByGRZ(grz)`                             | Поиск листа в report.xlsx по № ГРЗ                                                   | —                                | Mod_SheetOps    |
+| `RenameSheetsByGRZ`                                 | Переименование листов report.xlsx по ГРЗ                                     | —                                | Mod_SheetOps    |
+| `ApplyFreezePanes(ws)`                              | Закрепление строк (FreezePanes A4)                                                    | —                                | Mod_SheetOps    |
+| `ClearMainSheet_UI([silent])`                       | Очистка данных main B4:ZZ                                                                | «Очистить»              | Mod_SheetOps    |
+| `ClearHeader_UI`                                    | Очистка шапки B5:B17                                                                      | «Очистить шапку»   | Mod_SheetOps    |
+| `GetSheetByName(wb, name)`                          | Получение листа по имени без ошибки                                     | —                                | Mod_Utils       |
+| `GetWorkbookPath`                                   | Путь к книге                                                                                | —                                | Mod_Utils       |
+| `FileExists(filePath)`                              | Проверка существования файла                                                | —                                | Mod_Utils       |
+| `GetCurrentUser`                                    | Имя пользователя Windows                                                               | —                                | Mod_Utils       |
+| `FormatDateSQL(d)`                                  | Форматирование даты ГГГГ-ММ-ДД                                              | —                                | Mod_Utils       |
+| `WriteLog(message)`                                 | Обёртка обратной совместимости для`Mod_Logger`                       | —                                | Mod_Utils       |
+| `WriteLog_UI`                                       | Запись сообщения в лог через InputBox                                         | «Лог»                        | Mod_Utils       |
+| `ShowWorkbookPath_UI`                               | Показ пути к книге                                                                     | «Путь к книге»        | Mod_Utils       |
+| `ShowCurrentUser_UI`                                | Показ имени пользователя Windows                                                | «Пользователь»      | Mod_Utils       |
+| `CheckFileExists_UI`                                | Проверка существования файла по пути                                  | «Проверить файл»   | Mod_Utils       |
+| `InitLibName`                                       | Заполнение листа libname реестром имён                                     | —                                | Mod_Constants   |
+| `AddWorkEntry`                                      | Добавление записи work.xlsm на лист libname                                     | —                                | Mod_Constants   |
+| `GetAggregateName(code)`                            | Код агрегата → русское название                                            | —                                | Mod_Constants   |
+| `SqliteProviderEnabled`                             | Флаг доступности SQLite-провайдера                                           | —                                | Mod_Constants   |
+| `GetLogPath`                                        | Путь к файлу лога                                                                       | —                                | Mod_Logger      |
+| `WriteLog(moduleName, message)`                     | Запись сообщения в лог                                                             | —                                | Mod_Logger      |
+| `WriteLogE(moduleName, message)`                    | Запись ошибки с префиксом [ERROR]                                               | —                                | Mod_Logger      |
+| `RotateLogIfNeeded(maxSizeKB)`                      | Ротация лог-файла при превышении размера                           | —                                | Mod_Logger      |
+| `ClearLog`                                          | Очистка файла лога                                                                    | —                                | Mod_Logger      |
+
+**Провайдеры данных (классы):**
+
+| Имя                                                            | Краткое описание функционала                             | Кнопка (если есть) | Модуль           |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------- | ---------------------- |
+| `GetModelDataProvider(ByRef provider)`                          | Фабрика провайдера данных (SQLite / Excel-fallback)         | —                               | Mod_ModelDB            |
+| `GetModelDBBasePath`                                            | Функция: базовый путь`base\models\`                            | —                               | Mod_ModelDB            |
+| `GetModelGroupFilePath(groupName)`                              | Полный путь к файлу группы                                   | —                               | Mod_ModelDB            |
+| `ModelGroupFileExists(groupName)`                               | Проверка существования файла группы                | —                               | Mod_ModelDB            |
+| `OpenModelGroupFile(groupName)`                                 | Открытие файла группы                                           | —                               | Mod_ModelDB            |
+| `GetWorks/GetParts/GetModelWorks/GetModelParts`                 | Чтение работ/запчастей (модельных)                    | —                               | Mod_ModelDB            |
+| `GetMatLibEntries(groupName, entryCode)`                        | Тождества соответствий                                        | —                               | Mod_ModelDB            |
+| `GetWorkIdentities/GetPartIdentities`                           | Коллекции тождеств работ/запчастей                  | —                               | Mod_ModelDB            |
+| `GetAllModelGroups`                                             | Список всех модельных групп                                | —                               | Mod_ModelDB            |
+| `CreateModelGroupFile(groupName)`                               | Создание файла группы                                           | —                               | Mod_ModelDB            |
+| `FindModelGroupByModel(modelName)`                              | Группа по названию модели                                    | —                               | Mod_ModelDB            |
+| `OpenConnection/CloseConnection/IsConnected`                    | Жизненный цикл соединения SQLite                            | —                               | Mod_SQLiteDB           |
+| `ExecuteScalar/ExecuteQuery/ExecuteNonQuery`                    | Выполнение SQL-запросов                                          | —                               | Mod_SQLiteDB           |
+| `IModelDataProvider_*`                                          | Реализация интерфейса (чтение из SQLite)               | —                               | Mod_SQLiteDB           |
+| `IModelDataProvider_*`                                          | Реализация интерфейса (Excel-fallback)                         | —                               | Mod_ModelDBProvider    |
+| `ReadWorkIdentitiesFromSheet` / `ReadPartIdentitiesFromSheet` | Приватное чтение тождеств с листа                     | —                               | Mod_ModelDBProvider    |
+| `IModelDataProvider` (интерфейс)                       | Контракт доступа к данным моделей (10 методов) | —                               | IModelDataProvider.cls |
+| `PartIdentity` / `WorkIdentity` / `WorkEntry`               | Объекты-контейнеры данных                                   | —                               | *.cls                  |
+
+**Листовые события (`src/sheets/`):**
+
+| Имя                           | Краткое описание функционала               | Кнопка (если есть) | Модуль  |
+| -------------------------------- | -------------------------------------------------------------------- | -------------------------------- | ------------- |
+| `Лист2.Worksheet_Activate` | FreezePanes A4 при активации листа main             | —                               | Лист2.cls |
+| `Лист2.Worksheet_Change`   | Автозаполнение шапки при изменении B4 | —                               | Лист2.cls |
+| `Лист3.Worksheet_Activate` | FreezePanes A4 (лист libname)                                    | —                               | Лист3.cls |
+| `Лист5.Worksheet_Activate` | FreezePanes A4 (лист models)                                     | —                               | Лист5.cls |
+| `Лист9.Worksheet_Activate` | FreezePanes A4 (лист spisok)                                     | —                               | Лист9.cls |
+
+> Фактический состав `src/sheets/`: `Лист2.cls`, `Лист3.cls`, `Лист5.cls`, `Лист9.cls`.
+> Устаревшие упоминания `Лист2_main.cls` и `Лист4.cls` в документации не соответствуют
+> текущему составу каталога.
+
+### D.5 Заглушки и отсутствующие процедуры
+
+> Включены в реестр для полноты, но явно помечены как заглушки/несуществующие.
+
+| Имя                                           | Статус                                             | Примечание                                                                                                                        |
+| ------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `IModelDataProvider_CreateModelGroupFile`      | **ЗАГЛУШКА**                               | Excel-ветка (`Mod_ModelDBProvider`) возвращает `True` без фактического создания файла        |
+| `IModelDataProvider.*` (10 методов)     | **ЗАГЛУШКИ-контракт**              | В`IModelDataProvider.cls` все методы бросают `Err.Raise ... "Not implemented"` (контракт интерфейса) |
+| `Mod_ModelTypes.bas`                           | **Устаревший пустой модуль** | Хранится для обратной совместимости ссылок; UDT вынесены в классы/др.                |
+| `Btn_z4_Action1/2/3`, `Btn_work_Action1/2/3` | **Отсутствуют в коде**             | Упоминались в старой документации; в`Mod_SheetButtons` не реализованы                         |
+| `AutoMatch_UI()`                               | **Отсутствует в коде**             | Реальные точки входа —`AutoMatchWorks` / `AutoMatchParts`                                                            |
+| `MODELDB_BASE_PATH` (константа)       | **Отсутствует в коде**             | Реализована функция`GetModelDBBasePath`                                                                                 |
+
+---
+
+## Приложение E: Реестр скриптов
+
+> Столбцы: **Скрипт | Назначение | Входные параметры | Выходные артефакты | Зависимости**.
+
+### E.1 Python — ядро конвейера
+
+| Скрипт                    | Назначение                                                                                                                                          | Входные параметры                                                   | Выходные артефакты                               | Зависимости                                                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `build_all.py`                | Единый конвейер: бэкап → impVBA → check_vba_syntax → build_templates → migrate → integrity → run_tests; exit-коды 1/2/22/3/4/5/6 | нет                                                                              | `_backup/*`, `logs/build.log`                                 | config, sqlite3, subprocess; вызывает impVBA/check_vba_syntax/build_templates/migrate/run_tests                         |
+| `impVBA.py`                   | Импорт VBA из src/ в work.xlsm (UTF-8→CP1251) через COM; удаление компонентов; PID Excel                                    | нет                                                                              | `work.xlsm`, `logs/excel_pid_impvba.txt`                      | config, pywin32, src/{modules,sheets,classes}                                                                                   |
+| `export_vba.py`               | Экспорт VBA из work.xlsm в src/                                                                                                                     | нет (все компоненты по маппингу`COMPONENTS`); `--dry` | `src/**`                                                        | pywin32; маппинг`COMPONENTS` (содержит ошибочные `Лист4`, отсутствует `Лист9`) |
+| `check_vba_syntax.py`         | Статическая проверка синтаксиса VBA src/                                                                                         | опц. путь (по умолч.`src/`)                                         | отчёт stdout; exit 0/1                                       | stdlib                                                                                                                          |
+| `build_templates.py`          | Пересборка base/templates/ + защита листов + FreezePanes A4 для base/models/*.xlsm                                                   | нет                                                                              | `base/templates/*`, изменённые `base/models/*.xlsm` | template_protection, pywin32                                                                                                    |
+| `migrate_models_to_sqlite.py` | Конвертация base/models/*.xlsm → SysW.db (WAL); идемпотентно                                                                          | `--force`                                                                         | `SysW.db`, `logs/migration_report.log`, `_backup/SysW_*.db` | config, sqlite_schema, openpyxl                                                                                                 |
+| `run_tests.py`                | Запуск макроса RunAllTests через COM, чтение GetTestResults из Z1                                                                   | нет                                                                              | `logs/test_results.log`                                         | config, pywin32, work.xlsm                                                                                                      |
+
+### E.2 Python — библиотеки/служебные
+
+| Скрипт               | Назначение                                                                      | Входные параметры                                                              | Выходные артефакты                                                                        | Зависимости           |
+| -------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `config.py`              | Единый источник версии и путей (APP_VERSION)                    | импортируется                                                                     | константы                                                                                         | stdlib                           |
+| `sqlite_schema.py`       | DDL-схема SysW.db, init_db/set/get_user_version                                      | импортируется; прямое исполнение = демо-создание БД | `SysW.db` (при прямом запуске)                                                           | stdlib sqlite3                   |
+| `template_protection.py` | Библиотека защиты листов (Protect/AllowEditRanges/FreezePanes, XML) | импортируется                                                                     | функции                                                                                             | openpyxl, zipfile/re/ElementTree |
+| `check_docs.py`          | Проверка согласованности документации                  | `--check` / `--fix` (обязательны)                                               | отчёт; exit 0/1                                                                                       | config                           |
+| `update_version.py`      | Автообновление версии SemVer во всех местах + CHANGELOG   | `update_version.py <X.Y.Z>`                                                                  | правит Mod_Constants.bas, config.py, config.ps1, README, DEVELOPER, ROADMAP, ARCHITECTURE, CHANGELOG | stdlib                           |
+
+### E.3 PowerShell
+
+| Скрипт              | Назначение                                                                                                           | Входные параметры | Выходные артефакты | Зависимости         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- | ----------------------------------- | ------------------------------ |
+| `config.ps1`            | PS-конфигурация (версия, пути), dot-source                                                               | dot-source                        | переменные`$Script:*`   | stdlib                         |
+| `Set-ExcelTrust.ps1`    | Настройка доверия Excel через реестр (AccessVBOM=1, VBAWarnings=1, доверенная папка) | нет (админ)               | правки HKCU Excel             | config.ps1                     |
+| `fix_vbom_and_venv.ps1` | Диагностика/исправление AccessVBOM и .venv                                                              | нет                            | правки реестра         | `.venv/Scripts/Activate.ps1` |
+
+### E.4 Вспомогательные / служебные (пометки)
+
+| Скрипт                         | Статус / примечание                                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apply_protection_templates.py`    | Вспомогательный; дублирует защиту из`build_templates.py` — кандидат на упразднение |
+| `.codeassistant/mcp.json`          | Устарел; заменён на`.sourcecraft`                                                                                        |
+| `.github/workflows/docs-check.yml` | CI:`python scripts/check_docs.py --check`                                                                                                |
+| `.github/workflows/vba-check.yml`  | CI: проверка VBA-файлов и актуальности`CHANGELOG.md`                                                          |
+
+---
+
+## Приложение F: Реестр тестов (Mod_FullTestRunner)
+
+> Набор автоматических тестов покрывает **TC-01..TC-64** + **TC-S1..TC-S3**
+> (включая TC-60..TC-62 из группы `RunGlobalBaseTests` — глобальная база запчастей
+> `z4.xlsx` и fallback-поиск; TC-63 — единый хелпер `Mod_Utils.GetGroupName`;
+> TC-64 — регистрация группы `CreateModelGroupFile` в `model_groups`, SQLite-ветка).
+> Управляется процедурами-группами в [`src/modules/Mod_FullTestRunner.bas`](../src/modules/Mod_FullTestRunner.bas)
+> и запускается через `RunAllTests()` / `RunAllTests_UI()` либо `python scripts/run_tests.py`.
+> Запуск подавляет MsgBox (`Mod_Constants.SilenceMsgBox = True`), результаты пишутся
+> в ячейку `Z1` листа main (для чтения COM-клиентом) и дублируются в расширенный
+> тестовый лог `logs/test_results.log` (уровни INFO/WARN/ERROR, см. F.3).
+> Ожидаемый прогон (v1.0.15): **Total=65, Passed=56, Failed=0, Skipped=9**.
+
+### F.1 Состав групп и сценариев
+
+| Группа (процедура) | Сценарии           | Тестируемый модуль                   |
+| --------------------------------- | -------------------------- | ----------------------------------------------------- |
+| `RunUtilsTests`                 | TC-01..TC-08               | Mod_Utils                                             |
+| `RunLoggerTests`                | TC-09..TC-11               | Mod_Logger                                            |
+| `RunUtilsEdgeTests`             | TC-12                      | Mod_Utils (граничные случаи)           |
+| `RunLibNameTests`               | TC-13                      | Mod_Constants (libname)                               |
+| `RunImportVHTests`              | TC-14                      | Mod_Import (ImportFromB2_UI)                          |
+| `RunSheetOpsTests`              | TC-15..TC-18, TC-45        | Mod_SheetOps                                          |
+| `RunAggregateNameTests`         | TC-19..TC-21               | Mod_Constants (GetAggregateName)                      |
+| `RunModelDBReadTests`           | TC-22..TC-24               | Mod_ModelDB / провайдер (тождества) |
+| `RunOrderHeaderTests`           | TC-25..TC-28               | Mod_OrderHeader                                       |
+| `RunImportDataTests`            | TC-29, TC-30               | Mod_Import                                            |
+| `RunModelDBTests`               | TC-31..TC-35, TC-64        | Mod_ModelDB                                           |
+| `RunPickWorkTests`              | TC-36..TC-38, TC-63        | Mod_PickWork / Mod_Utils                              |
+| `RunAutoMatchTests`             | TC-39..TC-44               | Mod_AutoMatch                                         |
+| `RunConstantsTests`             | TC-46                      | Mod_Constants (AddWorkEntry)                          |
+| `RunSQLiteTests`                | TC-S1..TC-S3, TC-47..TC-50 | Mod_SQLiteDB / провайдер                     |
+| `RunSearchTests`                | TC-51..TC-55               | Mod_SheetButtons / Mod_PickWork              |
+| `RunGlobalBaseTests`            | TC-60..TC-62               | Mod_ModelDB (глобальная база з/ч, fallback) |
+
+### F.2 Полный перечень тестов
+
+| ID    | Название                                                                     | Группа          | Модуль    | Тип                       | Статус по умолчанию                                                                                   |
+| ----- | ------------------------------------------------------------------------------------ | --------------------- | --------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| TC-01 | FileExists с существующим файлом                                  | RunUtilsTests         | Mod_Utils       | Модульный           | PASS                                                                                                                   |
+| TC-02 | FileExists с несуществующим файлом                              | RunUtilsTests         | Mod_Utils       | Модульный           | PASS                                                                                                                   |
+| TC-03 | FormatDateSQL с корректной датой                                     | RunUtilsTests         | Mod_Utils       | Модульный           | PASS                                                                                                                   |
+| TC-04 | FormatDateSQL с нулевой датой                                           | RunUtilsTests         | Mod_Utils       | Модульный           | PASS                                                                                                                   |
+| TC-05 | GetSheetByName существующий лист                                     | RunUtilsTests         | Mod_Utils       | Модульный           | PASS                                                                                                                   |
+| TC-06 | GetSheetByName несуществующий лист                                 | RunUtilsTests         | Mod_Utils       | Модульный           | PASS                                                                                                                   |
+| TC-07 | WriteLog запись в лог                                                      | RunUtilsTests         | Mod_Utils       | Модульный           | PASS                                                                                                                   |
+| TC-08 | GetWorkbookPath / GetCurrentUser                                                     | RunUtilsTests         | Mod_Utils       | Модульный           | PASS                                                                                                                   |
+| TC-09 | WriteLog запись в лог-файл                                             | RunLoggerTests        | Mod_Logger      | Модульный           | PASS                                                                                                                   |
+| TC-10 | RotateLogIfNeeded ротация лога                                            | RunLoggerTests        | Mod_Logger      | Модульный           | PASS                                                                                                                   |
+| TC-11 | ClearLog очистка лога                                                     | RunLoggerTests        | Mod_Logger      | Модульный           | PASS                                                                                                                   |
+| TC-12 | FormatDateSQL граничные случаи                                        | RunUtilsEdgeTests     | Mod_Utils       | Модульный           | PASS; подпроверка «пустая строка» — SKIP (невалидный аргумент для Date) |
+| TC-13 | InitLibName заполнение libname                                             | RunLibNameTests       | Mod_Constants   | Модульный           | PASS                                                                                                                   |
+| TC-14 | ImportFromB2_UI с пустым B4                                                   | RunImportVHTests      | Mod_Import      | Интеграционный | PASS (silent)                                                                                                          |
+| TC-15 | ExtractNumberFromGRZ 'А123АН77' → '123'                                          | RunSheetOpsTests      | Mod_SheetOps    | Модульный           | PASS                                                                                                                   |
+| TC-16 | ExtractNumberFromGRZ 'А12АН34' → ''                                              | RunSheetOpsTests      | Mod_SheetOps    | Модульный           | PASS                                                                                                                   |
+| TC-17 | ExtractNumberFromGRZ 'А1234АН77' → '1234'                                        | RunSheetOpsTests      | Mod_SheetOps    | Модульный           | PASS                                                                                                                   |
+| TC-18 | ExtractNumberFromGRZ '' → ''                                                        | RunSheetOpsTests      | Mod_SheetOps    | Модульный           | PASS                                                                                                                   |
+| TC-19 | GetAggregateName 'DIAG' → 'Диагностика'                                  | RunAggregateNameTests | Mod_Constants   | Модульный           | PASS                                                                                                                   |
+| TC-20 | GetAggregateName 'TO' → 'ТО'                                                      | RunAggregateNameTests | Mod_Constants   | Модульный           | PASS                                                                                                                   |
+| TC-21 | GetAggregateName 'XXX' → ''                                                         | RunAggregateNameTests | Mod_Constants   | Модульный           | PASS                                                                                                                   |
+| TC-22 | GetWorkIdentities UAZ (из SysW.db)                                                 | RunModelDBReadTests   | Mod_ModelDB     | Модульный           | PASS; SKIP, если провайдер/SysW.db недоступен                                                   |
+| TC-23 | GetPartIdentities UAZ (из SysW.db)                                                 | RunModelDBReadTests   | Mod_ModelDB     | Модульный           | PASS; SKIP, если провайдер/SysW.db недоступен                                                   |
+| TC-24 | GetWorks UAZ (из SysW.db)                                                          | RunModelDBReadTests   | Mod_ModelDB     | Модульный           | PASS; SKIP, если провайдер/SysW.db недоступен                                                   |
+| TC-25 | FillHeaderFromOrder существующий заказ                              | RunOrderHeaderTests   | Mod_OrderHeader | Модульный           | PASS; SKIP, если нет данных spisok                                                                        |
+| TC-26 | FillHeaderFromOrder несуществующий заказ                          | RunOrderHeaderTests   | Mod_OrderHeader | Модульный           | PASS; SKIP, если листы не найдены                                                                    |
+| TC-27 | FindOrder существующий заказ                                        | RunOrderHeaderTests   | Mod_OrderHeader | Модульный           | PASS; SKIP, если нет данных spisok                                                                        |
+| TC-28 | FindOrder несуществующий заказ                                    | RunOrderHeaderTests   | Mod_OrderHeader | Модульный           | PASS; SKIP, если листы не найдены                                                                    |
+| TC-29 | ImportDataToMain перенос данных                                         | RunImportDataTests    | Mod_Import      | Интеграционный | PASS; SKIP, если лист main не найден                                                                   |
+| TC-30 | ImportSheet несуществующий ГРЗ                                      | RunImportDataTests    | Mod_Import      | Интеграционный | PASS; SKIP, если лист main не найден                                                                   |
+| TC-31 | GetModelDBBasePath возвращает путь                                     | RunModelDBTests       | Mod_ModelDB     | Модульный           | PASS                                                                                                                   |
+| TC-32 | GetModelGroupFilePath формирует путь                                    | RunModelDBTests       | Mod_ModelDB     | Модульный           | PASS                                                                                                                   |
+| TC-33 | ModelGroupFileExists существующий файл                               | RunModelDBTests       | Mod_ModelDB     | Модульный           | PASS                                                                                                                   |
+| TC-34 | ModelGroupFileExists несуществующий файл                           | RunModelDBTests       | Mod_ModelDB     | Модульный           | PASS                                                                                                                   |
+| TC-35 | GetModelDataProvider возвращает провайдера                       | RunModelDBTests       | Mod_ModelDB     | Модульный           | PASS; SKIP, если провайдер недоступен                                                           |
+| TC-36 | GetGroupNameFromMain читает B14                                                | RunPickWorkTests      | Mod_PickWork    | Модульный           | PASS                                                                                                                   |
+| TC-37 | GetWorkSheetName возвращает имя листа                              | RunPickWorkTests      | Mod_PickWork    | Модульный           | PASS                                                                                                                   |
+| TC-38 | PickWork_UI вызов без ошибки                                           | RunPickWorkTests      | Mod_PickWork    | Модульный           | PASS                                                                                                                   |
+| TC-39 | AutoMatchWorks выполняется без ошибки                            | RunAutoMatchTests     | Mod_AutoMatch   | Модульный           | PASS                                                                                                                   |
+| TC-40 | AutoMatchParts выполняется без ошибки                            | RunAutoMatchTests     | Mod_AutoMatch   | Модульный           | PASS                                                                                                                   |
+| TC-41 | HighlightNotFound (Private)                                                          | RunAutoMatchTests     | Mod_AutoMatch   | Модульный           | SKIP (Private, недоступен прямому вызову)                                                       |
+| TC-42 | ClearHighlight (Private)                                                             | RunAutoMatchTests     | Mod_AutoMatch   | Модульный           | SKIP (Private, недоступен прямому вызову)                                                       |
+| TC-43 | IsAllFound (Private)                                                                 | RunAutoMatchTests     | Mod_AutoMatch   | Модульный           | SKIP (Private, недоступен прямому вызову)                                                       |
+| TC-44 | AutoMatchWorks без изменения данных                                | RunAutoMatchTests     | Mod_AutoMatch   | Модульный           | SKIP (небезопасно автоматизировать)                                                         |
+| TC-45 | SearchSheetByGRZ несуществующий ГРЗ → Nothing                      | RunSheetOpsTests      | Mod_SheetOps    | Модульный           | PASS                                                                                                                   |
+| TC-46 | AddWorkEntry добавление work.xlsm                                          | RunConstantsTests     | Mod_Constants   | Модульный           | PASS; SKIP, если лист libname не найден                                                                |
+| TC-47 | GetParts через SQLite (JOIN parts_catalog)                                      | RunSQLiteTests        | Mod_SQLiteDB    | Модульный           | PASS; SKIP, если SQLite-провайдер недоступен                                                    |
+| TC-48 | works с дублями наименований без схлопывания       | RunSQLiteTests        | Mod_SQLiteDB    | Модульный           | PASS; SKIP, если нет групп с дублями                                                               |
+| TC-49 | Чтение parts_catalog                                                           | RunSQLiteTests        | Mod_SQLiteDB    | Модульный           | PASS; SKIP, если SQLite-провайдер недоступен                                                    |
+| TC-50 | GetMatLibEntries: детерминированный порядок                  | RunSQLiteTests        | Mod_SQLiteDB    | Модульный           | PASS; SKIP, если нет записей matlib                                                                      |
+| TC-51 | ClassifySheet классификация листов (`{Group}`/`w`/`z4`/`{Group}z4`) | RunSearchTests | Mod_SheetButtons | Модульный | PASS                                                                      |
+| TC-52 | Btn_Search_ByArticle без ошибки                                     | RunSearchTests        | Mod_SheetButtons | Модульный | PASS                                                                      |
+| TC-53 | Btn_Search_ByName без ошибки                                        | RunSearchTests        | Mod_SheetButtons | Модульный | PASS                                                                      |
+| TC-54 | Btn_ClearFilter (сброс фильтра + очистка C1)                        | RunSearchTests        | Mod_SheetButtons | Модульный | PASS                                                                      |
+| TC-55 | PickParts_UI вызов без ошибки                                       | RunSearchTests        | Mod_PickWork     | Модульный | PASS                                                                      |
+| TC-S1 | Фабрика GetModelDataProvider                                                  | RunSQLiteTests        | Mod_SQLiteDB    | Модульный           | PASS; SKIP, если SysW.db недоступен                                                                      |
+| TC-S2 | GetWorks через провайдер (SQLite эквивалент Excel)           | RunSQLiteTests        | Mod_SQLiteDB    | Модульный           | PASS; SKIP, если провайдер недоступен                                                           |
+| TC-S3 | Данные мигрированы в SysW.db (контрольные объёмы) | RunSQLiteTests        | Mod_SQLiteDB    | Интеграционный | PASS; SKIP, если провайдер недоступен                                                           |
+| TC-60 | GetGlobalPartsBasePath возвращает путь к `z4.xlsx`             | RunGlobalBaseTests    | Mod_ModelDB     | Модульный           | PASS                                                                                                                   |
+| TC-61 | ReadGlobalPartByKey отсутствие совпадения                        | RunGlobalBaseTests    | Mod_ModelDB     | Модульный           | PASS; SKIP, если файл `z4.xlsx` недоступен                                                                |
+| TC-62 | ReadLocalWorkByName отсутствие группы                              | RunGlobalBaseTests    | Mod_ModelDB     | Модульный           | PASS                                                                                                                   |
+| TC-63 | GetGroupName единый хелпер чтения B14                     | RunPickWorkTests      | Mod_Utils       | Модульный           | PASS                                                                                                                   |
+| TC-64 | CreateModelGroupFile регистрация в model_groups (SQLite) | RunModelDBTests       | Mod_ModelDB     | Модульный           | PASS; SKIP, если SQLite-провайдер недоступен                                                     |
+
+**Легенда статусов:** PASS — тест проходит при наличии данных/окружения; SKIP — тест пропускается по условию (Private-процедура, небезопасность автотеста, отсутствие листа/данных/SQLite-провайдера); FAIL — падение теста (останавливает конвейер `run_tests.py` с кодом 1).
+
+### F.3 Механизм записи результатов («2 лога», Задача 1, v1.1.0)
+
+Логирование разделено на два независимых лога (см. [`src/modules/Mod_Logger.bas`](../src/modules/Mod_Logger.bas)):
+
+- **Системный лог** — `logs/log.txt`: общие системные события (текущее поведение,
+  методы `WriteLog` / `WriteLogE`, ротация через `RotateLogIfNeeded`, очистка `ClearLog`).
+- **Расширенный тестовый лог** — `logs/test_results.log`: детальный лог тестов с уровнями
+  **INFO/WARN/ERROR**, включая ошибки VBA. Пишется методом `Mod_Logger.WriteTestLog`
+  (обёртки `LogTestInfo` / `LogTestWarn` / `LogTestError`).
+
+Сопоставление статусов теста и уровней тестового лога:
+
+| Статус теста | Уровень в `test_results.log` |
+| ------------ | ---------------------------- |
+| PASS         | `INFO`                       |
+| SKIP         | `WARN`                       |
+| FAIL (в т.ч. ошибки VBA) | `ERROR`      |
+
+Механика:
+
+- `RunAllTests()` — запускает все группы, подавляет MsgBox; перед стартом очищает тестовый лог
+  (`Mod_Logger.ClearTestLog`) и пишет маркеры `START` / `END` (INFO). Вызывает `WriteResultsToSheet`.
+- `AddResult()` — помимо статистики и Immediate Window, пишет каждую строку результата
+  в `logs/test_results.log` через `Mod_Logger.WriteTestLog` (PASS→INFO, SKIP→WARN, FAIL→ERROR).
+- `WriteResultsToSheet()` — приватная процедура записи отчёта (`Total/Passed/Failed/Skipped`) в ячейку `Z1` листа main.
+- `GetTestResults()` — **Public Sub**, дублирует запись отчёта в `Z1` (вызывается из Python-клиента). Не является функцией.
+- `scripts/run_tests.py` — дополнительно дописывает в тот же `logs/test_results.log` служебные
+  строки прогона (этапы, итог) и читает итог из `Z1` листа main; константа пути —
+  `TEST_LOG_FILE` из [`scripts/config.py`](../scripts/config.py).
+
+---
+
+## Приложение G: Ошибки, расхождения, актуальность, рекомендации
+
+> Раздел фиксирует результаты аудита кодовой базы. Здесь собраны фактические расхождения
+> между кодом и документацией, статус актуальности и рекомендации. Изменения бизнес-логики
+> в рамках этой задачи **не вносятся** — только фиксация.
+
+### G.1 Макросы (VBA)
+
+| Объект                                     | Тип замечания                          | Описание                                                                                                                                                | Актуальность / Рекомендация                                                                                                              |
+| ------------------------------------------------ | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Btn_main_ImportVH_Click`                      | Расхождение в комментарии   | Комментарий в`Mod_ButtonDispatcher.bas` ссылался на «{B2}M», фактически `ImportFromB2_UI` читает `B4`/`{B4}M` | Исправлено в v1.0.15: комментарий актуализирован на `{B4}M` |
+| `Btn_z4_Action1/2/3`, `Btn_work_Action1/2/3` | Отсутствуют в коде                 | Упоминались в старой документации (`DEVELOPER.md §2.10`), удалены из `Mod_SheetButtons` (v0.16)                     | Актуальны нейтральные поисковые обработчики `Btn_Search_*`/`Btn_ClearFilter` (v1.0.12); из доков исключены |
+| `AutoMatch_UI()`                               | Отсутствует в коде                 | Упоминалась в`DEVELOPER.md §2.13`; реальные точки входа — `AutoMatchWorks` / `AutoMatchParts`                             | Актуализировать документацию                                                                                                          |
+| `MODELDB_BASE_PATH` (константа)       | Отсутствует в коде                 | В доке указана как константа; в коде реализована функция`GetModelDBBasePath`                                   | Актуализировать`DEVELOPER.md §2.11` и `ARCHITECTURE.md §3.2`                                                                               |
+| `IModelDataProvider_CreateModelGroupFile`      | ЗАГЛУШКА                                   | Excel-ветка (`Mod_ModelDBProvider`) возвращает `True` без фактического создания файла                            | Зафиксировано; реализовать создание или явно пометить заглушкой                                          |
+| `IModelDataProvider.*` (10 методов)     | ЗАГЛУШКИ-контракт                  | Все методы бросают`Err.Raise ... "Not implemented"`                                                                                           | Контракт интерфейса; допустимо, реализации —`Mod_SQLiteDB`/`Mod_ModelDBProvider`                                       |
+| `Mod_ModelTypes.bas`                           | Устаревший пустой модуль     | Хранится для обратной совместимости ссылок; UDT вынесены                                                          | Кандидат на упразднение после полного перехода на классы                                                        |
+| `RunAllTests_UI`                               | Расхождение в комментарии   | Комментарий «TC-01..TC-46» устарел; фактически набор TC-01..TC-50 + TC-S*                                                    | Поправить комментарий при следующей правке                                                                                 |
+| `GetTestResults()`                             | Расхождение в документации | В`DEVELOPER.md §6.4` описан как функция; фактически **Public Sub** (запись в Z1)                                     | Актуализировать описание                                                                                                                  |
+
+### G.2 Тесты (Mod_FullTestRunner)
+
+| Объект                           | Тип замечания                          | Описание                                                                                                                                                                                                                              | Актуальность / Рекомендация                                                                                                             |
+| -------------------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TC-41..TC-44                           | SKIP по дизайну                           | Private-процедуры (`HighlightNotFound`, `ClearHighlight`, `IsAllFound`) недоступны прямому вызову; TC-44 небезопасно автоматизировать (меняет данные листа) | Покрытие этих сценариев возможно только интеграционно; рекомендуются ручные проверки |
+| TC-12                                  | Частичный SKIP                            | Подпроверка «пустая строка» пропущена (невалидный аргумент для типа`Date`)                                                                                                       | Поведение корректное; замечание к полноте покрытия                                                                  |
+| TC-22..24, TC-35, TC-S1..S3, TC-47..50 | Зависимость от окружения     | Пропускаются (SKIP), если SQLite-провайдер/`SysW.db` недоступен или нет данных                                                                                                               | При CI без SQLite покрытие неполное; рекомендуется наличие`SysW.db` в прогоне                               |
+| TC-25..30, TC-46                       | Зависимость от данных           | Пропускаются, если отсутствуют листы/данные (`spisok`, `main`, `libname`)                                                                                                                         | Требуются контрольные данные для полного прогона                                                                     |
+| Состав набора              | Расхождение в документации | `DEVELOPER.md §6.1` перечисляет TC-01..TC-44; фактически TC-01..TC-50 + TC-S1..S3                                                                                                                                     | Актуализировать перечень и таблицу покрытия                                                                              |
+
+### G.3 Скрипты (Python / PowerShell)
+
+| Объект                                                 | Тип замечания                                | Описание                                                                                                                                                                                                | Актуальность / Рекомендация                                                                                             |
+| ------------------------------------------------------------ | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/export_vba.py`                                    | Расхождение в маппинге`COMPONENTS` | Содержит ошибочные`"Лист4": sheets/Лист4.cls` (файла нет); **отсутствует** `"Лист9": sheets/Лист9.cls` (фактический лист)          | Исправить маппинг`COMPONENTS` (актуальный состав `src/sheets/`: Лист2, Лист3, Лист5, Лист9) |
+| `scripts/apply_protection_templates.py`                    | Дублирование                                 | Дублирует защиту листов из`build_templates.py`                                                                                                                                         | Кандидат на упразднение (объединить в`build_templates.py`)                                                    |
+| `.codeassistant/mcp.json`                                  | Устарел                                           | Заменён на корневой`.sourcecraft`                                                                                                                                                            | Оставить только для обратной совместимости; не использовать                                 |
+| `docs/sourcecraft-guide.md` (список scripts/)        | Неполный список                            | Не перечислены`build_templates.py`, `migrate_models_to_sqlite.py`, `check_vba_syntax.py`, `update_version.py`, `fix_vbom_and_venv.ps1`, `template_protection.py`, `sqlite_schema.py` | Актуализировать перечень скриптов                                                                                |
+| `README.md` / `DEVELOPER.md` (состав листов) | Расхождение                                   | Упоминаются`Лист2_main.cls`, `Лист4.cls`; фактически `Лист2.cls`, `Лист3.cls`, `Лист5.cls`, `Лист9.cls`                                                | Актуализировать упоминания состава листов                                                                 |
+| `docs/ARCHITECTURE.md §4.2`                               | Расхождение диапазона                | Указано «B3:B15»; фактически шапка`B5:B17` (согласовано с `DEVELOPER.md §2.2`)                                                                                         | Исправить на`B5:B17`                                                                                                               |

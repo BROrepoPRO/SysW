@@ -43,7 +43,6 @@ DOC_FILES = [
     "CHANGELOG.md",
     "DEVELOPER.md",
     "git-workflow.md",
-    "reestr.md",
     "ROADMAP.md",
     "sourcecraft-guide.md",
     "table.md",

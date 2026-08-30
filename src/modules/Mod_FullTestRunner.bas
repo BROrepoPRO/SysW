@@ -4,7 +4,10 @@ Option Explicit
 ' ============================================================
 ' Модуль: Mod_FullTestRunner
 ' Назначение: Набор технических тестов для проекта SysW
-' Покрытие: TC-01 .. TC-58 (автоматические тесты) + TC-S1..TC-S3
+' Покрытие: TC-01 .. TC-64 (автоматические тесты) + TC-S1..TC-S3
+' Результаты дублируются в расширенный тестовый лог
+' logs/test_results.log через Mod_Logger.WriteTestLog
+' (уровни INFO — PASS, WARN — SKIP, ERROR — FAIL/ошибки VBA).
 ' ============================================================
 
 ' ---- Счётчики результатов ----
@@ -31,11 +34,15 @@ Public Sub RunAllTests()
     Mod_Constants.SilenceMsgBox = True
 
     Debug.Print "=============================================="
-    Debug.Print "  Запуск набора тестов (TC-01..TC-62)"
+    Debug.Print "  Запуск набора тестов (TC-01..TC-64+TC-S*)"
     Debug.Print "=============================================="
     Debug.Print ""
 
     Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: START")
+
+    ' Очищаем расширенный тестовый лог перед новым прогоном и открываем сессию
+    Call Mod_Logger.ClearTestLog
+    Call Mod_Logger.WriteTestLog("Mod_FullTestRunner", "INFO", "RunAllTests: START")
 
     ' Запуск групп тестов
     Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunUtilsTests START")
@@ -117,6 +124,11 @@ Public Sub RunAllTests()
         Err.Clear
     End If
     On Error GoTo 0
+
+    ' Итоговый маркер в тестовом логе
+    Call Mod_Logger.WriteTestLog("Mod_FullTestRunner", "INFO", _
+              "RunAllTests: END (Total=" & m_Total & ";Passed=" & m_Passed & _
+              ";Failed=" & m_Failed & ";Skipped=" & m_Skipped & ")")
 
     ' Восстанавливаем показ MsgBox
     Mod_Constants.SilenceMsgBox = False
@@ -2174,7 +2186,11 @@ Private Sub RunGlobalBaseTests()
     End If
 End Sub
 
-' Добавляет результат теста в статистику и выводит в Immediate Window
+' Добавляет результат теста в статистику, выводит в Immediate Window и
+' пишет детальную строку в расширенный тестовый лог (logs/test_results.log):
+'   PASS  -> INFO
+'   SKIP  -> WARN
+'   FAIL  -> ERROR (включая ошибки VBA из failReason/Err.Description)
 Private Sub AddResult(testId As String, testName As String, _
                       passed As Boolean, Optional failReason As String = "", _
                       Optional skipped As Boolean = False, Optional skipReason As String = "")
@@ -2184,18 +2200,22 @@ Private Sub AddResult(testId As String, testName As String, _
         m_Skipped = m_Skipped + 1
         Debug.Print "[" & testId & "] " & ChrW(&H26A0) & " " & testName & ": SKIP (" & skipReason & ")"
         m_ResultsLog = m_ResultsLog & "[" & testId & "] SKIP: " & testName & " (" & skipReason & ")" & vbCrLf
+        Call Mod_Logger.WriteTestLog(testId, "WARN", testName & " SKIP: " & skipReason)
     ElseIf passed Then
         m_Passed = m_Passed + 1
         Debug.Print "[" & testId & "] " & ChrW(&H2713) & " " & testName & ": PASS"
         m_ResultsLog = m_ResultsLog & "[" & testId & "] PASS: " & testName & vbCrLf
+        Call Mod_Logger.WriteTestLog(testId, "INFO", testName & " PASS")
     Else
         m_Failed = m_Failed + 1
         If failReason <> "" Then
             Debug.Print "[" & testId & "] " & ChrW(&H2717) & " " & testName & ": FAIL - " & failReason
             m_ResultsLog = m_ResultsLog & "[" & testId & "] FAIL: " & testName & " - " & failReason & vbCrLf
+            Call Mod_Logger.WriteTestLog(testId, "ERROR", testName & " FAIL: " & failReason)
         Else
             Debug.Print "[" & testId & "] " & ChrW(&H2717) & " " & testName & ": FAIL"
             m_ResultsLog = m_ResultsLog & "[" & testId & "] FAIL: " & testName & vbCrLf
+            Call Mod_Logger.WriteTestLog(testId, "ERROR", testName & " FAIL")
         End If
     End If
 End Sub
