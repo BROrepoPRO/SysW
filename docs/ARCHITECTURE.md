@@ -1,7 +1,7 @@
 # Архитектура выноса данных работ и запчастей из work.xlsm
 
 > Версия: 1.0
-> Проект: SysW v1.1.0
+> Проект: SysW v1.1.1.1
 > Статус: Реализовано (SQLite-хранилище внедрено в v1.0.7)
 >
 > **Актуальный статус:** Миграция на SQLite реализована — единая база `SysW.db` (корень проекта), DDL в `db/schema.sql`, провайдеры `Mod_SQLiteDB.cls` / `Mod_ModelDBProvider.cls` / `IModelDataProvider.cls`, пересборка скриптом `scripts/migrate_models_to_sqlite.py` и контроль целостности в составе конвейера `scripts/build_all.py`.
@@ -353,6 +353,11 @@ Public Function CreateModelGroupFile(groupName As String) As Boolean
 ```vba
 Public Function OpenModelGroupFile(groupName As String) As Workbook
 ```
+
+> **Примечание (v1.1.1.1):** вокруг `Workbooks.Open` добавлены защитные параметры
+> (`ScreenUpdating`/`EnableEvents`/`DisplayAlerts`/`Calculation`) — устранено зависание
+> бизнес-макроса `AutoMatchWorks` на реальных данных (скрытый диалог/COM-блокировка
+> при открытии модели).
 
 **Назначение:** Открывает файл группы `{groupName}.xlsm` (если ещё не открыт) и возвращает ссылку на Workbook.
 
@@ -748,6 +753,10 @@ Public Function CreateModelGroupFile(groupName As String) As Boolean
 End Function
 ```
 
+> **Примечание (v1.1.1.1):** для защиты от бесконечного ожидания при блокировке `SysW.db`
+> в `OpenConnection` задан `m_conn.ConnectionTimeout = 15`, в `ExecuteQuery`/`ExecuteNonQuery` —
+> `cmd.CommandTimeout = 15`.
+
 ### 5.3. Что изменится при переходе на SQLite
 
 | Аспект                              | Сейчас (Excel)                                                                     | Потом (SQLite)                                                 |
@@ -837,6 +846,11 @@ CREATE INDEX idx_group_parts_group ON group_parts(group_name);
 бэкап (`work.xlsm`, `SysW.db`) → `impVBA.py` → **ранний контроль компиляции VBA
 (`check_vba_syntax.py`)** → `build_templates.py` → `migrate_models_to_sqlite.py` →
 контроль целостности БД → `run_tests.py`.
+
+> **Диагностический интерфейс `run_tests.py` (R-16, v1.1.1.1):** поддержан CLI через
+> `argparse` (`--module`, `--verbose`, `--output`) с генерацией отчётов JSON/HTML (UTF-8,
+> кириллица корректна); без аргументов поведение прежнее (отчёты не создаются);
+> exit code — по полной сводке Z1.
 
 #### 5.5.1. Устойчивость COM-этапов к зависаниям (v1.0.8)
 

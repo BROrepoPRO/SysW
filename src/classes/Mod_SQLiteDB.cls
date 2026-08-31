@@ -105,6 +105,10 @@ Public Sub OpenConnection()
     Call Mod_Logger.WriteLog("Mod_SQLiteDB", "OpenConnection: создаю ADODB.Connection")
     Set m_conn = CreateObject("ADODB.Connection")
     m_conn.CommandTimeout = 30
+    ' Таймаут самого открытия соединения — защита от бесконечного зависания
+    ' m_conn.Open при блокировке SysW.db (остаточный EXCEL-процесс держит
+    ' WAL-write lock). Значение согласовано с CommandTimeout (30 сек): 15 сек.
+    m_conn.ConnectionTimeout = 15
     m_conn.ConnectionString = _
         "Driver={" & SQLITE_DRIVER_NAME & "};Database=" & db & ";ReadOnly=0;"
     Call Mod_Logger.WriteLog("Mod_SQLiteDB", "OpenConnection: вызываю Open")
@@ -197,6 +201,9 @@ Public Function ExecuteQuery(ByVal sql As String, ByRef params As Variant) As Ob
     cmd.ActiveConnection = m_conn
     cmd.CommandText = sql
     cmd.CommandType = adCmdText
+    ' Явный командный таймаут для SELECT — ограничивает время выполнения
+    ' запроса и не даёт зависнуть бесконечно при занятости БД.
+    cmd.CommandTimeout = 15
 
     If IsArray(params) Then
         Dim i As Long
@@ -224,6 +231,8 @@ Public Sub ExecuteNonQuery(ByVal sql As String, ByRef params As Variant)
     cmd.ActiveConnection = m_conn
     cmd.CommandText = sql
     cmd.CommandType = adCmdText
+    ' Явный командный таймаут для записи/PRAGMA — ограничивает время выполнения.
+    cmd.CommandTimeout = 15
 
     If IsArray(params) Then
         Dim i As Long

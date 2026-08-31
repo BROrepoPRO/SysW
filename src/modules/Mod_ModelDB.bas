@@ -149,6 +149,13 @@ Public Function OpenModelGroupFile(ByVal groupName As String) As Workbook
     Dim filePath As String
     Dim wbName As String
 
+    ' --- Настройки приложения, временно подавляемые при открытии xlsm (фикс 1.1.1.1) ---
+    Dim savedScreenUpdating As Boolean
+    Dim savedEnableEvents As Boolean
+    Dim savedDisplayAlerts As Boolean
+    Dim savedCalculation As Long
+    Dim settingsSaved As Boolean
+
     filePath = GetModelGroupFilePath(groupName)
     If Len(filePath) = 0 Then
         Set OpenModelGroupFile = Nothing
@@ -172,11 +179,45 @@ Public Function OpenModelGroupFile(ByVal groupName As String) As Workbook
         Exit Function
     End If
 
+    ' --- Фикс 1.1.1.1: подавление событий/диалогов/пересчёта при открытии модели ---
+    ' Сохраняем текущие настройки приложения, чтобы корректно восстановить их после Open.
+    savedScreenUpdating = Application.ScreenUpdating
+    savedEnableEvents = Application.EnableEvents
+    savedDisplayAlerts = Application.DisplayAlerts
+    savedCalculation = Application.Calculation
+    settingsSaved = True
+
+    ' Подавляем обновление экрана, события (Workbook_Open и пр.), нативные диалоги
+    ' и пересчёт — чтобы headless COM-открытие xlsm с макросами не блокировалось
+    ' всплывающим диалогом либо реентрантным событием (зависание AutoMatchWorks).
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
+    Application.DisplayAlerts = False
+    Application.Calculation = xlCalculationManual
+
+    ' Открываем книгу в защищённом контексте (ReadOnly сохраняется как было).
     Set wb = Workbooks.Open(filePath, ReadOnly:=False)
+
+    ' Восстановление настроек после успешного открытия.
+    Application.ScreenUpdating = savedScreenUpdating
+    Application.EnableEvents = savedEnableEvents
+    Application.DisplayAlerts = savedDisplayAlerts
+    Application.Calculation = savedCalculation
+    settingsSaved = False
+
     Set OpenModelGroupFile = wb
     Exit Function
 
 ErrHandler:
+    ' Восстанавливаем настройки приложения даже при ошибке (если они были сохранены).
+    If settingsSaved Then
+        Application.ScreenUpdating = savedScreenUpdating
+        Application.EnableEvents = savedEnableEvents
+        Application.DisplayAlerts = savedDisplayAlerts
+        Application.Calculation = savedCalculation
+        settingsSaved = False
+    End If
+
     Call Mod_Logger.WriteLog("Mod_ModelDB", "OpenModelGroupFile: Ошибка — " & Err.Description)
     Set OpenModelGroupFile = Nothing
 End Function

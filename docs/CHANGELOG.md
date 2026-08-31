@@ -5,6 +5,43 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.1.1.1] — 2026-08-31
+
+### Fixed
+- **Зависание бизнес-макроса AutoMatchWorks на реальных данных**
+  ([`src/modules/Mod_ModelDB.bas`](src/modules/Mod_ModelDB.bas)): в `OpenModelGroupFile` вокруг
+  `Workbooks.Open` добавлены защитные параметры (ScreenUpdating/EnableEvents/DisplayAlerts/
+  Calculation) — устранено зависание при открытии модели (скрытый диалог/COM-блокировка).
+  Подтверждено бизнес-прогоном `run_p1_business_test.py` (сценарий ImportFromB2_UI →
+  AutoMatchWorks → AutoMatchParts) без зависания.
+- **Дефект кириллицы R-16** ([`scripts/run_tests.py`](scripts/run_tests.py)): `_read_text_robust`
+  переведён на построчный авто-декод (utf-8 → cp1251) — корректно восстанавливает кириллицу
+  в `logs/test_results.log` со смешанной кодировкой (VBA CP1251 + Python UTF-8), устраняя
+  замену символов на `\ufffd` в отчётах JSON/HTML.
+- **Интермиттентное зависание TC-35 / SQLite-таймаут**
+  ([`src/classes/Mod_SQLiteDB.cls`](src/classes/Mod_SQLiteDB.cls)): в `OpenConnection` добавлен
+  `m_conn.ConnectionTimeout = 15` (защита от бесконечного `m_conn.Open` при блокировке
+  `SysW.db`); в `ExecuteQuery`/`ExecuteNonQuery` задан `cmd.CommandTimeout = 15`. Логика
+  WAL/busy_timeout и обработчики ошибок не изменены.
+
+### Added
+- **CLI-интерфейс `run_tests.py` (R-16):** расширен через `argparse` — опции `--module`,
+  `--verbose`, `--output`; генерация отчётов JSON/HTML (UTF-8, кириллица корректна);
+  обратная совместимость (без аргументов поведение прежнее, отчёты не создаются);
+  exit code по полной сводке Z1. Сквозной прогон с флагами подтверждён (exit 0, отчёты
+  сгенерированы).
+
+### Changed
+- **Версия проекта:** 1.1.1.1 (шаговая, формат X.Y.Z.W). Синхронизирована в
+  `scripts/config.py` (APP_VERSION), `src/modules/Mod_Constants.bas` (APP_VERSION)
+  и `README.md`.
+
+### Tested
+- **Обкатка на реальных данных:** базовый прогон `run_tests.py` зелёный —
+  Total=65/Passed=56/Failed=0/Skipped=9, exit 0; бизнес-прогон `run_p1_business_test.py`
+  отработал сценарий ImportFromB2_UI → AutoMatchWorks → AutoMatchParts без зависания
+  (после фикса); `report.xlsx` пользователя не изменён.
+
 ## [v1.1.0] — 2026-08-30
 
 ### Added

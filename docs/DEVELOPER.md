@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v1.1.0)
+# Техническая документация разработчика — SysW (v1.1.1.1)
 
 ## 1. Архитектура проекта
 
@@ -830,6 +830,21 @@ python scripts/run_tests.py
    пишет детальный лог через `Mod_Logger.WriteTestLog` с уровнями INFO/WARN/ERROR;
    константа пути — `TEST_LOG_FILE` из `scripts/config.py`)
 8. Гарантированно закрывает Excel (в `finally` блоке)
+
+**CLI-опции (R-16, v1.1.1.1):**
+- `python scripts/run_tests.py --module <имя>` — выборочный запуск тестов модуля;
+- `python scripts/run_tests.py --verbose` — расширенный вывод прогона;
+- `python scripts/run_tests.py --output <путь>` — генерация отчётов JSON/HTML
+  (UTF-8, кириллица корректна);
+- без аргументов — поведение прежнее, отчёты не создаются; exit code — по полной
+  сводке Z1.
+
+> **Обкатка и устойчивость (v1.1.1.1):** базовый прогон зелёный
+> (Total=65/Passed=56/Failed=0/Skipped=9, exit 0); бизнес-прогон `run_p1_business_test.py`
+> (сценарий ImportFromB2_UI → AutoMatchWorks → AutoMatchParts) прошёл без зависания после
+> фикса `Mod_ModelDB.OpenModelGroupFile` (защитные параметры вокруг `Workbooks.Open`);
+> защита от бесконечного ожидания при блокировке `SysW.db` — `ConnectionTimeout`/
+> `CommandTimeout = 15` в `Mod_SQLiteDB.cls`. `report.xlsx` пользователя не изменён.
 
 **Интеграция с GitHub Actions:**
 
