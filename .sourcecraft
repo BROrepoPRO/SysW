@@ -7,7 +7,10 @@
         "-y",
         "@modelcontextprotocol/server-filesystem",
         "${workspaceFolder}"
-      ]
+      ],
+      "disabled": false,
+      "alwaysAllow": [],
+      "disabledTools": []
     },
     "git": {
       "command": "uvx",
@@ -19,7 +22,10 @@
         "mcp-server-git",
         "--repository",
         "${workspaceFolder}"
-      ]
+      ],
+      "disabled": false,
+      "alwaysAllow": [],
+      "disabledTools": []
     }
   },
   "customInstructions": {
