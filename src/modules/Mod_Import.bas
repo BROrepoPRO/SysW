@@ -371,6 +371,10 @@ End Sub
 ' если № кат. пуст ИЛИ по нему нет совпадения типа MOD_PART — fallback
 ' по наименованию Y(25). При пустых обоих ключах ячейка AB(28) не заполняется.
 ' Наименование в Y сохраняется без изменений.
+' Шаг 3 (R-Z4GEN, план 1.1.3): если шаги 1-2 не дали совпадения MOD_PART,
+' выполняется глобальный fallback через Mod_ModelDB.ReadGlobalPartByKey
+' по глобальному справочнику base\models\z4.xlsx (ключи — № кат. X(24)
+' и наименование Y(25)). Логика работ/O-колонка не затрагивается.
 ' --------------------------------------------------------------------------
 Private Sub SubstitutePartArticle(ByVal prov As IModelDataProvider, _
                                   ByVal groupName As String, _
@@ -381,6 +385,7 @@ Private Sub SubstitutePartArticle(ByVal prov As IModelDataProvider, _
     Dim entries As Collection
     Dim idx As Long
     Dim arr As Variant
+    Dim gPart As PartIdentity
 
     ' 1. Поиск по № кат. X(24) — приоритетный ключ
     key = Trim(CStr(ws.Cells(rowNum, 24).Value))
@@ -396,13 +401,32 @@ Private Sub SubstitutePartArticle(ByVal prov As IModelDataProvider, _
 
     ' 2. Fallback: поиск по наименованию Y(25)
     key = Trim(CStr(ws.Cells(rowNum, 25).Value))
-    If key = "" Then Exit Sub   ' пустой ключ — пропуск, AB(28) не заполняется
+    If key <> "" Then
+        Set entries = prov.GetMatLibEntries(groupName, key)
+        idx = FindFirstMatLibIndex(entries, "MOD_PART")
+        If idx > 0 Then
+            arr = entries(idx)
+            ws.Cells(rowNum, 28).Value = CStr(arr(1))   ' AB — модельный артикул
+            Exit Sub
+        End If
+    End If
 
-    Set entries = prov.GetMatLibEntries(groupName, key)
-    idx = FindFirstMatLibIndex(entries, "MOD_PART")
-    If idx > 0 Then
-        arr = entries(idx)
-        ws.Cells(rowNum, 28).Value = CStr(arr(1))   ' AB — модельный артикул
+    ' 3. Глобальный fallback (R-Z4GEN, план 1.1.3): когда основной поиск
+    ' по matlib_entries не дал совпадения MOD_PART (шаги 1-2), ищем запчасть
+    ' в глобальном справочнике base\models\z4.xlsx через
+    ' Mod_ModelDB.ReadGlobalPartByKey. Ключи — № кат. X(24) и наименование
+    ' Y(25); внутри ReadGlobalPartByKey приоритет — № кат., fallback — имя.
+    ' Не перебивает успешный результат шагов 1-2, меняет ТОЛЬКО AB(28)
+    ' (логика работ/O-колонка не затрагивается).
+    Dim catNum As String
+    Dim partName As String
+    catNum = Trim(CStr(ws.Cells(rowNum, 24).Value))
+    partName = Trim(CStr(ws.Cells(rowNum, 25).Value))
+    If catNum = "" And partName = "" Then Exit Sub   ' пустые ключи — пропуск
+
+    Set gPart = Mod_ModelDB.ReadGlobalPartByKey(catNum, partName)
+    If Not gPart Is Nothing Then
+        ws.Cells(rowNum, 28).Value = gPart.OutArticle   ' AB — модельный артикул
     End If
     Exit Sub
 
