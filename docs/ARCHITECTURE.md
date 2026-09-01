@@ -1,7 +1,7 @@
 # Архитектура выноса данных работ и запчастей из work.xlsm
 
 > Версия: 1.0
-> Проект: SysW v1.1.1.1
+> Проект: SysW v1.1.2.1
 > Статус: Реализовано (SQLite-хранилище внедрено в v1.0.7)
 >
 > **Актуальный статус:** Миграция на SQLite реализована — единая база `SysW.db` (корень проекта), DDL в `db/schema.sql`, провайдеры `Mod_SQLiteDB.cls` / `Mod_ModelDBProvider.cls` / `IModelDataProvider.cls`, пересборка скриптом `scripts/migrate_models_to_sqlite.py` и контроль целостности в составе конвейера `scripts/build_all.py`.

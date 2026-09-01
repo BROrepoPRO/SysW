@@ -5,6 +5,44 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.1.2.1] — 2026-09-01
+
+### Added
+- **Верификация шапки заказа после импорта** в
+  [`scripts/run_p1_business_test.py`](scripts/run_p1_business_test.py): проверка диапазона
+  `B4/B5:B17` листа `main` через функцию `snapshot_order_header` и итоговую сводку `[ШАПКА]`.
+  Результат прогона на реальных данных: **1 работа + 1 ЗЧ**; шапка `B5:B17` заполнена
+  (ключевые поля 5/5: B5 модель, B6 ГРЗ, B12 №ЗН, B13 цена н/ч, B14 группа). Отчёт:
+  `logs/p1_test_report.log`.
+- **Интеграционное тестирование `ImportFromB2_UI` (R-IT):** добавлена группа
+  `RunImportB2IntegrationTests` (TC-65..TC-68) в
+  [`Mod_FullTestRunner.bas`](src/modules/Mod_FullTestRunner.bas) — сквозной конвейер
+  «импорт → шапка → работы (L:N) → запчасти (X:AA)» и отсутствие исключений/зависаний.
+  R-IT отмечена выполненной в `docs/ROADMAP.md`; обновлены `docs/DEVELOPER.md` и `docs/table.md`.
+
+### Changed
+- **Версия проекта:** 1.1.2.1 (шаговая, формат X.Y.Z.W). Синхронизирована в
+  `scripts/config.py`, `src/modules/Mod_Constants.bas`, `scripts/config.ps1`, `README.md`,
+  `docs/DEVELOPER.md`, `docs/ROADMAP.md`, `docs/ARCHITECTURE.md` и `docs/CHANGELOG.md`.
+
+### Tested
+- **Базовый прогон `run_tests.py`:** Total=69 / Passed=60 / Failed=0 / Skipped=9, exit 0
+  (к прежним TC-01..TC-64 + TC-S1..S3 добавлена группа TC-65..68).
+- **Бизнес-прогон `run_p1_business_test.py`:** сценарий ImportFromB2_UI → AutoMatchWorks →
+  AutoMatchParts; 1 работа + 1 ЗЧ; шапка `B5:B17` заполнена (сводка `[ШАПКА]`);
+  отчёт `logs/p1_test_report.log`.
+
+### Known Issues (Наблюдения / техдолг, не исправлялось в v1.1.2)
+- **Номер заказа B4 пуст после импорта** — до импорта был `100`; шапка `B5:B17` заполняется
+  корректно, но ячейка `B4` очищается в процессе импорта. Рекомендация: проверить логику
+  очистки/переноса B4 в `Mod_Import.ImportFromB2_UI`.
+- **`AutoMatchWorks` медленный** — фикс зависания сработал (без зависания), но время
+  выполнения ~2 ч 46 мин на 1 работе. Кандидат на оптимизацию производительности
+  (кэширование/поиск по индексу модельных артикулов).
+- **`AutoMatchWorks`/`AutoMatchParts` не подобрали артикулы** — пусто вместо «НЕ НАЙДЕНО»,
+  при том что модельные артикулы O/AB проставлены. Рекомендация: проверить отображение
+  состояния «не найдено» в результатах автоподбора.
+
 ## [v1.1.1.1] — 2026-08-31
 
 ### Fixed

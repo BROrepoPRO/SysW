@@ -4,7 +4,7 @@ Option Explicit
 ' ============================================================
 ' Модуль: Mod_FullTestRunner
 ' Назначение: Набор технических тестов для проекта SysW
-' Покрытие: TC-01 .. TC-64 (автоматические тесты) + TC-S1..TC-S3
+' Покрытие: TC-01 .. TC-68 (автоматические тесты) + TC-S1..TC-S3
 ' Результаты дублируются в расширенный тестовый лог
 ' logs/test_results.log через Mod_Logger.WriteTestLog
 ' (уровни INFO — PASS, WARN — SKIP, ERROR — FAIL/ошибки VBA).
@@ -100,6 +100,10 @@ Public Sub RunAllTests()
     Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunImportDataTests START")
     RunImportDataTests
     Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunImportDataTests END")
+
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunImportB2IntegrationTests START")
+    RunImportB2IntegrationTests
+    Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunImportB2IntegrationTests END")
 
     Call Mod_Logger.WriteLog("Mod_FullTestRunner", "RunAllTests: RunConstantsTests START")
     RunConstantsTests
@@ -1852,6 +1856,312 @@ Private Sub RunImportDataTests()
     Mod_Import.SilenceMsgBox = False
 
     Set wsMain = Nothing
+    Set wsTemp = Nothing
+
+    Debug.Print ""
+End Sub
+
+' ============================================================
+' Группа: интеграционные тесты ImportFromB2_UI (TC-65..TC-68)
+' Сквозной сценарий «импорт → шапка заказа → работы → запчасти»:
+'   TC-65 — импортированные работы попадают в L:N листа main;
+'   TC-66 — импортированные запчасти попадают в X:AA листа main;
+'   TC-67 — шапка заказа B5:B17 заполняется через FillHeaderFromOrder;
+'   TC-68 — вызов ImportFromB2_UI не порождает исключений/зависаний
+'          (отсутствие Err и восстановление EnableEvents после CleanUp).
+' Вход: B4={числовой номер заказа}, лист-источник {B4}M создаётся фикстурой.
+' Состояние main (B4/B14/B5:B17/L:O/X:AB) и models полностью восстанавливаются.
+' Служебные колонки подстановки O(15)/AB(28) НЕ входят в критерий PASS/FAIL
+' (в фикстуре нет гарантированных совпадений MOD_WORK/MOD_PART — как в TC-29).
+' ============================================================
+Private Sub RunImportB2IntegrationTests()
+    Dim wsMain As Worksheet
+    Dim wsSpisok As Worksheet
+    Dim wsModels As Worksheet
+    Dim wsTemp As Worksheet
+    Dim orderNum As Variant
+    Dim sheetName As String
+    Dim grz As String
+    Dim savedB4 As Variant
+    Dim savedB14 As Variant
+    Dim savedB5toB17 As Variant
+    Dim savedLtoO As Variant
+    Dim savedXtoAB As Variant
+    Dim lastRow As Long
+    Dim clearTo As Long
+    Dim modelsLastRowBefore As Long
+    Dim modelsLastRowAfter As Long
+    Dim importErr As Long
+    Dim i As Long
+    Dim tc65Ok As Boolean
+    Dim tc66Ok As Boolean
+    Dim tc67Ok As Boolean
+    Dim tc68Ok As Boolean
+    Dim r65 As String
+    Dim r66 As String
+    Dim r67 As String
+    Dim r68 As String
+
+    Debug.Print "--- Mod_Import ImportFromB2_UI Integration Tests ---"
+
+    On Error Resume Next
+    Set wsMain = ThisWorkbook.Sheets(Mod_Constants.SHEET_MAIN)
+    Set wsSpisok = ThisWorkbook.Sheets(Mod_Constants.SHEET_SPISOK)
+    Set wsModels = ThisWorkbook.Sheets(Mod_Constants.SHEET_MODELS)
+    On Error GoTo 0
+
+    If wsMain Is Nothing Or wsSpisok Is Nothing Or wsModels Is Nothing Then
+        AddResult "TC-65", "Импорт B2: работы в L:N", True, "", True, "Лист main/spisok/models не найден"
+        AddResult "TC-66", "Импорт B2: запчасти в X:AA", True, "", True, "Лист main/spisok/models не найден"
+        AddResult "TC-67", "Импорт B2: шапка B5:B17", True, "", True, "Лист main/spisok/models не найден"
+        AddResult "TC-68", "Импорт B2: без исключений", True, "", True, "Лист main/spisok/models не найден"
+        Debug.Print ""
+        Exit Sub
+    End If
+
+    ' Выбираем номер заказа из spisok, для которого ещё нет листа {num}M,
+    ' чтобы импорт использовал НАШ лист-фикстуру, а не копировал report.xlsx.
+    ' Первый кандидат обычно достаточен (header заполняется, как в TC-25).
+    orderNum = Empty
+    For i = Mod_Constants.SPISOK_DATA_START_ROW To wsSpisok.Cells(wsSpisok.Rows.Count, 1).End(xlUp).Row
+        If Not IsEmpty(wsSpisok.Cells(i, 1).Value) Then
+            If Mod_Utils.GetSheetByName(ThisWorkbook, Trim(CStr(wsSpisok.Cells(i, 1).Value)) & "M") Is Nothing Then
+                orderNum = wsSpisok.Cells(i, 1).Value
+                Exit For
+            End If
+        End If
+    Next i
+
+    If IsEmpty(orderNum) Then
+        AddResult "TC-65", "Импорт B2: работы в L:N", True, "", True, "В spisok нет свободного номера заказа"
+        AddResult "TC-66", "Импорт B2: запчасти в X:AA", True, "", True, "В spisok нет свободного номера заказа"
+        AddResult "TC-67", "Импорт B2: шапка B5:B17", True, "", True, "В spisok нет свободного номера заказа"
+        AddResult "TC-68", "Импорт B2: без исключений", True, "", True, "В spisok нет свободного номера заказа"
+        Debug.Print ""
+        Exit Sub
+    End If
+
+    grz = Trim(CStr(orderNum))
+    sheetName = grz & "M"
+
+    ' Сохраняем состояние main
+    savedB4 = wsMain.Range("B4").Value
+    savedB14 = wsMain.Range("B14").Value
+    savedB5toB17 = wsMain.Range("B5:B17").Value
+    lastRow = Application.WorksheetFunction.Max( _
+        wsMain.Cells(wsMain.Rows.Count, 12).End(xlUp).Row, _
+        wsMain.Cells(wsMain.Rows.Count, 15).End(xlUp).Row, _
+        wsMain.Cells(wsMain.Rows.Count, 24).End(xlUp).Row, _
+        wsMain.Cells(wsMain.Rows.Count, 28).End(xlUp).Row)
+    If lastRow < 4 Then lastRow = 4
+    savedLtoO = wsMain.Range("L4:O" & lastRow).Value
+    savedXtoAB = wsMain.Range("X4:AB" & lastRow).Value
+
+    ' Создаём временный лист-источник {grz}M. Фикстура идентична TC-29:
+    ' заголовки на строке 2/9, подзаголовки на 3/10, данные с 4/11 —
+    ' для работ используется fallback-маппинг, для запчастей — адаптивный.
+    Application.DisplayAlerts = False
+    On Error Resume Next
+    Set wsTemp = ThisWorkbook.Sheets.Add(After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count))
+    wsTemp.Name = sheetName
+    On Error GoTo 0
+    Application.DisplayAlerts = True
+
+    If wsTemp Is Nothing Then
+        AddResult "TC-65", "Импорт B2: работы в L:N", False, "Не удалось создать лист " & sheetName
+        AddResult "TC-66", "Импорт B2: запчасти в X:AA", False, "Не удалось создать лист " & sheetName
+        AddResult "TC-67", "Импорт B2: шапка B5:B17", False, "Не удалось создать лист " & sheetName
+        AddResult "TC-68", "Импорт B2: без исключений", False, "Не удалось создать лист " & sheetName
+        Debug.Print ""
+        Exit Sub
+    End If
+
+    ' --- Таблица "Выполненные работы" ---
+    wsTemp.Cells(1, 1).Value = "Выполненные работы"
+    wsTemp.Cells(2, 1).Value = "№"
+    wsTemp.Cells(2, 2).Value = "№ кат."
+    wsTemp.Cells(2, 3).Value = "Наименование"
+    wsTemp.Cells(2, 4).Value = "Кол. оп."
+    wsTemp.Cells(2, 5).Value = "Цена"
+    wsTemp.Cells(2, 6).Value = "Норма"
+    wsTemp.Cells(2, 7).Value = "н/ч"
+    wsTemp.Cells(2, 8).Value = "Всего"
+    wsTemp.Cells(2, 9).Value = "в т.ч. НДС"
+    wsTemp.Cells(3, 1).Value = "1"
+    wsTemp.Cells(3, 2).Value = "2"
+    wsTemp.Cells(3, 3).Value = "3"
+    wsTemp.Cells(3, 4).Value = "4"
+    wsTemp.Cells(3, 5).Value = "5"
+    wsTemp.Cells(3, 6).Value = "6"
+    wsTemp.Cells(3, 7).Value = "7"
+    wsTemp.Cells(3, 8).Value = "8"
+    wsTemp.Cells(3, 9).Value = "9"
+    wsTemp.Cells(4, 4).Value = "Тестовая работа 1"
+    wsTemp.Cells(4, 9).Value = 100
+    wsTemp.Cells(4, 13).Value = 20
+    wsTemp.Cells(5, 4).Value = "Тестовая работа 2"
+    wsTemp.Cells(5, 9).Value = 200
+    wsTemp.Cells(5, 13).Value = 40
+    wsTemp.Cells(6, 4).Value = "Итого работ"
+
+    ' --- Таблица "Расходная накладная" ---
+    wsTemp.Cells(8, 1).Value = "Расходная накладная"
+    wsTemp.Cells(9, 1).Value = "№"
+    wsTemp.Cells(9, 2).Value = "№ кат."
+    wsTemp.Cells(9, 3).Value = "Наименование"
+    wsTemp.Cells(9, 4).Value = "Кол-во"
+    wsTemp.Cells(9, 5).Value = "Ед.изм."
+    wsTemp.Cells(9, 6).Value = "Цена"
+    wsTemp.Cells(9, 7).Value = "Всего"
+    wsTemp.Cells(9, 8).Value = "в т.ч. НДС"
+    wsTemp.Cells(10, 1).Value = "1"
+    wsTemp.Cells(10, 2).Value = "2"
+    wsTemp.Cells(10, 3).Value = "3"
+    wsTemp.Cells(10, 4).Value = "4"
+    wsTemp.Cells(10, 5).Value = "5"
+    wsTemp.Cells(10, 6).Value = "6"
+    wsTemp.Cells(10, 7).Value = "7"
+    wsTemp.Cells(10, 8).Value = "8"
+    wsTemp.Cells(11, 2).Value = "ТК-001"
+    wsTemp.Cells(11, 3).Value = "Тестовая запчасть 1"
+    wsTemp.Cells(11, 4).Value = 2
+    wsTemp.Cells(11, 7).Value = 50
+    wsTemp.Cells(11, 13).Value = 10
+    wsTemp.Cells(12, 2).Value = "ТК-002"
+    wsTemp.Cells(12, 3).Value = "Тестовая запчасть 2"
+    wsTemp.Cells(12, 4).Value = 3
+    wsTemp.Cells(12, 7).Value = 60
+    wsTemp.Cells(12, 13).Value = 12
+    wsTemp.Cells(13, 2).Value = "Итого"
+
+    ' Устанавливаем входные параметры конвейера ImportFromB2_UI
+    Application.EnableEvents = False
+    wsMain.Range("B4").Value = orderNum
+    wsMain.Range("B14").Value = ""
+    modelsLastRowBefore = wsModels.Cells(wsModels.Rows.Count, 1).End(xlUp).Row
+    Application.EnableEvents = True
+
+    ' Подавляем MsgBox модуля импорта
+    Mod_Import.SilenceMsgBox = True
+
+    ' ===== Выполняем сквозной конвейер импорта =====
+    importErr = 0
+    On Error Resume Next
+    Call Mod_Import.ImportFromB2_UI
+    importErr = Err.Number
+    Err.Clear
+    On Error GoTo 0
+
+    Mod_Import.SilenceMsgBox = False
+
+    ' TC-68: вызов не породил исключений; состояние (EnableEvents) восстановлено
+    tc68Ok = (importErr = 0) And (Application.EnableEvents = True)
+    If Not tc68Ok Then
+        r68 = "importErr=" & CStr(importErr) & ", EnableEvents=" & CStr(Application.EnableEvents)
+    End If
+
+    ' TC-65: работы L:N (маппинг D→L, I→M, M→N; граница «Итого работ» не переносится)
+    tc65Ok = True
+    r65 = ""
+    If Trim(CStr(wsMain.Cells(4, 12).Value)) <> "Тестовая работа 1" Then
+        tc65Ok = False
+        r65 = "L4 = '" & CStr(wsMain.Cells(4, 12).Value) & "'"
+    ElseIf Val(CStr(wsMain.Cells(4, 13).Value)) <> 100 Then
+        tc65Ok = False
+        r65 = "M4 = '" & CStr(wsMain.Cells(4, 13).Value) & "'"
+    ElseIf Val(CStr(wsMain.Cells(4, 14).Value)) <> 20 Then
+        tc65Ok = False
+        r65 = "N4 = '" & CStr(wsMain.Cells(4, 14).Value) & "'"
+    ElseIf Trim(CStr(wsMain.Cells(5, 12).Value)) <> "Тестовая работа 2" Then
+        tc65Ok = False
+        r65 = "L5 = '" & CStr(wsMain.Cells(5, 12).Value) & "'"
+    ElseIf Len(Trim(CStr(wsMain.Cells(6, 12).Value))) <> 0 Then
+        tc65Ok = False
+        r65 = "L6 (граница «Итого работ») = '" & CStr(wsMain.Cells(6, 12).Value) & "'"
+    End If
+
+    ' TC-66: запчасти X:AA (маппинг B→X, C→Y, D→Z, G→AA; «Итого» не переносится)
+    tc66Ok = True
+    r66 = ""
+    If Trim(CStr(wsMain.Cells(4, 24).Value)) <> "ТК-001" Then
+        tc66Ok = False
+        r66 = "X4 = '" & CStr(wsMain.Cells(4, 24).Value) & "'"
+    ElseIf Trim(CStr(wsMain.Cells(4, 25).Value)) <> "Тестовая запчасть 1" Then
+        tc66Ok = False
+        r66 = "Y4 = '" & CStr(wsMain.Cells(4, 25).Value) & "'"
+    ElseIf Val(CStr(wsMain.Cells(4, 26).Value)) <> 2 Then
+        tc66Ok = False
+        r66 = "Z4 = '" & CStr(wsMain.Cells(4, 26).Value) & "'"
+    ElseIf Val(CStr(wsMain.Cells(4, 27).Value)) <> 50 Then
+        tc66Ok = False
+        r66 = "AA4 = '" & CStr(wsMain.Cells(4, 27).Value) & "'"
+    ElseIf Trim(CStr(wsMain.Cells(5, 24).Value)) <> "ТК-002" Then
+        tc66Ok = False
+        r66 = "X5 = '" & CStr(wsMain.Cells(5, 24).Value) & "'"
+    ElseIf Len(Trim(CStr(wsMain.Cells(6, 24).Value))) <> 0 Then
+        tc66Ok = False
+        r66 = "X6 (граница «Итого» ЗЧ) = '" & CStr(wsMain.Cells(6, 24).Value) & "'"
+    End If
+
+    ' TC-67: шапка B5:B17 заполняется через FillHeaderFromOrder (B5 и № ЗН B12)
+    tc67Ok = (Len(Trim(CStr(wsMain.Range("B5").Value))) > 0) _
+         And (Len(Trim(CStr(wsMain.Range("B12").Value))) > 0)
+    If Not tc67Ok Then
+        r67 = "B5='" & CStr(wsMain.Range("B5").Value) & "', B12='" & CStr(wsMain.Range("B12").Value) & "'"
+    End If
+
+    If tc65Ok Then
+        AddResult "TC-65", "Импорт B2: работы в L:N", True, ""
+    Else
+        AddResult "TC-65", "Импорт B2: работы в L:N", False, r65
+    End If
+    If tc66Ok Then
+        AddResult "TC-66", "Импорт B2: запчасти в X:AA", True, ""
+    Else
+        AddResult "TC-66", "Импорт B2: запчасти в X:AA", False, r66
+    End If
+    If tc67Ok Then
+        AddResult "TC-67", "Импорт B2: шапка B5:B17", True, ""
+    Else
+        AddResult "TC-67", "Импорт B2: шапка B5:B17", False, r67
+    End If
+    If tc68Ok Then
+        AddResult "TC-68", "Импорт B2: без исключений", True, ""
+    Else
+        AddResult "TC-68", "Импорт B2: без исключений", False, r68
+    End If
+
+    ' ================= Очистка/восстановление состояния =================
+    ' Удаляем временный лист-источник {grz}M
+    Application.DisplayAlerts = False
+    On Error Resume Next
+    wsTemp.Delete
+    On Error GoTo 0
+    Application.DisplayAlerts = True
+
+    ' Восстанавливаем main
+    Application.EnableEvents = False
+    wsMain.Range("B4").Value = savedB4
+    wsMain.Range("B14").Value = savedB14
+    wsMain.Range("B5:B17").Value = savedB5toB17
+    clearTo = lastRow + 5
+    wsMain.Range("L4:O" & clearTo).ClearContents
+    wsMain.Range("X4:AB" & clearTo).ClearContents
+    wsMain.Range("L4:O" & lastRow).Value = savedLtoO
+    wsMain.Range("X4:AB" & lastRow).Value = savedXtoAB
+    Application.EnableEvents = True
+
+    ' Удаляем строки, добавленные FillHeaderFromOrder в models
+    modelsLastRowAfter = wsModels.Cells(wsModels.Rows.Count, 1).End(xlUp).Row
+    If modelsLastRowAfter > modelsLastRowBefore Then
+        Application.DisplayAlerts = False
+        wsModels.Rows((modelsLastRowBefore + 1) & ":" & modelsLastRowAfter).Delete
+        Application.DisplayAlerts = True
+    End If
+
+    Set wsMain = Nothing
+    Set wsSpisok = Nothing
+    Set wsModels = Nothing
     Set wsTemp = Nothing
 
     Debug.Print ""

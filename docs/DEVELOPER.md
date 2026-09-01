@@ -1,4 +1,4 @@
-# Техническая документация разработчика — SysW (v1.1.1.1)
+# Техническая документация разработчика — SysW (v1.1.2.1)
 
 ## 1. Архитектура проекта
 
@@ -233,6 +233,7 @@ Mod_FullTestRunner.RunAllTests()
 | `RunModelDBReadTests()` | TC-22..TC-24 | Mod_ModelDB / провайдер |
 | `RunOrderHeaderTests()` | TC-25..TC-28 | Mod_OrderHeader |
 | `RunImportDataTests()` | TC-29, TC-30 | Mod_Import |
+| `RunImportB2IntegrationTests()` | TC-65..TC-68 | Mod_Import (ImportFromB2_UI сквозной: импорт+шапка+работы+запчасти) |
 | `RunModelDBTests()` | TC-31..TC-35, TC-64 | Mod_ModelDB |
 | `RunPickWorkTests()` | TC-36..TC-38, TC-63 | Mod_PickWork / Mod_Utils |
 | `RunAutoMatchTests()` | TC-39..TC-44 | Mod_AutoMatch |
@@ -754,6 +755,7 @@ python scripts/impVBA.py      # Импорт всех модулей
 | `RunModelDBReadTests()` | TC-22..TC-24 | Mod_ModelDB | SQLite-провайдер |
 | `RunOrderHeaderTests()` | TC-25..TC-28 | Mod_OrderHeader | листы main/spisok/models |
 | `RunImportDataTests()` | TC-29, TC-30 | Mod_Import | лист main |
+| `RunImportB2IntegrationTests()` | TC-65..TC-68 | Mod_Import | лист main/spisok/models, временный лист {B4}M |
 | `RunModelDBTests()` | TC-31..TC-35, TC-64 | Mod_ModelDB | файлы групп/провайдер (TC-64 — SQLite) |
 | `RunPickWorkTests()` | TC-36..TC-38, TC-63 | Mod_PickWork / Mod_Utils | нет |
 | `RunAutoMatchTests()` | TC-39..TC-44 | Mod_AutoMatch | нет (TC-41..44 — SKIP) |
@@ -772,7 +774,7 @@ python scripts/impVBA.py      # Импорт всех модулей
 | Mod_Utils | RunUtilsTests, RunUtilsEdgeTests | TC-01..08, TC-12, TC-63 |
 | Mod_Logger | RunLoggerTests | TC-09..11 |
 | Mod_Constants | RunLibNameTests, RunAggregateNameTests, RunConstantsTests | TC-13, TC-19..21, TC-46 |
-| Mod_Import | RunImportVHTests, RunImportDataTests | TC-14, TC-29, TC-30 |
+| Mod_Import | RunImportVHTests, RunImportDataTests, RunImportB2IntegrationTests | TC-14, TC-29, TC-30, TC-65..TC-68 |
 | Mod_SheetOps | RunSheetOpsTests | TC-15..18, TC-45 |
 | Mod_OrderHeader | RunOrderHeaderTests | TC-25..28 |
 | Mod_AutoMatch | RunAutoMatchTests | TC-39..44 (TC-41..44 — SKIP) |
@@ -1370,6 +1372,7 @@ Mod_Utils
 | `RunModelDBReadTests`           | TC-22..TC-24               | Mod_ModelDB / провайдер (тождества) |
 | `RunOrderHeaderTests`           | TC-25..TC-28               | Mod_OrderHeader                                       |
 | `RunImportDataTests`            | TC-29, TC-30               | Mod_Import                                            |
+| `RunImportB2IntegrationTests`   | TC-65..TC-68               | Mod_Import (сквозной импорт: шапка+работы+запчасти)   |
 | `RunModelDBTests`               | TC-31..TC-35, TC-64        | Mod_ModelDB                                           |
 | `RunPickWorkTests`              | TC-36..TC-38, TC-63        | Mod_PickWork / Mod_Utils                              |
 | `RunAutoMatchTests`             | TC-39..TC-44               | Mod_AutoMatch                                         |
@@ -1445,6 +1448,10 @@ Mod_Utils
 | TC-62 | ReadLocalWorkByName отсутствие группы                              | RunGlobalBaseTests    | Mod_ModelDB     | Модульный           | PASS                                                                                                                   |
 | TC-63 | GetGroupName единый хелпер чтения B14                     | RunPickWorkTests      | Mod_Utils       | Модульный           | PASS                                                                                                                   |
 | TC-64 | CreateModelGroupFile регистрация в model_groups (SQLite) | RunModelDBTests       | Mod_ModelDB     | Модульный           | PASS; SKIP, если SQLite-провайдер недоступен                                                     |
+| TC-65 | Импорт B2: работы в L:N (сквозной ImportFromB2_UI)          | RunImportB2IntegrationTests | Mod_Import | Интеграционный | PASS; SKIP, если лист main/spisok/models не найден |
+| TC-66 | Импорт B2: запчасти в X:AA (сквозной ImportFromB2_UI)       | RunImportB2IntegrationTests | Mod_Import | Интеграционный | PASS; SKIP, если лист main/spisok/models не найден |
+| TC-67 | Импорт B2: шапка B5:B17 (FillHeaderFromOrder)                | RunImportB2IntegrationTests | Mod_Import/Mod_OrderHeader | Интеграционный | PASS; SKIP, если лист main/spisok/models не найден |
+| TC-68 | Импорт B2: без исключений/зависаний                          | RunImportB2IntegrationTests | Mod_Import | Интеграционный | PASS; SKIP, если лист main/spisok/models не найден |
 
 **Легенда статусов:** PASS — тест проходит при наличии данных/окружения; SKIP — тест пропускается по условию (Private-процедура, небезопасность автотеста, отсутствие листа/данных/SQLite-провайдера); FAIL — падение теста (останавливает конвейер `run_tests.py` с кодом 1).
 

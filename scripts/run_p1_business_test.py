@@ -5,8 +5,13 @@
 
 Сценарий (3 макроса):
   1. ImportFromB2_UI  — перенос данных с листа {номер}M на main (L:N работы, X:AA ЗЧ)
+                       + заполнение шапки заказа B5:B17 (Mod_OrderHeader.FillHeaderFromOrder)
   2. AutoMatchWorks    — автоподбор работ (E:K), ключ — наименование L
   3. AutoMatchParts    — автоподбор ЗЧ (Q:V), ключ — № кат. X
+
+Помимо снапшотов main (работы/ЗЧ) скрипт снимает снапшот шапки заказа
+(B4 номер заказа + B5:B17) сразу после импорта и верифицирует заполненность
+ключевых полей шапки (результат пишется в отчёт).
 
 Никакой код/данные юзера не модифицируются; только выполнение макросов,
 сбор результатов и сохранение книги для просмотра юзером.
@@ -46,6 +51,27 @@ C = {
     "P_MODEL_AB": 28,   # AB — модельный артикул (подстановка при импорте)
     "W_MODEL_O": 15,    # O  — модельный артикул работы
 }
+
+# Шапка заказа на листе main (заполняется Mod_OrderHeader.FillHeaderFromOrder).
+# Номер заказа лежит в B4; FillHeaderFromOrder пишет данные в B5:B17.
+ORDER_NUM_CELL = 4                       # B4 — номер заказа (вход)
+ORDER_HEADER_FIELDS = {
+    5: "Модель/ТС",        # B5 — название ТС
+    6: "ГРЗ",              # B6 — гос.номер
+    7: "VIN",              # B7 — VIN
+    8: "Гараж.№",          # B8 — гаражный номер
+    9: "Год вып.",         # B9 — год выпуска
+    10: "Пробег",          # B10 — пробег
+    11: "Дата",            # B11 — дата
+    12: "№ ЗН",            # B12 — номер заказ-наряда ("00<...>-20")
+    13: "Цена н/ч",        # B13 — цена нормо-часа (из models)
+    14: "Группа",          # B14 — группа модели
+    15: "Поле B15",
+    16: "Поле B16",
+    17: "Поле B17",
+}
+# Ключевые поля, которые должны быть заполнены после импорта
+ORDER_HEADER_KEY_ROWS = {5, 6, 12, 13, 14}
 
 
 def write_log(message: str):
@@ -115,6 +141,32 @@ def snapshot_main(ws, label):
                   f"имя_вх={r['in_name']!r} | арт={r['art']!r} | имя={r['name']!r} | "
                   f"кол={r['qty']!r} | цена={r['price']!r} | сум={r['sum']!r} | AB={r['model_ab']!r}")
     return works, parts
+
+
+def snapshot_order_header(ws, label):
+    """Снимает состояние шапки заказа (B4 + B5:B17) на листе main.
+
+    B4 — номер заказа; B5:B17 заполняются Mod_OrderHeader.FillHeaderFromOrder.
+    Логирует каждое поле (значение + заполнено/пусто) и подсчитывает
+    количество заполненных ключевых полей. Возвращает словарь для итога.
+    """
+    order_num = val(ws.Cells(1, ORDER_NUM_CELL))
+    header = {"order_num": order_num, "fields": {}}
+    filled_key = 0
+    for row, field_name in ORDER_HEADER_FIELDS.items():
+        v = val(ws.Cells(row, 2))
+        filled = v != ""
+        header["fields"][row] = {"name": field_name, "value": v, "filled": filled}
+        status = "заполнено" if filled else "ПУСТО"
+        write_log(f"[СНИМОК ШАПКИ:{label}] B{row} ({field_name}) = {v!r} — {status}")
+        if row in ORDER_HEADER_KEY_ROWS and filled:
+            filled_key += 1
+    key_total = len(ORDER_HEADER_KEY_ROWS)
+    header["filled_key"] = filled_key
+    header["key_total"] = key_total
+    write_log(f"[СНИМОК ШАПКИ:{label}] Номер заказа (B4) = {order_num!r}; "
+              f"ключевых полей заполнено {filled_key}/{key_total}")
+    return header
 
 
 def inject_silence(wb, excel):
@@ -256,6 +308,7 @@ def main():
         write_log("=" * 70)
         ok1, err1 = run_macro(excel, "ImportFromB2_UI")
         snapshot_main(ws_main, "ПОСЛЕ-ИМПОРТА")
+        header_after_import = snapshot_order_header(ws_main, "ПОСЛЕ-ИМПОРТА")
 
         # ---------- МАКРОС 2. Автоподбор работ ----------
         write_log("=" * 70)
@@ -279,6 +332,26 @@ def main():
         p_nf = p_total - p_found
         write_log(f"  Работы: всего={w_total}, найдено={w_found}, НЕ НАЙДЕНО={w_nf}")
         write_log(f"  ЗЧ:     всего={p_total}, найдено={p_found}, НЕ НАЙДЕНО={p_nf}")
+
+        # ---------- Проверка шапки заказа (B4 + B5:B17) после импорта ----------
+        if header_after_import:
+            write_log("[ШАПКА] Верификация заполнения шапки заказа после импорта:")
+            write_log(f"  Номер заказа (B4) = {header_after_import['order_num']!r}")
+            empty_fields = []
+            for row, f in header_after_import["fields"].items():
+                mark = "заполнено" if f["filled"] else "ПУСТО"
+                write_log(f"  B{row} ({f['name']}) = {f['value']!r} — {mark}")
+                if not f["filled"] and row in ORDER_HEADER_KEY_ROWS:
+                    empty_fields.append(f"{row}({f['name']})")
+            fk = header_after_import["filled_key"]
+            kt = header_after_import["key_total"]
+            if empty_fields:
+                write_log(f"[ШАПКА] НАБЛЮДЕНИЕ: ключевые поля пусты: {empty_fields} "
+                          f"(заполнено {fk}/{kt}). Это факт, НЕ исправляется (скоуп — тест).")
+            else:
+                write_log(f"[ШАПКА] Ключевые поля шапки заполнены: {fk}/{kt}.")
+        else:
+            write_log("[ШАПКА] Снимок шапки не выполнен (шапка недоступна).")
 
         # Подставленные артикулы работ
         arts_w = sorted({r["art"] for r in works if r["art"] not in ("", "НЕ НАЙДЕНО")})
