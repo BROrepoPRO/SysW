@@ -35,6 +35,11 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
     Dim FoundRow As Range
     Dim ModelRow As Range
     Dim ModelCode As Variant
+    ' Сохраняем предыдущее состояние событий, чтобы корректно восстановить его
+    ' (вызов может прийти из ImportFromB2_UI, где события уже отключены; безусловное
+    ' EnableEvents=True разрывало бы изоляцию событий посреди импорта).
+    Dim prevEvents As Boolean
+    prevEvents = Application.EnableEvents
 
     Set wsMain = Mod_Utils.GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_MAIN)
     Set wsSpisok = Mod_Utils.GetSheetByName(ThisWorkbook, Mod_Constants.SHEET_SPISOK)
@@ -165,15 +170,15 @@ Public Function FillHeaderFromOrder(orderNum As Variant) As Boolean
         End If
     End If
 
-    ' Восстанавливаем события после записи в шапку
-    Application.EnableEvents = True
+    ' Восстанавливаем предыдущее состояние событий после записи в шапку
+    Application.EnableEvents = prevEvents
 
     FillHeaderFromOrder = True
     Exit Function
 
 ErrHandler:
-    ' Восстановление состояния приложения
-    Application.EnableEvents = True
+    ' Восстановление предыдущего состояния приложения
+    Application.EnableEvents = prevEvents
     Call Mod_Logger.WriteLog("Mod_OrderHeader", "FillHeaderFromOrder: " & Err.Description)
     FillHeaderFromOrder = False
 End Function
