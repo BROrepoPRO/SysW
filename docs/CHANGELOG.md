@@ -5,6 +5,19 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.1.5] — 2026-09-02
+
+### Added
+- **Единый источник версии и скрипт `update_version.py`:** версия проекта централизована в `config.APP_VERSION`, `Mod_Constants.APP_VERSION` и `$Script:AppVersion`; добавлен скрипт автоматического обновления версии.
+
+### Changed
+- **K-03 — состояние «не найдено» в автоподборе (`AutoMatchWorks`/`AutoMatchParts`):** любая строка с неопределённым итоговым артикулом (пустой `OutArticle`) теперь помечается маркером «НЕ НАЙДЕНО» с жёлтой заливкой и красным текстом через единый приватный helper `MarkNotFound`. Проверка пустоты реализована во всех 4 ветках: кэш-индекс работ и локальный список работ группы (`AutoMatchWorks`), тождества з/ч и общая база з/ч (`AutoMatchParts`). Добавлен тест **TC-69** в `RunAutoMatchTests` (допускается SKIP с обоснованием, аналогично TC-44, из-за ограничений безопасности изменения листа `main` в авторежиме; сценарий закрывается бизнес-прогоном).
+
+### Tested
+- **Регрессионный прогон `run_tests.py` (P2):** Total=70, Passed=60, Failed=0, Skipped=10; TC-69 — SKIP. Отчёт: `logs/test_results.log`.
+- **Бизнес-прогон `run_p1_business_test.py`:** ImportFromB2_UI=True, AutoMatchWorks=True, AutoMatchParts=True — PASS. Отчёт: `logs/p1_test_report.log`.
+- **`check_vba_syntax.py`:** синтаксис VBA OK (23 модуля).
+
 ## [v1.1.4] — 2026-09-01
 
 ### Added

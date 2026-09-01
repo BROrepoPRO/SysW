@@ -52,6 +52,17 @@ Private Sub HighlightNotFound(ByVal cell As Range)
 End Sub
 
 ' --------------------------------------------------------------------------
+' MarkNotFound
+' Инкапсулирует пометку строки как «НЕ НАЙДЕНО»: подсветка (HighlightNotFound)
+' + запись текста «НЕ НАЙДЕНО» в ячейку. Единый helper (Z4) для всех веток
+' состояния «не найдено», включая случай пустого артикула (K-03).
+' --------------------------------------------------------------------------
+Private Sub MarkNotFound(ByVal cell As Range)
+    HighlightNotFound cell
+    cell.Value = "НЕ НАЙДЕНО"
+End Sub
+
+' --------------------------------------------------------------------------
 ' ClearHighlight
 ' Очищает подсветку и форматирование в диапазоне
 ' --------------------------------------------------------------------------
@@ -183,59 +194,70 @@ Public Sub AutoMatchWorks()
         inKey = UCase$(Trim$(inName))
         If idIndex.Exists(inKey) Then
             Set identity = idIndex(inKey)
-            ' Найдено — заполняем модельные колонки
-            wsMain.Cells(i, MAIN_W_ARTICLE).Value = identity.OutArticle   ' E ← B
-            wsMain.Cells(i, MAIN_W_NAME).Value = identity.OutName         ' F ← C
-            wsMain.Cells(i, MAIN_W_NORMHOURS).Value = identity.NormHours  ' G ← D
-            wsMain.Cells(i, MAIN_W_QTY).Value = identity.QtyZN            ' H ← G
-            wsMain.Cells(i, MAIN_W_PRICE).Value = priceNH                 ' I ← B13
-            Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: writing formula at row " & CStr(i))
-            ' J — Сумма = ОКРУГЛ(G*H*I;2)
-            wsMain.Cells(i, MAIN_W_SUM).FormulaLocal = _
-                "=ROUND(G" & i & "*H" & i & "*I" & i & ";2)"
+            If Trim$(CStr(identity.OutArticle)) <> "" Then
+                ' Найдено — заполняем модельные колонки
+                wsMain.Cells(i, MAIN_W_ARTICLE).Value = identity.OutArticle   ' E ← B
+                wsMain.Cells(i, MAIN_W_NAME).Value = identity.OutName         ' F ← C
+                wsMain.Cells(i, MAIN_W_NORMHOURS).Value = identity.NormHours  ' G ← D
+                wsMain.Cells(i, MAIN_W_QTY).Value = identity.QtyZN            ' H ← G
+                wsMain.Cells(i, MAIN_W_PRICE).Value = priceNH                 ' I ← B13
+                Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: writing formula at row " & CStr(i))
+                ' J — Сумма = ОКРУГЛ(G*H*I;2)
+                wsMain.Cells(i, MAIN_W_SUM).FormulaLocal = _
+                    "=ROUND(G" & i & "*H" & i & "*I" & i & ";2)"
 
-            matchCount = matchCount + 1
-            found = True
+                matchCount = matchCount + 1
+                found = True
+            Else
+                ' Артикул пуст — пометить «НЕ НАЙДЕНО» (K-03)
+                MarkNotFound wsMain.Cells(i, MAIN_W_IN_NAME)
+                notFoundCount = notFoundCount + 1
+                found = True   ' строка обработана, повторный поиск не нужен
+            End If
         End If
 
         If Not found Then
             ' Не найдено по тождествам — поиск по локальному листу работ группы
             If Mod_Constants.SilenceMsgBox Then
                 ' Тестовый режим (без диалогов): пометить как не найденное
-                HighlightNotFound wsMain.Cells(i, MAIN_W_IN_NAME)
-                wsMain.Cells(i, MAIN_W_IN_NAME).Value = "НЕ НАЙДЕНО"
+                MarkNotFound wsMain.Cells(i, MAIN_W_IN_NAME)
                 notFoundCount = notFoundCount + 1
             Else
                 Set lw = Mod_ModelDB.ReadLocalWorkByName(groupName, inName)
                 If lw Is Nothing Then
                     MsgBox "Работа не найдена по тождествам и в списке работ группы.", _
                            vbExclamation, "АВТО РАБ"
-                    HighlightNotFound wsMain.Cells(i, MAIN_W_IN_NAME)
-                    wsMain.Cells(i, MAIN_W_IN_NAME).Value = "НЕ НАЙДЕНО"
+                    MarkNotFound wsMain.Cells(i, MAIN_W_IN_NAME)
                     notFoundCount = notFoundCount + 1
                 Else
-                    wsMain.Cells(i, MAIN_W_ARTICLE).Value = lw.OutArticle
-                    wsMain.Cells(i, MAIN_W_NAME).Value = lw.OutName
-                    wsMain.Cells(i, MAIN_W_NORMHOURS).Value = lw.NormHours
-                    wsMain.Cells(i, MAIN_W_QTY).Value = lw.QtyZN
-                    wsMain.Cells(i, MAIN_W_PRICE).Value = priceNH
-                    wsMain.Cells(i, MAIN_W_SUM).FormulaLocal = _
-                        "=ROUND(G" & i & "*H" & i & "*I" & i & ";2)"
-                    matchCount = matchCount + 1
+                    If Trim$(CStr(lw.OutArticle)) <> "" Then
+                        wsMain.Cells(i, MAIN_W_ARTICLE).Value = lw.OutArticle
+                        wsMain.Cells(i, MAIN_W_NAME).Value = lw.OutName
+                        wsMain.Cells(i, MAIN_W_NORMHOURS).Value = lw.NormHours
+                        wsMain.Cells(i, MAIN_W_QTY).Value = lw.QtyZN
+                        wsMain.Cells(i, MAIN_W_PRICE).Value = priceNH
+                        wsMain.Cells(i, MAIN_W_SUM).FormulaLocal = _
+                            "=ROUND(G" & i & "*H" & i & "*I" & i & ";2)"
+                        matchCount = matchCount + 1
 
-                    askWId = MsgBox("Создать тождество для этой работы?", _
-                                    vbYesNo, "АВТО РАБ")
-                    If askWId = vbYes Then
-                        Set newW = New WorkIdentity
-                        newW.OutArticle = lw.OutArticle
-                        newW.OutName = lw.OutName
-                        newW.NormHours = lw.NormHours
-                        newW.QtyZN = Val(wsMain.Cells(i, MAIN_W_IN_QTY).Value)
-                        newW.InName = inName
-                        If Not Mod_ModelDB.AppendWorkIdentity(groupName, newW) Then
-                            MsgBox "Не удалось сохранить тождество.", _
-                                   vbExclamation, "АВТО РАБ"
+                        askWId = MsgBox("Создать тождество для этой работы?", _
+                                        vbYesNo, "АВТО РАБ")
+                        If askWId = vbYes Then
+                            Set newW = New WorkIdentity
+                            newW.OutArticle = lw.OutArticle
+                            newW.OutName = lw.OutName
+                            newW.NormHours = lw.NormHours
+                            newW.QtyZN = Val(wsMain.Cells(i, MAIN_W_IN_QTY).Value)
+                            newW.InName = inName
+                            If Not Mod_ModelDB.AppendWorkIdentity(groupName, newW) Then
+                                MsgBox "Не удалось сохранить тождество.", _
+                                       vbExclamation, "АВТО РАБ"
+                            End If
                         End If
+                    Else
+                        ' Артикул пуст — пометить «НЕ НАЙДЕНО» (K-03)
+                        MarkNotFound wsMain.Cells(i, MAIN_W_IN_NAME)
+                        notFoundCount = notFoundCount + 1
                     End If
                 End If
             End If
@@ -404,19 +426,27 @@ Public Sub AutoMatchParts()
         ' Ищем в коллекции тождеств по InCatNum
         For Each identity In identities
             If UCase$(Trim$(identity.InCatNum)) = UCase$(inCatNum) Then
-                ' Найдено — заполняем модельные колонки
-                wsMain.Cells(i, MAIN_P_ARTICLE).Value = identity.OutArticle   ' Q ← B
-                wsMain.Cells(i, MAIN_P_NAME).Value = identity.OutName         ' R ← C
-                wsMain.Cells(i, MAIN_P_QTY).Value = identity.QtyZN            ' T ← G
-                wsMain.Cells(i, MAIN_P_PRICE).Value = identity.Price          ' U ← F
-                Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchParts: writing formula at row " & CStr(i))
-                ' V — Сумма = ОКРУГЛ(T*U;2)
-                wsMain.Cells(i, MAIN_P_SUM).FormulaLocal = _
-                    "=ROUND(T" & i & "*U" & i & ";2)"
+                If Trim$(CStr(identity.OutArticle)) <> "" Then
+                    ' Найдено — заполняем модельные колонки
+                    wsMain.Cells(i, MAIN_P_ARTICLE).Value = identity.OutArticle   ' Q ← B
+                    wsMain.Cells(i, MAIN_P_NAME).Value = identity.OutName         ' R ← C
+                    wsMain.Cells(i, MAIN_P_QTY).Value = identity.QtyZN            ' T ← G
+                    wsMain.Cells(i, MAIN_P_PRICE).Value = identity.Price          ' U ← F
+                    Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchParts: writing formula at row " & CStr(i))
+                    ' V — Сумма = ОКРУГЛ(T*U;2)
+                    wsMain.Cells(i, MAIN_P_SUM).FormulaLocal = _
+                        "=ROUND(T" & i & "*U" & i & ";2)"
 
-                matchCount = matchCount + 1
-                found = True
-                Exit For
+                    matchCount = matchCount + 1
+                    found = True
+                    Exit For
+                Else
+                    ' Артикул пуст — пометить «НЕ НАЙДЕНО» (K-03)
+                    MarkNotFound wsMain.Cells(i, MAIN_P_IN_CATNUM)
+                    notFoundCount = notFoundCount + 1
+                    found = True   ' строка обработана (дефект устранён)
+                    Exit For
+                End If
             End If
         Next identity
 
@@ -424,47 +454,50 @@ Public Sub AutoMatchParts()
             ' Не найдено по тождествам — предлагаем поиск по общей базе з/ч
             If Mod_Constants.SilenceMsgBox Then
                 ' Тестовый режим (без диалогов): пометить как не найденное
-                HighlightNotFound wsMain.Cells(i, MAIN_P_IN_CATNUM)
-                wsMain.Cells(i, MAIN_P_IN_CATNUM).Value = "НЕ НАЙДЕНО"
+                MarkNotFound wsMain.Cells(i, MAIN_P_IN_CATNUM)
                 notFoundCount = notFoundCount + 1
             Else
                 askBase = MsgBox("По тождествам не найдено. Искать в общей базе з/ч?", _
                                  vbYesNo, "АВТО ЗЧ")
                 If askBase = vbNo Then
-                    HighlightNotFound wsMain.Cells(i, MAIN_P_IN_CATNUM)
-                    wsMain.Cells(i, MAIN_P_IN_CATNUM).Value = "НЕ НАЙДЕНО"
+                    MarkNotFound wsMain.Cells(i, MAIN_P_IN_CATNUM)
                     notFoundCount = notFoundCount + 1
                 Else
                     Set gPart = Mod_ModelDB.ReadGlobalPartByKey(inCatNum, inName)
                     If gPart Is Nothing Then
                         MsgBox "Запчасть не найдена в общей базе з/ч.", _
                                vbExclamation, "АВТО ЗЧ"
-                        HighlightNotFound wsMain.Cells(i, MAIN_P_IN_CATNUM)
-                        wsMain.Cells(i, MAIN_P_IN_CATNUM).Value = "НЕ НАЙДЕНО"
+                        MarkNotFound wsMain.Cells(i, MAIN_P_IN_CATNUM)
                         notFoundCount = notFoundCount + 1
                     Else
-                        wsMain.Cells(i, MAIN_P_ARTICLE).Value = gPart.OutArticle
-                        wsMain.Cells(i, MAIN_P_NAME).Value = gPart.OutName
-                        wsMain.Cells(i, MAIN_P_QTY).Value = gPart.QtyZN
-                        wsMain.Cells(i, MAIN_P_PRICE).Value = gPart.Price
-                        wsMain.Cells(i, MAIN_P_SUM).FormulaLocal = _
-                            "=ROUND(T" & i & "*U" & i & ";2)"
-                        matchCount = matchCount + 1
+                        If Trim$(CStr(gPart.OutArticle)) <> "" Then
+                            wsMain.Cells(i, MAIN_P_ARTICLE).Value = gPart.OutArticle
+                            wsMain.Cells(i, MAIN_P_NAME).Value = gPart.OutName
+                            wsMain.Cells(i, MAIN_P_QTY).Value = gPart.QtyZN
+                            wsMain.Cells(i, MAIN_P_PRICE).Value = gPart.Price
+                            wsMain.Cells(i, MAIN_P_SUM).FormulaLocal = _
+                                "=ROUND(T" & i & "*U" & i & ";2)"
+                            matchCount = matchCount + 1
 
-                        askId = MsgBox("Создать тождество для этой запчасти?", _
-                                       vbYesNo, "АВТО ЗЧ")
-                        If askId = vbYes Then
-                            Set newId = New PartIdentity
-                            newId.OutArticle = gPart.OutArticle
-                            newId.OutName = gPart.OutName
-                            newId.Price = gPart.Price
-                            newId.QtyZN = Val(wsMain.Cells(i, MAIN_P_IN_QTY).Value)
-                            newId.InCatNum = inCatNum
-                            newId.InName = inName
-                            If Not Mod_ModelDB.AppendPartIdentity(groupName, newId) Then
-                                MsgBox "Не удалось сохранить тождество.", _
-                                       vbExclamation, "АВТО ЗЧ"
+                            askId = MsgBox("Создать тождество для этой запчасти?", _
+                                           vbYesNo, "АВТО ЗЧ")
+                            If askId = vbYes Then
+                                Set newId = New PartIdentity
+                                newId.OutArticle = gPart.OutArticle
+                                newId.OutName = gPart.OutName
+                                newId.Price = gPart.Price
+                                newId.QtyZN = Val(wsMain.Cells(i, MAIN_P_IN_QTY).Value)
+                                newId.InCatNum = inCatNum
+                                newId.InName = inName
+                                If Not Mod_ModelDB.AppendPartIdentity(groupName, newId) Then
+                                    MsgBox "Не удалось сохранить тождество.", _
+                                           vbExclamation, "АВТО ЗЧ"
+                                End If
                             End If
+                        Else
+                            ' Артикул пуст — пометить «НЕ НАЙДЕНО» (K-03)
+                            MarkNotFound wsMain.Cells(i, MAIN_P_IN_CATNUM)
+                            notFoundCount = notFoundCount + 1
                         End If
                     End If
                 End If
