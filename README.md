@@ -1,6 +1,6 @@
 ﻿# SysW — Система автоматизации обработки заказ-нарядов авторемонта
 
-**Версия:** v1.1.5
+**Версия:** v1.1.6.2
 
 **Назначение:** импорт, анализ и учёт данных заказ-нарядов из Excel.
 
@@ -26,7 +26,7 @@
 | **PowerShell** | Альтернативный скрипт импорта VBA из Excel |
 | **SQLite** | **Реализован** — единая база `SysW.db` в корне проекта, DDL в `db/schema.sql`, доступ из VBA через `Mod_SQLiteDB` / `Mod_ModelDBProvider` |
 | **Git / GitHub** | Контроль версий, CI/CD (GitHub Actions) |
-| **SourceCraft Code Assistant** | Многоролевая архитектура разработки |
+| **SourceCraft Code Assistant** | Многоролевая архитектура разработки; правила — `.ycarules` (8 модулей `[O][G][Z][K][U][S][T][E]`) + зеркала `.codeassistant/rules/` |
 
 ---
 
@@ -70,7 +70,9 @@ SysW (https://github.com/BROrepoPRO/SysW.git)
 │   ├── vba-check.yml          # Проверка VBA-файлов
 │   └── docs-check.yml         # Проверка консистентности документации
 ├── .vscode/                   # Настройки VS Code
-├── .ycarules                  # Правила SourceCraft
+├── .ycarules                  # Единый справочник правил SourceCraft (8 модулей [O][G][Z][K][U][S][T][E])
+├── .codeassistant/            # Рабочие правила рабочей области (зеркала .ycarules)
+│   └── rules/                 # 8 файлов-зеркал [O][G][Z][K][U][S][T][E]
 ├── .gitattributes             # Нормализация Git
 ├── work.xlsm                  # Excel-файл с макросами (в .gitignore)
 └── SysW.db                    # Единая база данных SQLite (в .gitignore)

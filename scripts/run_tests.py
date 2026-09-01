@@ -19,12 +19,9 @@ import win32process
 from win32com.client import gencache
 import gc
 
-from config import WORKBOOK_PATH, TEST_LOG_FILE, LOGS_DIR
+from config import APP_VERSION, WORKBOOK_PATH, TEST_LOG_FILE, LOGS_DIR
 EXCEL_PATH = str(WORKBOOK_PATH)
 LOG_FILE = str(TEST_LOG_FILE)
-
-# Версия приложения для отчётов (единый источник версии проекта).
-APP_VERSION = "1.1.1.1"
 
 
 def ensure_logs_dir():

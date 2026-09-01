@@ -5,6 +5,22 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.1.6.2] — 2026-09-02
+
+### Added
+- **Реорганизация `.ycarules` по Варианту А:** единый справочник правил рабочей области переведён на новую структуру из **8 тематических модулей** `[O] Роли`, `[G] Глобальные правила`, `[Z] Запреты и ограничения`, `[K] Кодировка и синхронизация`, `[U] Управление изменениями`, `[S] Структура проекта`, `[T] Автодополнение текста`, `[E] Исключения и критические файлы`.
+- **Зеркала правил `.codeassistant/rules/`:** создан каталог рабочих правил рабочей области с **8 файлами-зеркалами** (`01-roles.md`, `02-global.md`, `03-restrictions.md`, `04-encoding.md`, `05-changes.md`, `06-structure.md`, `07-autocomplete.txt`, `08-exceptions.md`). Коды правил идентичны `.ycarules`; иерархия источников описана в `[E5]`.
+
+### Changed
+- **Версия проекта:** 1.1.6.2 (переход `1.1.5 → 1.1.6.2` одной командой `update_version.py`). Синхронизирована во всех точках `[U7]`: `scripts/config.py`, `src/modules/Mod_Constants.bas`, `scripts/config.ps1`, `README.md`, `docs/DEVELOPER.md`, `docs/ROADMAP.md`, `docs/ARCHITECTURE.md`, `docs/CHANGELOG.md`.
+
+### Roadmap
+- **Зарегистрирована глобальная задача `G-CHAT-UI`** в `docs/ROADMAP.md`: постепенная интеграция SourceCraft `chat-rules` → `skills` → `chat-interface` для VSCode.
+
+### Tested
+- **`check_docs.py --check`:** устранены расхождения версий (`v1.1.5` → `v1.1.6.2`) в `ROADMAP.md`, `sourcecraft-guide.md`, `table.md`; после правок — расхождений не найдено.
+- **`check_vba_syntax.py`:** синтаксис VBA OK (VBA не менялся в цикле 1.1.6.2).
+
 ## [v1.1.5] — 2026-09-02
 
 ### Added

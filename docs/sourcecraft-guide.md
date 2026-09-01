@@ -1,6 +1,6 @@
 # Руководство по работе с SourceCraft Code Assistant
 
-> **Версия руководства:** v1.1.5 (актуализировано 2026-09-02).
+> **Версия руководства:** v1.1.6.2 (актуализировано 2026-09-02).
 
 ## Архитектура взаимодействия
 
@@ -232,9 +232,9 @@ SysW\
 │       └── Лист9.cls
 ├── .gitattributes        # Настройки Git для нормализации кодировок
 ├── .sourcecraft          # Конфигурация SourceCraft (MCP-серверы, правила, инструкции)
-├── .codeassistant/       # Резервная конфигурация MCP (mcp.json)
-│   └── mcp.json
-├── .ycarules             # Правила для SourceCraft Code Assistant
+├── .codeassistant/       # Рабочие правила рабочей области (зеркала .ycarules)
+│   └── rules/            # 8 файлов-зеркал [O][G][Z][K][U][S][T][E]
+├── .ycarules             # Единый справочник правил SourceCraft (8 модулей [O][G][Z][K][U][S][T][E])
 ├── README.md             # Основное описание проекта
 └── work.xlsm             # Excel-файл с макросами (в .gitignore)
 ```
@@ -258,9 +258,29 @@ SysW\
 | Файл | Назначение |
 |------|-----------|
 | [`.sourcecraft`](../.sourcecraft) | **Центральная конфигурация SourceCraft:** MCP-серверы, ссылка на `.ycarules`, правила exclude/include/critical |
-| [`.ycarules`](../.ycarules) | **Правила для ассистента:** легенда, запреты, кодировка, структура проекта, автодополнение |
+| [`.ycarules`](../.ycarules) | **Единый справочник правил рабочей области** — 8 тематических модулей `[O] Роли`, `[G] Глобальные правила`, `[Z] Запреты и ограничения`, `[K] Кодировка и синхронизация`, `[U] Управление изменениями`, `[S] Структура проекта`, `[T] Автодополнение текста`, `[E] Исключения и критические файлы` |
+| [`.codeassistant/rules/`](../.codeassistant/rules/) | **Рабочие правила рабочей области** — каталог-зеркало `.ycarules`: 8 файлов-зеркал (`01-roles.md` … `08-exceptions.md`) с идентичными кодами правил `[O][G][Z][K][U][S][T][E]`; иерархия источников описана в правиле `[E5]` |
 | [`.gitattributes`](../.gitattributes) | Настройки Git для нормализации кодировок и окончаний строк |
 | [`.vscode/settings.json`](../.vscode/settings.json) | Настройки VS Code: кодировка UTF-8, терминал SourceCraft, VBA Language Server |
+
+---
+
+## Правила SourceCraft (.ycarules и .codeassistant/rules/)
+
+Правила поведения рабочей области хранятся в **двух связанных источниках** (иерархия приоритета — правило `[E5]`):
+
+1. **Глобальный справочник [`.ycarules`](../.ycarules)** — единый корневой файл правил, подключённый через `.sourcecraft` (`customInstructions.file`). Содержит **8 тематических модулей** с кодами:
+   - `[O]` Роли (`01-roles.md`),
+   - `[G]` Глобальные правила поведения,
+   - `[Z]` Запреты и ограничения,
+   - `[K]` Кодировка и синхронизация,
+   - `[U]` Управление изменениями,
+   - `[S]` Структура проекта,
+   - `[T]` Автодополнение текста,
+   - `[E]` Исключения и критические файлы.
+2. **Каталог рабочих правил рабочей области [`.codeassistant/rules/`](../.codeassistant/rules/)** — **8 файлов-зеркал** (`01-roles.md`, `02-global.md`, `03-restrictions.md`, `04-encoding.md`, `05-changes.md`, `06-structure.md`, `07-autocomplete.txt`, `08-exceptions.md`), коды которых **идентичны** `.ycarules`. Используется как резервный/зеркальный источник и как входная точка для задачи `G-CHAT-UI` (интеграция `chat-rules` → `skills` → `chat-interface`).
+
+> **Важно:** `.ycarules` и `.codeassistant/rules/*` — критические файлы ([E3]). Редактируются только по согласованию; синхронность кодов модулей проверяется при каждом цикле (Фаза 3.3/4).
 
 ---
 
@@ -282,6 +302,15 @@ SysW\
 | [`update_version.py`](../scripts/update_version.py) | Автообновление версии SemVer + CHANGELOG | UTF-8 |
 | [`sqlite_schema.py`](../scripts/sqlite_schema.py) | DDL-схема SysW.db, init_db/get/set_user_version | UTF-8 |
 | [`template_protection.py`](../scripts/template_protection.py) | Библиотека защиты листов (Protect/AllowEditRanges/FreezePanes) | UTF-8 |
+| [`apply_protection_templates.py`](../scripts/apply_protection_templates.py) | Защита листов шаблонов `base/templates/` (вспомогательный; дублирует `build_templates.py`) | UTF-8 |
+| [`apply_sheet_format.py`](../scripts/apply_sheet_format.py) | Применение форматирования листов шаблонов | UTF-8 |
+| [`build_global_parts.py`](../scripts/build_global_parts.py) | Построение глобального справочника запчастей | UTF-8 |
+| [`check_z4_fallback.py`](../scripts/check_z4_fallback.py) | Контроль fallback-логики листа `z4` | UTF-8 |
+| [`clean_system.py`](../scripts/clean_system.py) | Очистка проекта от временных артефактов | UTF-8 |
+| [`initiate_models.py`](../scripts/initiate_models.py) | Инициализация модельных файлов `base/models/` | UTF-8 |
+| [`run_oab_reconcile_business_test.py`](../scripts/run_oab_reconcile_business_test.py) | Бизнес-прогон сверки глубокой подстановки O/AB против `matlib_entries` | UTF-8 |
+| [`run_p1_business_test.py`](../scripts/run_p1_business_test.py) | Бизнес-прогон импорта и автоподбора (ImportFromB2_UI, AutoMatchWorks/Parts) | UTF-8 |
+| [`watch_p2.py`](../scripts/watch_p2.py) | Вспомогательный наблюдатель для прогонов P2 | UTF-8 |
 
 ### PowerShell-скрипты
 
@@ -290,6 +319,7 @@ SysW\
 | [`config.ps1`](../scripts/config.ps1) | Конфигурация окружения PowerShell |
 | [`Set-ExcelTrust.ps1`](../scripts/Set-ExcelTrust.ps1) | Настройка доверия Excel для работы VBA-макросов |
 | [`fix_vbom_and_venv.ps1`](../scripts/fix_vbom_and_venv.ps1) | Диагностика/исправление AccessVBOM и `.venv` |
+| [`monitor_long.ps1`](../scripts/monitor_long.ps1) | Фоновый мониторинг длительных процессов (опрос, лог `logs/monitor_long.log`) |
 
 **Важно:** PowerShell-скрипты должны быть в кодировке UTF-8 with BOM (требование PowerShell для корректной обработки кириллицы).
 
@@ -299,6 +329,7 @@ SysW\
 
 | Версия | Дата | Изменения |
 |--------|------|-----------|
+| 1.1.6.2 | 2026-09-02 | Актуализация под v1.1.6.2: описан каталог рабочих правил `.codeassistant/rules/` (8 файлов-зеркал), структура `.ycarules` (8 модулей `[O][G][Z][K][U][S][T][E]`), дополнен список скриптов `scripts/` |
 | 1.0.14 | 2026-08-26 | Финализация v1.0.14: актуализация документации, перенос `docs/reestrOLD.md` в `plans/_archive/`, очистка временных артефактов; тесты расширены до TC-62 (группа `RunGlobalBaseTests`) |
 | 1.0.11 | 2026-08-25 | ROADMAP — единый источник задач: новый раздел «Актуальные задачи и подзадачи» с чекбоксами и mermaid-деревом; настройка Todo Tree; устранены несоответствия §5 («53 теста») и §7 («8 групп правил») |
 | 1.0.10 | 2026-08-25 | Создан реестр макросов, скриптов и тестов `docs/reestr.md` (в v1.1.0 интегрирован в `docs/DEVELOPER.md`, Приложения D–G); актуализация документации; список скриптов и состав листов приведены к фактическому состоянию |
