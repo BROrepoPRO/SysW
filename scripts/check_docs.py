@@ -198,8 +198,10 @@ def check_script_paths(files, issues):
 
 def check_versions(files, issues):
     """Проверяет, что версия проекта в документации соответствует актуальной."""
-    # Ищем упоминания версий вида vX.Y.Z в документации
-    version_pattern = re.compile(r"\bv\d+\.\d+\.\d+\b")
+    # Ищем упоминания версий вида vX.Y.Z или vX.Y.Z.W (четырёхкомпонентная).
+    # Явный запрет последующего .\d (negative lookahead) не даёт шаблону
+    # частично захватить vX.Y.Z из строки vX.Y.Z.W, что исключает ложные флаги.
+    version_pattern = re.compile(r"\bv\d+(?:\.\d+){2,3}(?![\d.])")
     for path in files:
         content = read_text(path)
         # В исторических документах (CHANGELOG.md, ROADMAP.md) перечислены все
