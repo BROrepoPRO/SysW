@@ -5,6 +5,30 @@
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/),
 версионирование следует [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [v1.1.4] — 2026-09-01
+
+### Added
+- **Точное описание режимов SourceCraft Code Assistant** — в `.ycarules` (раздел 1.1)
+  и `docs/sourcecraft-guide.md` интегрированы сводные характеристики пяти режимов
+  (`Code`, `Ask`, `Architect`, `Debug`, `Orchestrator`): название, назначение, доступ
+  к инструментам, цель и особенности (по таблицам плана 1.1.4).
+- **Перенос всех групп моделей в `matlib_entries` (SysW.db)** — выполнена миграция
+  справочника через `scripts/migrate_models_to_sqlite.py`: все 6 групп
+  (`2170`, `2180`, `2190`, `4x4`, `GAZ`, `UAZ`) перенесены в БД. Каталог з/ч
+  `parts_catalog` — 25 154 позиции (лист `z4` книги `2170.xlsm`); `matlib_entries` — 387
+  записей (`mod_work`/`mod_part`).
+
+### Changed
+- **Версия проекта:** 1.1.4. Синхронизирована в `scripts/config.py`,
+  `src/modules/Mod_Constants.bas`, `scripts/config.ps1`, `README.md`,
+  `docs/DEVELOPER.md`, `docs/ROADMAP.md`, `docs/ARCHITECTURE.md` и `docs/CHANGELOG.md`.
+
+### Tested
+- **Бизнес-прогон `run_oab_reconcile_business_test.py`:** сверка глубокой подстановки
+  O/AB против `matlib_entries` — **PASS** (PASS=2, FAIL=0): работа `L='Снятие колеса ...'`
+  → `O='00 16 07.05'`, запчасть `X='2389901363'` → `AB='19531'` (группа `GAZ`, `main!B14`).
+  Отчёт: `logs/oab_reconcile_report.log`.
+
 ## [v1.1.2.1] — 2026-09-01
 
 ### Added
