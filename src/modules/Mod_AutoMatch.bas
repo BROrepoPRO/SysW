@@ -101,6 +101,8 @@ Public Sub AutoMatchWorks()
     Dim lw As WorkIdentity
     Dim askWId As VbMsgBoxResult
     Dim newW As WorkIdentity
+    Dim idIndex As Object   ' Кэш-индекс тождеств работ по InName (K-02)
+    Dim inKey As String
 
     Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: START")
 
@@ -155,7 +157,15 @@ Public Sub AutoMatchWorks()
         wsMain.Cells(i, MAIN_W_ARTICLE).Resize(1, 6).ClearContents
     Next i
 
-    ' 6. Для каждой строки входящих работ ищем совпадение
+    ' 6. Кэш/индекс тождеств работ по входящему наименованию (K-02).
+    '    Индекс строится ОДИН раз перед циклом по строкам, что устраняет
+    '    повторный линейный просмотр всей коллекции identities для каждой
+    '    строки (было O(N*M)) и даёт O(1) lookup по нормализованному ключу.
+    Set idIndex = BuildWorkIdentityIndex(identities)
+    If idIndex Is Nothing Then
+        Set idIndex = CreateObject("Scripting.Dictionary")
+    End If
+
     matchCount = 0
     notFoundCount = 0
 
@@ -167,25 +177,26 @@ Public Sub AutoMatchWorks()
 
         found = False
 
-        ' Ищем в коллекции тождеств по InName
-        For Each identity In identities
-            If UCase$(Trim$(identity.InName)) = UCase$(inName) Then
-                ' Найдено — заполняем модельные колонки
-                wsMain.Cells(i, MAIN_W_ARTICLE).Value = identity.OutArticle   ' E ← B
-                wsMain.Cells(i, MAIN_W_NAME).Value = identity.OutName         ' F ← C
-                wsMain.Cells(i, MAIN_W_NORMHOURS).Value = identity.NormHours  ' G ← D
-                wsMain.Cells(i, MAIN_W_QTY).Value = identity.QtyZN            ' H ← G
-                wsMain.Cells(i, MAIN_W_PRICE).Value = priceNH                 ' I ← B13
-                Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: writing formula at row " & CStr(i))
-                ' J — Сумма = ОКРУГЛ(G*H*I;2)
-                wsMain.Cells(i, MAIN_W_SUM).FormulaLocal = _
-                    "=ROUND(G" & i & "*H" & i & "*I" & i & ";2)"
+        ' Быстрый lookup по кэш-индексу (O(1)) вместо линейного перебора.
+        ' Ключ индекса нормализуется так же, как при прямом поиске
+        ' (UCase + Trim), поэтому семантика сопоставления не изменена.
+        inKey = UCase$(Trim$(inName))
+        If idIndex.Exists(inKey) Then
+            Set identity = idIndex(inKey)
+            ' Найдено — заполняем модельные колонки
+            wsMain.Cells(i, MAIN_W_ARTICLE).Value = identity.OutArticle   ' E ← B
+            wsMain.Cells(i, MAIN_W_NAME).Value = identity.OutName         ' F ← C
+            wsMain.Cells(i, MAIN_W_NORMHOURS).Value = identity.NormHours  ' G ← D
+            wsMain.Cells(i, MAIN_W_QTY).Value = identity.QtyZN            ' H ← G
+            wsMain.Cells(i, MAIN_W_PRICE).Value = priceNH                 ' I ← B13
+            Call Mod_Logger.WriteLog("Mod_AutoMatch", "AutoMatchWorks: writing formula at row " & CStr(i))
+            ' J — Сумма = ОКРУГЛ(G*H*I;2)
+            wsMain.Cells(i, MAIN_W_SUM).FormulaLocal = _
+                "=ROUND(G" & i & "*H" & i & "*I" & i & ";2)"
 
-                matchCount = matchCount + 1
-                found = True
-                Exit For
-            End If
-        Next identity
+            matchCount = matchCount + 1
+            found = True
+        End If
 
         If Not found Then
             ' Не найдено по тождествам — поиск по локальному листу работ группы
@@ -259,6 +270,9 @@ ContinueWork:
         End If
     End If
 
+    ' Освобождаем временный кэш-индекс
+    Set idIndex = Nothing
+
     Exit Sub
 
 ErrHandler:
@@ -266,7 +280,48 @@ ErrHandler:
     If Not Mod_Constants.SilenceMsgBox Then
         MsgBox "Ошибка при автоподборе работ: " & Err.Description, vbCritical, "АВТО РАБ"
     End If
+    ' Освобождаем временный кэш-индекс даже при ошибке
+    Set idIndex = Nothing
 End Sub
+
+' --------------------------------------------------------------------------
+' BuildWorkIdentityIndex
+' Строит кэш-индекс (Scripting.Dictionary) тождеств работ по нормализованному
+' входящему наименованию (UCase + Trim). Механизм кэширования K-02 (1.1.3):
+' индекс строится один раз перед циклом AutoMatchWorks и обеспечивает O(1)
+' lookup вместо O(M) линейного просмотра коллекции identities на каждую строку.
+'
+' Корректность: ключи индекса однозначно соответствуют InName точно так же,
+' как при прямом поиске UCase(Trim(InName)) = UCase(Trim(inName)). При
+' дублирующихся InName в коллекции сохраняется ПЕРВАЯ запись (та же семантика,
+' что и исходный цикл с Exit For после первого совпадения). Пустые ключи
+' отбрасываются — они никогда не совпадают с непустым inName из цикла.
+' Возвращает Nothing при ошибке построения.
+' --------------------------------------------------------------------------
+Private Function BuildWorkIdentityIndex(ByVal identities As Collection) As Object
+    On Error GoTo ErrHandler
+
+    Dim idx As Object
+    Set idx = CreateObject("Scripting.Dictionary")
+
+    Dim identity As WorkIdentity
+    Dim key As String
+    For Each identity In identities
+        key = UCase$(Trim$(identity.InName))
+        If key <> "" And Not idx.Exists(key) Then
+            idx.Add key, identity
+        End If
+    Next identity
+
+    Set BuildWorkIdentityIndex = idx
+    Exit Function
+
+ErrHandler:
+    Call Mod_Logger.WriteLog("Mod_AutoMatch", _
+        "BuildWorkIdentityIndex: Ошибка — " & Err.Description)
+    Set idx = Nothing
+    Set BuildWorkIdentityIndex = Nothing
+End Function
 
 ' ============================================================
 ' AutoMatchParts
